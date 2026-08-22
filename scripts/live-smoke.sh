@@ -418,13 +418,7 @@ else
   http_get "/" "$board4" >/dev/null || true
   after_clicks="$(clicks_for_id "$board4" "$cover_id" || echo "")"
   if [[ "$click_code" == "404" ]]; then
-    # PR 6 scope is the operator script. /r/:id is not on main after PR 5.
-    # Do not invent a click count or register the hop here.
-    if [[ "$before_clicks" == "0" && ( -z "$after_clicks" || "$after_clicks" == "0" ) ]]; then
-      record "click-increment" "PASS-ERROR" "GET /r/${cover_id} 404 (redirect hop not registered; clicks stay 0, none invented)"
-    else
-      record "click-increment" "FAIL" "GET /r/${cover_id} 404 but clicks changed ${before_clicks}→${after_clicks}"
-    fi
+    record "click-increment" "FAIL" "GET /r/${cover_id} 404 (redirect hop not registered)"
   elif [[ "$before_clicks" =~ ^[0-9]+$ && "$after_clicks" =~ ^[0-9]+$ ]] \
     && [[ "$after_clicks" -eq $((before_clicks + 1)) ]] \
     && [[ "$click_code" =~ ^30[12378]$ ]] \
