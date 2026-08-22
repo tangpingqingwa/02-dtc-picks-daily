@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { AppDb } from "../db.js";
+import { canonicalizeProductUrl, normalizeWhyTestThisToday } from "./urls.js";
 
 export const MIN_BID_USD = 5;
 
@@ -49,6 +50,11 @@ export type PaidBid = {
   day: string;
   paidUsd?: number;
   paidAt: string;
+};
+
+export type BidQuote = {
+  raise: boolean;
+  chargeUsd: number;
 };
 
 type CheckoutEventRow = {
@@ -101,6 +107,66 @@ export function listingFromRow(row: ListingRow): Listing {
   };
 }
 
+export function findListingByDayAndUrl(
+  db: AppDb,
+  day: string,
+  productUrl: string,
+): Listing | undefined {
+  const row = db
+    .prepare<[string, string], ListingRow>(
+      `SELECT ${LISTING_COLUMNS} FROM listings WHERE day = ? AND product_url = ?`,
+    )
+    .get(day, productUrl);
+  return row ? listingFromRow(row) : undefined;
+}
+
+/** Charge the full bid on first list; only `newBid - currentBid` on a same-day raise. */
+export function quotePaidBid(
+  existing: Pick<Listing, "bidUsd"> | undefined,
+  newBidUsd: number,
+): BidQuote {
+  if (!Number.isInteger(newBidUsd) || newBidUsd < MIN_BID_USD) {
+    throw new Error(`bid must be a whole dollar >= ${MIN_BID_USD}`);
+  }
+  if (!existing) {
+    return { raise: false, chargeUsd: newBidUsd };
+  }
+  if (newBidUsd <= existing.bidUsd) {
+    throw new Error("new bid must be a whole dollar strictly greater than the current bid");
+  }
+  return { raise: true, chargeUsd: newBidUsd - existing.bidUsd };
+}
+
+export function raiseBid(
+  db: AppDb,
+  listing: Listing,
+  input: { bidUsd: number; whyTestThisToday: string; paidUsd: number; updatedAt: string },
+): Listing {
+  const quote = quotePaidBid(listing, input.bidUsd);
+  if (quote.chargeUsd !== input.paidUsd) {
+    throw new Error(`raise pays the difference only (expected $${quote.chargeUsd})`);
+  }
+  const raised: Listing = {
+    ...listing,
+    whyTestThisToday: input.whyTestThisToday,
+    bidUsd: input.bidUsd,
+    paidUsd: listing.paidUsd + input.paidUsd,
+    updatedAt: input.updatedAt,
+  };
+  db.prepare(
+    `UPDATE listings
+     SET why_test_this_today = ?, bid_usd = ?, paid_usd = ?, updated_at = ?
+     WHERE id = ?`,
+  ).run(
+    raised.whyTestThisToday,
+    raised.bidUsd,
+    raised.paidUsd,
+    raised.updatedAt,
+    raised.id,
+  );
+  return raised;
+}
+
 export function listToday(db: AppDb, day: string): RankedListing[] {
   const rows = db
     .prepare<[string], ListingRow>(
@@ -118,8 +184,8 @@ export function placeBid(db: AppDb, input: PlaceBidInput): Listing {
   const listing: Listing = {
     id: input.id ?? randomUUID(),
     day: input.day,
-    productUrl: input.productUrl,
-    whyTestThisToday: input.whyTestThisToday,
+    productUrl: canonicalizeProductUrl(input.productUrl),
+    whyTestThisToday: normalizeWhyTestThisToday(input.whyTestThisToday),
     bidUsd: input.bidUsd,
     paidUsd: input.paidUsd ?? input.bidUsd,
     clicks: input.clicks ?? 0,
@@ -152,34 +218,53 @@ export function getListing(db: AppDb, id: string): Listing | undefined {
   return row ? listingFromRow(row) : undefined;
 }
 
-/** Insert a listing only after Polar or the fixture reports a completed payment. */
+/** Insert or raise a listing only after Polar or the fixture reports a completed payment. */
 export function applyPaidBid(db: AppDb, paid: PaidBid): Listing {
   if (!Number.isInteger(paid.bidUsd) || paid.bidUsd < MIN_BID_USD) {
     throw new Error(`bid must be a whole dollar >= ${MIN_BID_USD}`);
   }
+  const productUrl = canonicalizeProductUrl(paid.productUrl);
+  const whyTestThisToday = normalizeWhyTestThisToday(paid.whyTestThisToday);
   return db.transaction(() => {
-    const existing = db
+    const replayed = db
       .prepare<[string], CheckoutEventRow>("SELECT listing_id FROM checkout_events WHERE id = ?")
       .get(paid.sessionId);
-    if (existing) {
-      const listing = getListing(db, existing.listing_id);
+    if (replayed) {
+      const listing = getListing(db, replayed.listing_id);
       if (!listing) {
         throw new Error(`checkout ${paid.sessionId} points at a missing listing`);
       }
       return listing;
     }
-    const listing = placeBid(db, {
-      productUrl: paid.productUrl,
-      whyTestThisToday: paid.whyTestThisToday,
-      bidUsd: paid.bidUsd,
-      day: paid.day,
-      paidUsd: paid.paidUsd ?? paid.bidUsd,
-      createdAt: paid.paidAt,
-      updatedAt: paid.paidAt,
-    });
+    const existing = findListingByDayAndUrl(db, paid.day, productUrl);
+    const quote = quotePaidBid(existing, paid.bidUsd);
+    const charged = paid.paidUsd ?? quote.chargeUsd;
+    if (charged !== quote.chargeUsd) {
+      throw new Error(
+        quote.raise
+          ? `raise pays the difference only (expected $${quote.chargeUsd})`
+          : `first bid pays the full amount (expected $${quote.chargeUsd})`,
+      );
+    }
+    const listing = existing
+      ? raiseBid(db, existing, {
+          bidUsd: paid.bidUsd,
+          whyTestThisToday,
+          paidUsd: charged,
+          updatedAt: paid.paidAt,
+        })
+      : placeBid(db, {
+          productUrl,
+          whyTestThisToday,
+          bidUsd: paid.bidUsd,
+          day: paid.day,
+          paidUsd: charged,
+          createdAt: paid.paidAt,
+          updatedAt: paid.paidAt,
+        });
     db.prepare(
       "INSERT INTO checkout_events (id, listing_id, amount_usd, paid_at) VALUES (?, ?, ?, ?)",
-    ).run(paid.sessionId, listing.id, paid.paidUsd ?? paid.bidUsd, paid.paidAt);
+    ).run(paid.sessionId, listing.id, charged, paid.paidAt);
     return listing;
   })();
 }

@@ -51,13 +51,14 @@ export class PolarCheckout implements CheckoutPort {
         accept: "application/json",
       },
       body: JSON.stringify({
-        amount: draft.bidUsd * 100,
+        amount: (draft.chargeUsd ?? draft.bidUsd) * 100,
         currency: "usd",
         success_url: `${publicBaseUrl(this.env)}/checkout/complete?session={CHECKOUT_ID}`,
         metadata: {
           productUrl: draft.productUrl,
           whyTestThisToday: draft.whyTestThisToday,
           bidUsd: String(draft.bidUsd),
+          chargeUsd: String(draft.chargeUsd ?? draft.bidUsd),
           day: draft.day,
         },
       }),
@@ -76,7 +77,7 @@ export class PolarCheckout implements CheckoutPort {
       status: "open",
       url,
       draft: { ...draft },
-      amountUsd: draft.bidUsd,
+      amountUsd: draft.chargeUsd ?? draft.bidUsd,
     };
     this.sessions.set(id, session);
     return { ...session };
@@ -135,13 +136,13 @@ export class PolarCheckout implements CheckoutPort {
       status: "complete",
       url: existing?.url ?? "",
       draft,
-      amountUsd: draft.bidUsd,
+      amountUsd: existing?.amountUsd ?? draft.chargeUsd ?? draft.bidUsd,
       paidAt,
     });
     return {
       sessionId,
       draft,
-      amountUsd: draft.bidUsd,
+      amountUsd: existing?.amountUsd ?? draft.chargeUsd ?? draft.bidUsd,
       paidAt,
     };
   }
@@ -217,7 +218,14 @@ function draftFromMetadata(data: Record<string, unknown>): CheckoutDraft | undef
   if (!productUrl || !whyTestThisToday || bidUsd === undefined || !day) {
     return undefined;
   }
-  return { productUrl, whyTestThisToday, bidUsd, day };
+  const chargeUsd = readInt(metadata.chargeUsd);
+  return {
+    productUrl,
+    whyTestThisToday,
+    bidUsd,
+    day,
+    ...(chargeUsd !== undefined ? { chargeUsd } : {}),
+  };
 }
 
 function readString(value: unknown): string | undefined {

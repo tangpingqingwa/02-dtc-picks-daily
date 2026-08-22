@@ -74,7 +74,8 @@ if [[ -f package.json ]]; then
     src/http/checkout.ts src/http/webhook.ts src/migrations/002_checkouts.sql \
     tests/checkout.test.ts tests/fixtures/polar/checkout-paid.json \
     tests/fixtures/polar/checkout-expired.json tests/fixtures/polar/underbid-paid.json \
-    tests/fixtures/polar/checkout-created.json; do
+    tests/fixtures/polar/checkout-created.json \
+    src/core/urls.ts tests/raise.test.ts tests/urls.test.ts; do
     [[ -f "$f" ]] || fail "missing $f"
     [[ -s "$f" ]] || fail "empty $f"
   done
@@ -136,6 +137,14 @@ if [[ -f package.json ]]; then
     || fail "checkout underbid test did not run"
   grep -q 'abandoned' "$test_log" \
     || fail "abandoned checkout test did not run"
+  grep -q 'pays \$5 more' "$test_log" \
+    || fail "raise difference test did not run"
+  grep -q 'utm_source' "$test_log" \
+    || fail "url strip test did not run"
+  grep -q 't.me' "$test_log" \
+    || fail "chat ban test did not run"
+  grep -q 'adult URL' "$test_log" \
+    || fail "NSFW ban test did not run"
 fi
 
 echo "OK: buildable and testable"

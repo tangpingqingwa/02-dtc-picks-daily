@@ -7,6 +7,8 @@ export type CheckoutDraft = {
   whyTestThisToday: string;
   bidUsd: number;
   day: string;
+  /** Dollars charged now: full bid on first list, difference on a raise. */
+  chargeUsd?: number;
 };
 
 export type CheckoutStatus = "open" | "complete" | "expired";

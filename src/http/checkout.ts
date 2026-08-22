@@ -1,7 +1,13 @@
 import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import type { CheckoutDraft, PaidEvent } from "../billing/port.js";
-import { applyPaidBid, MIN_BID_USD } from "../core/board.js";
+import {
+  applyPaidBid,
+  findListingByDayAndUrl,
+  MIN_BID_USD,
+  quotePaidBid,
+} from "../core/board.js";
 import { boardTimeZone, dayKey } from "../core/day.js";
+import { canonicalizeProductUrl, normalizeWhyTestThisToday, UrlError } from "../core/urls.js";
 
 export const CHECKOUT_PATH = "/checkout" as const;
 export const CHECKOUT_COMPLETE_PATH = "/checkout/complete" as const;
@@ -22,25 +28,25 @@ export class CheckoutFormError extends Error {
 
 export function parseCheckoutForm(body: unknown, day: string): CheckoutDraft {
   const form = (body ?? {}) as CheckoutForm;
-  const productUrl = typeof form.productUrl === "string" ? form.productUrl.trim() : "";
-  const whyTestThisToday =
+  const rawUrl = typeof form.productUrl === "string" ? form.productUrl.trim() : "";
+  const rawWhy =
     typeof form.whyTestThisToday === "string" ? form.whyTestThisToday.trim() : "";
   const bidUsd = parseBidUsd(form.bidUsd);
 
-  if (!productUrl) {
+  if (!rawUrl) {
     throw new CheckoutFormError("product URL is required");
   }
-  let parsed: URL;
+  let productUrl: string;
   try {
-    parsed = new URL(productUrl);
-  } catch {
-    throw new CheckoutFormError("product URL must be a valid https URL");
+    productUrl = canonicalizeProductUrl(rawUrl);
+  } catch (error) {
+    throw checkoutUrlError(error);
   }
-  if (parsed.protocol !== "https:") {
-    throw new CheckoutFormError("product URL must be https");
-  }
-  if (whyTestThisToday.length < 8 || whyTestThisToday.length > 140) {
-    throw new CheckoutFormError("why test this today must be 8–140 characters");
+  let whyTestThisToday: string;
+  try {
+    whyTestThisToday = normalizeWhyTestThisToday(rawWhy);
+  } catch (error) {
+    throw checkoutUrlError(error);
   }
   if (bidUsd === undefined) {
     throw new CheckoutFormError(`bid must be a whole dollar >= ${MIN_BID_USD}`);
@@ -78,6 +84,8 @@ export const checkoutRoutes: FastifyPluginAsync = async (app) => {
     let draft: CheckoutDraft;
     try {
       draft = parseCheckoutForm(request.body, day);
+      const existing = findListingByDayAndUrl(app.db, day, draft.productUrl);
+      draft = { ...draft, chargeUsd: quotePaidBid(existing, draft.bidUsd).chargeUsd };
     } catch (error) {
       return formError(reply, error);
     }
@@ -119,6 +127,12 @@ function applyPaid(
     paidUsd: paid.amountUsd,
     paidAt: paid.paidAt,
   });
+}
+
+function checkoutUrlError(error: unknown): CheckoutFormError {
+  const message =
+    error instanceof UrlError || error instanceof Error ? error.message : "invalid product URL";
+  return new CheckoutFormError(message);
 }
 
 function formError(reply: FastifyReply, error: unknown): FastifyReply {
