@@ -6,6 +6,11 @@ dist/
 .env.*
 !.env.example
 *.log
+npm-debug.log*
 .vercel
 coverage/
-
+data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm

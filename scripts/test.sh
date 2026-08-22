@@ -65,10 +65,49 @@ file -b --mime-encoding README.md SPEC.md BUILD.md CONTRIBUTING.md | grep -qiE '
   || fail "docs are not UTF-8/ASCII"
 
 if [[ -f package.json ]]; then
-  echo "== app tests =="
+  echo "== skeleton files =="
+  for f in tsconfig.json src/server.ts src/app.ts src/http/health.ts tests/health.test.ts; do
+    [[ -f "$f" ]] || fail "missing $f"
+    [[ -s "$f" ]] || fail "empty $f"
+  done
+
+  echo "== install =="
   command -v npx >/dev/null || fail "npx missing but package.json exists"
+  if [[ ! -d node_modules ]]; then
+    if [[ -f package-lock.json ]]; then
+      npm ci
+    else
+      npm install
+    fi
+  fi
+
+  echo "== Polar stays offline =="
+  unset POLAR_LIVE POLAR_ACCESS_TOKEN POLAR_WEBHOOK_SECRET || true
+  [[ "${POLAR_LIVE:-}" != "1" ]] || fail "POLAR_LIVE must stay unset in test.sh"
+  if grep -E '"@polar-sh/sdk"|"@polar-sh/' package.json >/dev/null 2>&1; then
+    fail "do not add a live Polar SDK in this unit"
+  fi
+  if grep -R --include='*.ts' -E "from ['\"]@polar-sh|api\\.polar\\.sh" src >/dev/null 2>&1; then
+    fail "src must not call live Polar"
+  fi
+
+  echo "== tsc --noEmit =="
   npx tsc --noEmit
-  npx tsx --test tests/**/*.test.ts
+
+  echo "== unit tests =="
+  # Quoted so bash 3.2 does not eat **; Node 22's test runner expands the glob.
+  # Inject only — never hit live Polar.
+  test_log="$(mktemp)"
+  trap 'rm -f "$test_log"' EXIT
+  set +e
+  npx tsx --test --test-reporter spec 'tests/**/*.test.ts' | tee "$test_log"
+  test_status=${PIPESTATUS[0]}
+  set -e
+  [[ $test_status -eq 0 ]] || fail "unit tests failed"
+  grep -Eq 'tests[[:space:]]+[1-9][0-9]*' "$test_log" \
+    || fail "test runner reported 0 tests"
+  grep -q '/healthz' "$test_log" \
+    || fail "healthz test did not run"
 fi
 
 echo "OK: buildable and testable"
