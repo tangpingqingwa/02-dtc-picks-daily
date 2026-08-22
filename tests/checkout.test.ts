@@ -282,6 +282,7 @@ test("live PolarCheckout never fetches unless POLAR_LIVE=1", async () => {
     whyTestThisToday: "Test this restock on today's brief",
     bidUsd: 5,
     day: "2026-08-22",
+    chargeUsd: 5,
   });
   assert.equal(fetches, 1);
   assert.equal(session.id, "chk_recorded_open");
