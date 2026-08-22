@@ -1,0 +1,13 @@
+{
+  "id": "chk_recorded_open",
+  "status": "open",
+  "amount": 500,
+  "currency": "usd",
+  "url": "https://polar.sh/checkout/chk_recorded_open",
+  "metadata": {
+    "productUrl": "https://store.example/sku",
+    "whyTestThisToday": "Test this restock on today's brief",
+    "bidUsd": "5",
+    "day": "2026-08-22"
+  }
+}

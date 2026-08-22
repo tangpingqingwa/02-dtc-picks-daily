@@ -1,11 +1,16 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import { FixtureCheckout } from "./billing/fixture.js";
+import type { CheckoutPort } from "./billing/port.js";
 import { DEFAULT_DATABASE_PATH, openDatabase, type AppDb } from "./db.js";
+import { checkoutRoutes } from "./http/checkout.js";
 import { healthRoutes } from "./http/health.js";
 import { boardRoutes } from "./http/pages/board.js";
+import { webhookRoutes } from "./http/webhook.js";
 
 declare module "fastify" {
   interface FastifyInstance {
     db: AppDb;
+    checkout: CheckoutPort;
   }
 }
 
@@ -13,6 +18,7 @@ export type BuildAppOptions = {
   logger?: boolean;
   db?: AppDb;
   databasePath?: string;
+  checkout?: CheckoutPort;
 };
 
 export async function buildApp(
@@ -23,7 +29,9 @@ export async function buildApp(
   const db =
     options.db ??
     openDatabase(options.databasePath ?? process.env.DATABASE_PATH ?? ":memory:");
+  const checkout = options.checkout ?? new FixtureCheckout();
   app.decorate("db", db);
+  app.decorate("checkout", checkout);
   if (ownsDb) {
     app.addHook("onClose", async () => {
       db.close();
@@ -31,6 +39,8 @@ export async function buildApp(
   }
   await app.register(healthRoutes);
   await app.register(boardRoutes);
+  await app.register(checkoutRoutes);
+  await app.register(webhookRoutes);
   return app;
 }
 

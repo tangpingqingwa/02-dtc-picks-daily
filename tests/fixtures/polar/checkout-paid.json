@@ -1,0 +1,15 @@
+{
+  "type": "checkout.updated",
+  "data": {
+    "id": "chk_recorded_paid",
+    "status": "succeeded",
+    "amount": 500,
+    "currency": "usd",
+    "metadata": {
+      "productUrl": "https://store.example/sku",
+      "whyTestThisToday": "Test this restock on today's brief",
+      "bidUsd": "5",
+      "day": "2026-08-22"
+    }
+  }
+}

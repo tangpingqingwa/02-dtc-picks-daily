@@ -69,7 +69,12 @@ if [[ -f package.json ]]; then
   for f in tsconfig.json src/server.ts src/app.ts src/http/health.ts tests/health.test.ts \
     src/db.ts src/migrations/001_init.sql src/core/board.ts src/core/day.ts \
     src/http/pages/board.ts src/views/board.ts src/views/layout.ts src/views/html.ts \
-    src/views/styles.ts tests/rank.test.ts tests/pages.test.ts; do
+    src/views/styles.ts tests/rank.test.ts tests/pages.test.ts \
+    src/config.ts src/billing/port.ts src/billing/fixture.ts src/billing/polar.ts \
+    src/http/checkout.ts src/http/webhook.ts src/migrations/002_checkouts.sql \
+    tests/checkout.test.ts tests/fixtures/polar/checkout-paid.json \
+    tests/fixtures/polar/checkout-expired.json tests/fixtures/polar/underbid-paid.json \
+    tests/fixtures/polar/checkout-created.json; do
     [[ -f "$f" ]] || fail "missing $f"
     [[ -s "$f" ]] || fail "empty $f"
   done
@@ -88,11 +93,21 @@ if [[ -f package.json ]]; then
   unset POLAR_LIVE POLAR_ACCESS_TOKEN POLAR_WEBHOOK_SECRET || true
   [[ "${POLAR_LIVE:-}" != "1" ]] || fail "POLAR_LIVE must stay unset in test.sh"
   if grep -E '"@polar-sh/sdk"|"@polar-sh/' package.json >/dev/null 2>&1; then
-    fail "do not add a live Polar SDK in this unit"
+    fail "do not add a live Polar SDK; polar.ts is env-gated fetch only"
   fi
-  if grep -R --include='*.ts' -E "from ['\"]@polar-sh|api\\.polar\\.sh" src >/dev/null 2>&1; then
-    fail "src must not call live Polar"
+  if grep -R --include='*.ts' -E "from ['\"]@polar-sh" src tests >/dev/null 2>&1; then
+    fail "src/tests must not import a Polar SDK"
   fi
+  if grep -R --include='*.ts' -E "api\\.polar\\.sh" tests >/dev/null 2>&1; then
+    fail "tests must not call live Polar"
+  fi
+  if grep -R --include='*.ts' -E "api\\.polar\\.sh" src >/dev/null 2>&1; then
+    if grep -R --include='*.ts' -E "api\\.polar\\.sh" src | grep -v 'src/billing/polar.ts' >/dev/null 2>&1; then
+      fail "only src/billing/polar.ts may mention the Polar API host"
+    fi
+  fi
+  grep -q 'polarLiveEnabled' src/config.ts \
+    || fail "live Polar client is not env-gated"
 
   echo "== tsc --noEmit =="
   npx tsc --noEmit
@@ -115,6 +130,12 @@ if [[ -f package.json ]]; then
     || fail "rank test did not run"
   grep -q 'empty board' "$test_log" \
     || fail "pages empty-board test did not run"
+  grep -q 'fixture pay' "$test_log" \
+    || fail "checkout fixture test did not run"
+  grep -q 'underbid' "$test_log" \
+    || fail "checkout underbid test did not run"
+  grep -q 'abandoned' "$test_log" \
+    || fail "abandoned checkout test did not run"
 fi
 
 echo "OK: buildable and testable"

@@ -1,0 +1,15 @@
+{
+  "type": "order.paid",
+  "data": {
+    "id": "chk_recorded_underbid",
+    "status": "paid",
+    "amount": 800,
+    "currency": "usd",
+    "metadata": {
+      "productUrl": "https://under.example/sku",
+      "whyTestThisToday": "Cheaper SKU still belongs on the brief",
+      "bidUsd": "8",
+      "day": "2026-08-22"
+    }
+  }
+}
