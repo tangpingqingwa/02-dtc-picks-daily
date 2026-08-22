@@ -75,7 +75,8 @@ if [[ -f package.json ]]; then
     tests/checkout.test.ts tests/fixtures/polar/checkout-paid.json \
     tests/fixtures/polar/checkout-expired.json tests/fixtures/polar/underbid-paid.json \
     tests/fixtures/polar/checkout-created.json \
-    src/core/urls.ts tests/raise.test.ts tests/urls.test.ts; do
+    src/core/urls.ts tests/raise.test.ts tests/urls.test.ts \
+    src/http/pages/about.ts src/http/pages/rules.ts; do
     [[ -f "$f" ]] || fail "missing $f"
     [[ -s "$f" ]] || fail "empty $f"
   done
@@ -151,6 +152,31 @@ if [[ -f package.json ]]; then
     || fail "telegram ban assertion did not run"
   grep -q 'SPEC acceptance 8' "$test_log" \
     || fail "NSFW ban test did not run"
+  grep -q 'SPEC acceptance 10' "$test_log" \
+    || fail "about/rules pages test did not run"
+  grep -q '/about' "$test_log" \
+    || fail "about page test did not run"
+  grep -q '/rules' "$test_log" \
+    || fail "rules page test did not run"
+  grep -q 'no ads' src/http/pages/about.ts \
+    || grep -q 'No ads' src/http/pages/about.ts \
+    || fail "about copy missing no ads"
+  grep -q 'No API keys' src/http/pages/about.ts \
+    || fail "about copy missing no API keys"
+  grep -q 'revenue share' src/http/pages/about.ts \
+    || fail "about copy missing no revenue share"
+  grep -q '\$5' src/http/pages/rules.ts \
+    || fail "rules copy missing \$5 floor"
+  grep -q 'older' src/http/pages/rules.ts \
+    || fail "rules copy missing older-wins ties"
+  grep -q 'difference' src/http/pages/rules.ts \
+    || fail "rules copy missing raise difference"
+  grep -q 'BOARD_TZ' src/http/pages/rules.ts \
+    || fail "rules copy missing BOARD_TZ"
+  grep -q 'NSFW' src/http/pages/rules.ts \
+    || fail "rules copy missing NSFW ban"
+  grep -q 'utm_' src/http/pages/rules.ts \
+    || fail "rules copy missing stripped tracking"
 fi
 
 echo "OK: buildable and testable"
