@@ -30,7 +30,7 @@ export class FixtureCheckout implements CheckoutPort {
       status: "open",
       url: `/checkout/complete?session=${encodeURIComponent(id)}`,
       draft: { ...draft },
-      amountUsd: draft.chargeUsd ?? draft.bidUsd,
+      amountUsd: draft.chargeUsd,
     };
     this.sessions.set(id, session);
     if (this.autoComplete) {
@@ -94,7 +94,7 @@ export class FixtureCheckout implements CheckoutPort {
         status: "open",
         url: `/checkout/complete?session=${encodeURIComponent(sessionId)}`,
         draft,
-        amountUsd: draft.chargeUsd ?? draft.bidUsd,
+        amountUsd: draft.chargeUsd,
       });
     }
     return this.completeSession(sessionId);
@@ -145,14 +145,8 @@ function draftFromMetadata(data: Record<string, unknown>, fallbackDay: string): 
   if (!productUrl || !whyTestThisToday || resolvedBid === undefined || !Number.isInteger(resolvedBid)) {
     return undefined;
   }
-  const chargeUsd = readInt(metadata.chargeUsd);
-  return {
-    productUrl,
-    whyTestThisToday,
-    bidUsd: resolvedBid,
-    day,
-    ...(chargeUsd !== undefined ? { chargeUsd } : {}),
-  };
+  const chargeUsd = readInt(metadata.chargeUsd) ?? resolvedBid;
+  return { productUrl, whyTestThisToday, bidUsd: resolvedBid, day, chargeUsd };
 }
 
 function readString(value: unknown): string | undefined {

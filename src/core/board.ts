@@ -112,11 +112,12 @@ export function findListingByDayAndUrl(
   day: string,
   productUrl: string,
 ): Listing | undefined {
+  const canonical = canonicalizeProductUrl(productUrl);
   const row = db
     .prepare<[string, string], ListingRow>(
       `SELECT ${LISTING_COLUMNS} FROM listings WHERE day = ? AND product_url = ?`,
     )
-    .get(day, productUrl);
+    .get(day, canonical);
   return row ? listingFromRow(row) : undefined;
 }
 

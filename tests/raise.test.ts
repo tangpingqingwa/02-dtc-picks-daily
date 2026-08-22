@@ -280,3 +280,66 @@ test("fixture checkout raise of the same URL pays the difference only", async ()
   assert.equal(listings[0]?.paidUsd, 15);
   assert.equal(listings[0]?.rank, 1);
 });
+
+test("raising yesterday's URL today is a new full-bid listing", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const yesterday = placeBid(db, {
+      id: "lst-yesterday",
+      day: "2026-08-21",
+      productUrl: "https://store.example/sku",
+      whyTestThisToday: "Yesterday's cover must leave today's board",
+      bidUsd: 20,
+      createdAt: "2026-08-21T09:00:00.000Z",
+    });
+    const today = applyPaidBid(db, {
+      sessionId: "chk_new_day",
+      productUrl: "https://store.example/sku",
+      whyTestThisToday: "Same URL on a new day pays a full bid",
+      bidUsd: 5,
+      day: "2026-08-22",
+      paidUsd: 5,
+      paidAt: "2026-08-22T09:00:00.000Z",
+    });
+    assert.notEqual(today.id, yesterday.id);
+    assert.equal(today.bidUsd, 5);
+    assert.equal(today.paidUsd, 5);
+    assert.equal(listToday(db, "2026-08-22").length, 1);
+    assert.equal(listToday(db, "2026-08-21")[0]?.bidUsd, 20);
+  } finally {
+    db.close();
+  }
+});
+
+test("a different URL cannot steal rank by paying only this listing's difference", () => {
+  const db = openDatabase(":memory:");
+  try {
+    placeBid(db, {
+      id: "lst-cover",
+      day: "2026-08-22",
+      productUrl: "https://cover.example/apps/pick",
+      whyTestThisToday: "Cover app sellers should install this morning",
+      bidUsd: 20,
+      createdAt: "2026-08-22T09:00:00.000Z",
+    });
+    assert.throws(
+      () =>
+        applyPaidBid(db, {
+          sessionId: "chk_steal",
+          productUrl: "https://rival.example/sku",
+          whyTestThisToday: "Trying to buy #1 for the difference only",
+          bidUsd: 21,
+          day: "2026-08-22",
+          paidUsd: 1,
+          paidAt: "2026-08-22T10:00:00.000Z",
+        }),
+      /first bid pays the full amount/,
+    );
+    const today = listToday(db, "2026-08-22");
+    assert.equal(today.length, 1);
+    assert.equal(today[0]?.id, "lst-cover");
+    assert.equal(today[0]?.bidUsd, 20);
+  } finally {
+    db.close();
+  }
+});

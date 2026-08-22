@@ -51,7 +51,7 @@ export function parseCheckoutForm(body: unknown, day: string): CheckoutDraft {
   if (bidUsd === undefined) {
     throw new CheckoutFormError(`bid must be a whole dollar >= ${MIN_BID_USD}`);
   }
-  return { productUrl, whyTestThisToday, bidUsd, day };
+  return { productUrl, whyTestThisToday, bidUsd, day, chargeUsd: bidUsd };
 }
 
 export function parseBidUsd(raw: unknown): number | undefined {

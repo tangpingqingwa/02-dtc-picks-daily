@@ -26,7 +26,7 @@ const TRACKING_KEYS = new Set([
   "psc",
 ]);
 
-const SHORTENER_HOSTS = new Set([
+const SHORTENER_HOSTS = [
   "bit.ly",
   "t.co",
   "tinyurl.com",
@@ -37,7 +37,7 @@ const SHORTENER_HOSTS = new Set([
   "cutt.ly",
   "rebrand.ly",
   "amzn.to",
-]);
+];
 
 const CHAT_HOSTS = [
   "t.me",
@@ -127,7 +127,10 @@ export function canonicalizeProductUrl(raw: string): string {
     url.port = "";
   }
 
-  for (const key of [...url.searchParams.keys()]) {
+  const queryKeys = [...url.searchParams.keys()];
+  const hadQuery = queryKeys.length > 0;
+  const allQueryWasTracking = hadQuery && queryKeys.every((key) => isTrackingQueryKey(key));
+  for (const key of queryKeys) {
     if (isTrackingQueryKey(key)) {
       url.searchParams.delete(key);
     }
@@ -142,6 +145,10 @@ export function canonicalizeProductUrl(raw: string): string {
     url.pathname = url.pathname.replace(/\/+$/, "");
   }
 
+  const path = url.pathname === "" ? "/" : url.pathname;
+  if (path === "/" && url.search === "" && allQueryWasTracking) {
+    throw new UrlError("invalid_url", "product URL must identify a product after stripping tracking");
+  }
   return url.toString();
 }
 
@@ -159,13 +166,8 @@ export function normalizeWhyTestThisToday(raw: string): string {
   return text;
 }
 
-function hostMatchesAny(hostname: string, listed: Iterable<string>): boolean {
-  for (const candidate of listed) {
-    if (hostname === candidate || hostname.endsWith(`.${candidate}`)) {
-      return true;
-    }
-  }
-  return false;
+function hostMatchesAny(hostname: string, listed: readonly string[]): boolean {
+  return listed.some((candidate) => hostname === candidate || hostname.endsWith(`.${candidate}`));
 }
 
 function isPathKeyedHost(hostname: string): boolean {

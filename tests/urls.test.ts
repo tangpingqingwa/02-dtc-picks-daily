@@ -171,3 +171,10 @@ test("paid apply stores the stripped URL so clicks never keep tracking keys", ()
     db.close();
   }
 });
+
+test("tracking-only identity with no product path is rejected", () => {
+  assert.throws(
+    () => canonicalizeProductUrl("https://store.example/?utm_source=x&aff=1"),
+    /identify a product after stripping tracking/,
+  );
+});

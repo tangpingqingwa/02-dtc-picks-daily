@@ -137,13 +137,19 @@ if [[ -f package.json ]]; then
     || fail "checkout underbid test did not run"
   grep -q 'abandoned' "$test_log" \
     || fail "abandoned checkout test did not run"
+  grep -q 'SPEC acceptance 5' "$test_log" \
+    || fail "raise test did not run"
   grep -q 'pays \$5 more' "$test_log" \
     || fail "raise difference test did not run"
-  grep -q 'utm_source' "$test_log" \
+  grep -q 'SPEC acceptance 6' "$test_log" \
     || fail "url strip test did not run"
-  grep -q 't.me' "$test_log" \
+  grep -q 'utm_source' "$test_log" \
+    || fail "utm strip assertion did not run"
+  grep -q 'SPEC acceptance 7' "$test_log" \
     || fail "chat ban test did not run"
-  grep -q 'adult URL' "$test_log" \
+  grep -q 't.me' "$test_log" \
+    || fail "telegram ban assertion did not run"
+  grep -q 'SPEC acceptance 8' "$test_log" \
     || fail "NSFW ban test did not run"
 fi
 
