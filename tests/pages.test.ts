@@ -4,6 +4,8 @@ import { buildApp } from "../src/app.js";
 import { placeBid } from "../src/core/board.js";
 import { dayKey } from "../src/core/day.js";
 import { openDatabase } from "../src/db.js";
+import { renderAboutPage } from "../src/http/pages/about.js";
+import { renderRulesPage } from "../src/http/pages/rules.js";
 
 test("GET / is a public empty board with bid form", async () => {
   const app = await buildApp({ databasePath: ":memory:" });
@@ -111,4 +113,93 @@ test("GET / does not show yesterday's cover on a new day", async () => {
   assert.match(response.body, /data-empty-board/);
   assert.doesNotMatch(response.body, /yesterday\.example/);
   assert.doesNotMatch(response.body, /\$99/);
+});
+
+test("SPEC acceptance 10: GET /about and GET /rules are 200", async () => {
+  const app = await buildApp({ databasePath: ":memory:" });
+  after(() => app.close());
+
+  const about = await app.inject({ method: "GET", url: "/about" });
+  const rules = await app.inject({ method: "GET", url: "/rules" });
+
+  assert.equal(about.statusCode, 200);
+  assert.equal(rules.statusCode, 200);
+  assert.match(about.headers["content-type"] ?? "", /text\/html/);
+  assert.match(rules.headers["content-type"] ?? "", /text\/html/);
+});
+
+test("GET /about states no ads, no API keys, no revenue share, $5 floor, daily UTC", async () => {
+  const app = await buildApp({ databasePath: ":memory:" });
+  after(() => app.close());
+
+  const response = await app.inject({ method: "GET", url: "/about" });
+  assert.equal(response.statusCode, 200);
+  const body = response.body;
+  assert.match(body, /aria-current="page"/);
+  assert.match(body, /data-page="about"/);
+  assert.match(body, /No ads/);
+  assert.match(body, /No API keys/);
+  assert.match(body, /No revenue share/);
+  assert.match(body, /\$5/);
+  assert.match(body, /Rank is the bid/);
+  assert.match(body, /older listing keeps the higher rank/);
+  assert.match(body, /DTC \/ Shopify \/ Amazon/);
+  assert.match(body, /Global sellers/);
+  assert.match(body, /English/);
+  assert.match(body, /USD/);
+  assert.match(body, /BOARD_TZ/);
+  assert.match(body, /UTC/);
+  assert.match(body, /00:00/);
+  assert.match(body, /dtc-picks-daily/);
+  assert.match(body, /outbid\.lol/);
+  assert.match(body, /Chat and invite links/);
+  assert.match(body, /NSFW/);
+  assert.match(body, /tracking/);
+  assert.match(body, /difference/);
+  assert.doesNotMatch(body, /POLAR_LIVE=1/);
+  assert.doesNotMatch(body, /api\.polar\.sh/);
+});
+
+test("GET /rules states ranking, raise difference, bans, reset, clicks, Polar", async () => {
+  const app = await buildApp({ databasePath: ":memory:" });
+  after(() => app.close());
+
+  const response = await app.inject({ method: "GET", url: "/rules" });
+  assert.equal(response.statusCode, 200);
+  const body = response.body;
+  assert.match(body, /aria-current="page"/);
+  assert.match(body, /data-page="rules"/);
+  assert.match(body, /No ads/);
+  assert.match(body, /No API keys/);
+  assert.match(body, /No revenue share/);
+  assert.match(body, /Minimum <strong>\$5<\/strong>/);
+  assert.match(body, /Step <strong>\$1<\/strong>/);
+  assert.match(body, /older/);
+  assert.match(body, /difference/);
+  assert.match(body, /newBid − currentBid/);
+  assert.match(body, /BOARD_TZ/);
+  assert.match(body, /UTC/);
+  assert.match(body, /00:00/);
+  assert.match(body, /Telegram/);
+  assert.match(body, /WhatsApp/);
+  assert.match(body, /Discord/);
+  assert.match(body, /NSFW/);
+  assert.match(body, /utm_\*/);
+  assert.match(body, /stripped/);
+  assert.match(body, /Clicking does not change rank/);
+  assert.match(body, /Polar Checkout/);
+  assert.match(body, /abandoned checkout/);
+  assert.match(body, /D is on the board even though D did not take #1/);
+  assert.match(body, /no extra[\s\S]*ranking factors/i);
+  assert.match(body, /no recency boost/i);
+  assert.doesNotMatch(body, /trending score/);
+});
+
+test("GET /about and GET /rules document BOARD_TZ when it is not UTC", () => {
+  const about = renderAboutPage({ tz: "America/New_York" });
+  const rules = renderRulesPage({ tz: "America/New_York" });
+  assert.match(about, /America\/New_York/);
+  assert.match(rules, /America\/New_York/);
+  assert.match(about, /BOARD_TZ/);
+  assert.match(rules, /Default <strong>UTC<\/strong>/);
 });

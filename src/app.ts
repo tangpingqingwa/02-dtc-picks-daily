@@ -4,7 +4,9 @@ import type { CheckoutPort } from "./billing/port.js";
 import { DEFAULT_DATABASE_PATH, openDatabase, type AppDb } from "./db.js";
 import { checkoutRoutes } from "./http/checkout.js";
 import { healthRoutes } from "./http/health.js";
+import { aboutRoutes } from "./http/pages/about.js";
 import { boardRoutes } from "./http/pages/board.js";
+import { rulesRoutes } from "./http/pages/rules.js";
 import { webhookRoutes } from "./http/webhook.js";
 
 declare module "fastify" {
@@ -39,6 +41,8 @@ export async function buildApp(
   }
   await app.register(healthRoutes);
   await app.register(boardRoutes);
+  await app.register(aboutRoutes);
+  await app.register(rulesRoutes);
   await app.register(checkoutRoutes);
   await app.register(webhookRoutes);
   return app;

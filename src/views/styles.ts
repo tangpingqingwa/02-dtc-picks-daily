@@ -496,6 +496,61 @@ nav[aria-label="Main"] a:hover {
   letter-spacing: 0.025em;
   text-transform: uppercase;
 }
+.doc {
+  max-width: 42rem;
+  margin: 0 auto;
+}
+.doc h1 {
+  margin: 0 0 1rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.doc h2 {
+  margin: 2rem 0 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.doc p, .doc li {
+  color: var(--muted-foreground);
+}
+.doc p { margin: 0 0 0.85rem; }
+.doc ol, .doc ul {
+  margin: 0 0 0.85rem;
+  padding-left: 1.25rem;
+}
+.doc li { margin: 0.35rem 0; }
+.doc strong { color: var(--foreground); }
+.doc a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.doc code {
+  font-size: 0.875em;
+  background: var(--muted);
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.35rem;
+}
+.doc table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+}
+.doc th, .doc td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+.doc th {
+  font-weight: 600;
+  color: var(--foreground);
+  white-space: nowrap;
+}
+.doc td { color: var(--muted-foreground); }
 html.dark {
   --background: #1a1512;
   --foreground: #f7f5f1;
