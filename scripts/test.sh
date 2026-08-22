@@ -65,8 +65,11 @@ file -b --mime-encoding README.md SPEC.md BUILD.md CONTRIBUTING.md | grep -qiE '
   || fail "docs are not UTF-8/ASCII"
 
 if [[ -f package.json ]]; then
-  echo "== skeleton files =="
-  for f in tsconfig.json src/server.ts src/app.ts src/http/health.ts tests/health.test.ts; do
+  echo "== skeleton + board files =="
+  for f in tsconfig.json src/server.ts src/app.ts src/http/health.ts tests/health.test.ts \
+    src/db.ts src/migrations/001_init.sql src/core/board.ts src/core/day.ts \
+    src/http/pages/board.ts src/views/board.ts src/views/layout.ts src/views/html.ts \
+    src/views/styles.ts tests/rank.test.ts tests/pages.test.ts; do
     [[ -f "$f" ]] || fail "missing $f"
     [[ -s "$f" ]] || fail "empty $f"
   done
@@ -108,6 +111,10 @@ if [[ -f package.json ]]; then
     || fail "test runner reported 0 tests"
   grep -q '/healthz' "$test_log" \
     || fail "healthz test did not run"
+  grep -q 'rankListings' "$test_log" \
+    || fail "rank test did not run"
+  grep -q 'empty board' "$test_log" \
+    || fail "pages empty-board test did not run"
 fi
 
 echo "OK: buildable and testable"

@@ -1,6 +1,6 @@
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { buildApp } from "./app.js";
+import { buildApp, DEFAULT_DATABASE_PATH } from "./app.js";
 
 const DEFAULT_PORT = 3000;
 
@@ -26,6 +26,7 @@ export function isExecutedAsMain(
 }
 
 if (isExecutedAsMain()) {
-  const app = await buildApp({ logger: true });
+  const databasePath = process.env.DATABASE_PATH || DEFAULT_DATABASE_PATH;
+  const app = await buildApp({ logger: true, databasePath });
   await app.listen({ host: "0.0.0.0", port: parseListenPort() });
 }
