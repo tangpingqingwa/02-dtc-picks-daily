@@ -41,6 +41,20 @@ export type PlaceBidInput = {
   id?: string;
 };
 
+export type PaidBid = {
+  sessionId: string;
+  productUrl: string;
+  whyTestThisToday: string;
+  bidUsd: number;
+  day: string;
+  paidUsd?: number;
+  paidAt: string;
+};
+
+type CheckoutEventRow = {
+  listing_id: string;
+};
+
 const LISTING_COLUMNS = `
   id, day, product_url, why_test_this_today, bid_usd, paid_usd,
   clicks, created_at, updated_at
@@ -129,4 +143,43 @@ export function placeBid(db: AppDb, input: PlaceBidInput): Listing {
     listing.updatedAt,
   );
   return listing;
+}
+
+export function getListing(db: AppDb, id: string): Listing | undefined {
+  const row = db
+    .prepare<[string], ListingRow>(`SELECT ${LISTING_COLUMNS} FROM listings WHERE id = ?`)
+    .get(id);
+  return row ? listingFromRow(row) : undefined;
+}
+
+/** Insert a listing only after Polar or the fixture reports a completed payment. */
+export function applyPaidBid(db: AppDb, paid: PaidBid): Listing {
+  if (!Number.isInteger(paid.bidUsd) || paid.bidUsd < MIN_BID_USD) {
+    throw new Error(`bid must be a whole dollar >= ${MIN_BID_USD}`);
+  }
+  return db.transaction(() => {
+    const existing = db
+      .prepare<[string], CheckoutEventRow>("SELECT listing_id FROM checkout_events WHERE id = ?")
+      .get(paid.sessionId);
+    if (existing) {
+      const listing = getListing(db, existing.listing_id);
+      if (!listing) {
+        throw new Error(`checkout ${paid.sessionId} points at a missing listing`);
+      }
+      return listing;
+    }
+    const listing = placeBid(db, {
+      productUrl: paid.productUrl,
+      whyTestThisToday: paid.whyTestThisToday,
+      bidUsd: paid.bidUsd,
+      day: paid.day,
+      paidUsd: paid.paidUsd ?? paid.bidUsd,
+      createdAt: paid.paidAt,
+      updatedAt: paid.paidAt,
+    });
+    db.prepare(
+      "INSERT INTO checkout_events (id, listing_id, amount_usd, paid_at) VALUES (?, ?, ?, ?)",
+    ).run(paid.sessionId, listing.id, paid.paidUsd ?? paid.bidUsd, paid.paidAt);
+    return listing;
+  })();
 }
