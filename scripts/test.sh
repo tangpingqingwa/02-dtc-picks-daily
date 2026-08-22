@@ -2,6 +2,7 @@
 # Offline gate for main. Must exit 0 on a clean clone with no secrets.
 # When application code lands, add unit/contract tests here. Do not delete the
 # contract checks. Do not require live Polar or other third-party networks.
+# Operator live smoke is scripts/live-smoke.sh and is never invoked from here.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -52,6 +53,25 @@ grep -q 'bash scripts/test.sh' .github/workflows/ci.yml || fail "ci.yml does not
 if grep -q 'POLAR_LIVE=1' .github/workflows/ci.yml; then
   fail "ci.yml must not set POLAR_LIVE=1"
 fi
+if grep -q 'scripts/live-smoke.sh' .github/workflows/ci.yml; then
+  fail "live-smoke.sh must not be called from Actions"
+fi
+
+echo "== live-smoke stays operator-only =="
+[[ -f scripts/live-smoke.sh ]] || fail "missing scripts/live-smoke.sh"
+[[ -x scripts/live-smoke.sh ]] || fail "scripts/live-smoke.sh must be executable"
+[[ -f docs/live-smoke.md ]] || fail "missing docs/live-smoke.md"
+[[ -s docs/live-smoke.md ]] || fail "empty docs/live-smoke.md"
+if grep -Eq '^\s*(bash )?(\./)?scripts/live-smoke\.sh' scripts/test.sh; then
+  fail "test.sh must not invoke live-smoke.sh"
+fi
+if grep -E '^[[:space:]]*(export[[:space:]]+)?POLAR_LIVE=1' scripts/test.sh >/dev/null; then
+  fail "test.sh must not set POLAR_LIVE=1"
+fi
+grep -q 'BLOCKED-SECRET: POLAR_ACCESS_TOKEN' scripts/live-smoke.sh \
+  || fail "live-smoke.sh must name BLOCKED-SECRET: POLAR_ACCESS_TOKEN"
+grep -q 'POLAR_LIVE' scripts/live-smoke.sh \
+  || fail "live-smoke.sh must gate live Polar on POLAR_LIVE"
 
 echo "== no committed secrets =="
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then

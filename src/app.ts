@@ -7,6 +7,7 @@ import { healthRoutes } from "./http/health.js";
 import { aboutRoutes } from "./http/pages/about.js";
 import { boardRoutes } from "./http/pages/board.js";
 import { rulesRoutes } from "./http/pages/rules.js";
+import { redirectRoutes } from "./http/redirect.js";
 import { webhookRoutes } from "./http/webhook.js";
 
 declare module "fastify" {
@@ -45,6 +46,7 @@ export async function buildApp(
   await app.register(rulesRoutes);
   await app.register(checkoutRoutes);
   await app.register(webhookRoutes);
+  await app.register(redirectRoutes);
   return app;
 }
 
