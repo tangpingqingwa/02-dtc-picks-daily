@@ -1,7 +1,7 @@
 {
   "type": "checkout.updated",
   "data": {
-    "id": "fix_paid_cover",
+    "id": "chk_recorded_paid",
     "status": "succeeded",
     "amount": 500,
     "currency": "usd",

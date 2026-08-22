@@ -13,6 +13,7 @@ import type {
   WebhookResult,
 } from "./port.js";
 
+/** Only used when POLAR_LIVE=1. tests/ never fetch this host. */
 export const POLAR_API_BASE = "https://api.polar.sh";
 
 export type PolarCheckoutOptions = {

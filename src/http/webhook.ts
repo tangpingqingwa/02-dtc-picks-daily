@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import type { WebhookResult } from "../billing/port.js";
 import { applyPaidBid } from "../core/board.js";
 
 export const POLAR_WEBHOOK_PATH = "/webhooks/polar" as const;
@@ -18,7 +19,15 @@ export const webhookRoutes: FastifyPluginAsync = async (app) => {
         headers[key] = value[0];
       }
     }
-    const result = await app.checkout.parseWebhook(rawBody, headers);
+    let result: WebhookResult;
+    try {
+      result = await app.checkout.parseWebhook(rawBody, headers);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "invalid webhook";
+      const status =
+        message.startsWith("BLOCKED-SECRET") || message.includes("signature") ? 400 : 500;
+      return reply.status(status).send({ error: message });
+    }
     if ("ignored" in result) {
       return reply.send({ received: true, applied: false });
     }

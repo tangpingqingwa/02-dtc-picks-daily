@@ -1,9 +1,9 @@
 {
-  "id": "chk_live_recorded",
+  "id": "chk_recorded_open",
   "status": "open",
-  "url": "https://polar.example/checkout/chk_live_recorded",
   "amount": 500,
   "currency": "usd",
+  "url": "https://polar.sh/checkout/chk_recorded_open",
   "metadata": {
     "productUrl": "https://store.example/sku",
     "whyTestThisToday": "Test this restock on today's brief",

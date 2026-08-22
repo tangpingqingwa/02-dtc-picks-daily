@@ -72,8 +72,8 @@ if [[ -f package.json ]]; then
     src/views/styles.ts tests/rank.test.ts tests/pages.test.ts \
     src/config.ts src/billing/port.ts src/billing/fixture.ts src/billing/polar.ts \
     src/http/checkout.ts src/http/webhook.ts src/migrations/002_checkouts.sql \
-    tests/checkout.test.ts tests/fixtures/polar/paid.json \
-    tests/fixtures/polar/abandoned.json tests/fixtures/polar/underbid-paid.json \
+    tests/checkout.test.ts tests/fixtures/polar/checkout-paid.json \
+    tests/fixtures/polar/checkout-expired.json tests/fixtures/polar/underbid-paid.json \
     tests/fixtures/polar/checkout-created.json; do
     [[ -f "$f" ]] || fail "missing $f"
     [[ -s "$f" ]] || fail "empty $f"

@@ -1,8 +1,8 @@
 {
-  "type": "checkout.updated",
+  "type": "order.paid",
   "data": {
-    "id": "fix_paid_underbid",
-    "status": "succeeded",
+    "id": "chk_recorded_underbid",
+    "status": "paid",
     "amount": 800,
     "currency": "usd",
     "metadata": {

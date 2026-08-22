@@ -1,13 +1,13 @@
 {
   "type": "checkout.updated",
   "data": {
-    "id": "fix_abandoned",
+    "id": "chk_recorded_expired",
     "status": "expired",
     "amount": 800,
     "currency": "usd",
     "metadata": {
       "productUrl": "https://under.example/sku",
-      "whyTestThisToday": "Abandoned Polar session must not list",
+      "whyTestThisToday": "Cheaper SKU still belongs on the brief",
       "bidUsd": "8",
       "day": "2026-08-22"
     }

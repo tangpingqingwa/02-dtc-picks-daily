@@ -7,9 +7,9 @@ export const CHECKOUT_PATH = "/checkout" as const;
 export const CHECKOUT_COMPLETE_PATH = "/checkout/complete" as const;
 
 type CheckoutForm = {
-  productUrl?: string;
-  whyTestThisToday?: string;
-  bidUsd?: string;
+  productUrl?: unknown;
+  whyTestThisToday?: unknown;
+  bidUsd?: unknown;
 };
 
 export class CheckoutFormError extends Error {
@@ -83,12 +83,8 @@ export const checkoutRoutes: FastifyPluginAsync = async (app) => {
     }
     const session = await app.checkout.createSession(draft);
     if (session.status === "complete") {
-      applyPaid(app, {
-        sessionId: session.id,
-        draft: session.draft,
-        amountUsd: session.amountUsd,
-        paidAt: new Date().toISOString(),
-      });
+      const paid = await app.checkout.completeSession(session.id);
+      applyPaid(app, paid);
       return reply.redirect("/", 303);
     }
     return reply.redirect(session.url, 303);
