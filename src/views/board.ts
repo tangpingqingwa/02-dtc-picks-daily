@@ -61,7 +61,7 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
     : "";
   const listAfterTake = isCover
     ? html`<p class="list-after-take-wrap">
-        <a class="list-after-take list-after-take-first list-after-take-two" href="#claim" data-list-after-take="" data-first-write="list" data-list-after-take-two="">List a product</a>
+        <a class="list-after-take list-after-take-first list-after-take-two list-after-take-three" href="#claim" data-list-after-take="" data-first-write="list" data-list-after-take-two="" data-list-after-take-three="">List a product</a>
         after Test this today. Paying less than #1 still lists.
       </p>`
     : "";
