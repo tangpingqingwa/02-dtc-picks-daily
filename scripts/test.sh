@@ -195,6 +195,8 @@ if [[ -f package.json ]]; then
     || fail "seller list-after-why test did not run"
   grep -q 'takes the cover after list-after-why' "$test_log" \
     || fail "shopper take-after-list test did not run"
+  grep -q 'lists after Test this today' "$test_log" \
+    || fail "seller list-after-take test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -223,8 +225,11 @@ if list_after < 0 or list_after < cover_why or list_after > cover_hop:
 take_after = src.find("data-take-after-list")
 if take_after < 0 or take_after < list_after or take_after > cover_hop:
     raise SystemExit(1)
+list_after_take = src.find("data-list-after-take")
+if list_after_take < 0 or list_after_take < cover_hop:
+    raise SystemExit(1)
 host_after = src.find("<p class=\"host\">")
-if host_after < 0 or cover_hop > host_after:
+if host_after < 0 or cover_hop > host_after or list_after_take > host_after:
     raise SystemExit(1)
 PY
   grep -q 'Morning merch desk' src/views/board.ts \
@@ -251,6 +256,10 @@ PY
     || fail "list-after-why hop does not sit under the cover reason"
   grep -q 'data-take-after-list' src/views/board.ts \
     || fail "paid cover missing take-after-list wrap on Test this today"
+  grep -q 'data-list-after-take' src/views/board.ts \
+    || fail "paid cover missing list-after-take hop after Test this today"
+  grep -q 'after Test this today' src/views/board.ts \
+    || fail "list-after-take hop does not sit after Test this today"
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
   grep -q 'text-decoration-style: dashed' src/views/styles.ts \

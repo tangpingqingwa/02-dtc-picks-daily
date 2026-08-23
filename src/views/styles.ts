@@ -505,6 +505,40 @@ a.row-link:hover { color: var(--primary); }
 .cover-why + .cover-hop-wrap {
   margin-top: 0;
 }
+.list-after-take-wrap {
+  margin: 0.35rem 0 0.7rem;
+  font-size: 0.9rem;
+  font-family: var(--font);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.45;
+  text-transform: none;
+  color: var(--muted-foreground);
+  text-wrap: pretty;
+}
+.list-after-take {
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  padding: 0 0.95rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  vertical-align: middle;
+}
+.list-after-take:hover {
+  background: var(--foreground);
+  color: var(--background);
+}
+.cover-hop-wrap + .list-after-take-wrap {
+  margin-top: 0.35rem;
+}
 @media (min-width: 768px) {
   .row-meta {
     width: auto;
