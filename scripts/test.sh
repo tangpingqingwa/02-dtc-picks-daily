@@ -197,6 +197,8 @@ if [[ -f package.json ]]; then
     || fail "shopper take-after-list test did not run"
   grep -q 'lists after Test this today' "$test_log" \
     || fail "seller list-after-take test did not run"
+  grep -q 'win the first click after list-after-take' "$test_log" \
+    || fail "shopper take-after-list-hop first-click test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -227,6 +229,9 @@ if take_after < 0 or take_after < list_after or take_after > cover_hop:
     raise SystemExit(1)
 list_after_take = src.find("data-list-after-take")
 if list_after_take < 0 or list_after_take < cover_hop:
+    raise SystemExit(1)
+first_click = src.find('data-first-click="take"')
+if first_click < 0 or first_click < take_after or first_click > list_after_take:
     raise SystemExit(1)
 host_after = src.find("<p class=\"host\">")
 if host_after < 0 or cover_hop > host_after or list_after_take > host_after:
@@ -260,6 +265,10 @@ PY
     || fail "paid cover missing list-after-take hop after Test this today"
   grep -q 'after Test this today' src/views/board.ts \
     || fail "list-after-take hop does not sit after Test this today"
+  grep -q 'data-first-click="take"' src/views/board.ts \
+    || fail "paid cover missing first-click take on Test this today"
+  grep -q 'cover-hop-first' src/views/styles.ts \
+    || fail "first-click take is not louder than list-after-take"
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
   grep -q 'text-decoration-style: dashed' src/views/styles.ts \

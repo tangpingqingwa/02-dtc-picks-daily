@@ -44,6 +44,7 @@ test("GET / is a public empty board with bid form", async () => {
   assert.doesNotMatch(body, /data-list-after-why/);
   assert.doesNotMatch(body, /data-take-after-list/);
   assert.doesNotMatch(body, /data-list-after-take/);
+  assert.doesNotMatch(body, /data-first-click="take"/);
   assert.doesNotMatch(body, /data-cover-why/);
   const emptyAt = body.indexOf("data-empty-board");
   const claimAt = body.indexOf('id="claim"');
@@ -113,6 +114,7 @@ test("GET / ranks fixture-seeded rows by bid then older createdAt", async () => 
   assert.match(body, /data-list-under-cover=""/);
   assert.match(body, /href="#claim"/);
   assert.match(body, /data-cover-hop=""/);
+  assert.match(body, /data-first-click="take"/);
   assert.match(body, /href="\/r\/lst-cover"/);
   assert.match(body, /aria-label="Test this today at cover\.example\/apps\/pick"/);
   const coverAt = body.indexOf('data-listing-id="lst-cover"');
@@ -176,6 +178,7 @@ test("GET / does not show yesterday's cover on a new day", async () => {
   assert.doesNotMatch(response.body, /data-list-after-why/);
   assert.doesNotMatch(response.body, /data-take-after-list/);
   assert.doesNotMatch(response.body, /data-list-after-take/);
+  assert.doesNotMatch(response.body, /data-first-click="take"/);
 });
 
 test("masthead, folio, and data-issue-date name the same day in UTC+12", () => {
@@ -255,6 +258,7 @@ test("GET / gives a shopper one Test this today hop on the paid cover", async ()
   const under = body.slice(underStart, underEnd);
 
   assert.match(cover, /data-cover-hop=""/);
+  assert.match(cover, /data-first-click="take"/);
   assert.match(cover, />Test this today</);
   assert.match(cover, /href="\/r\/lst-cover"/);
   assert.match(cover, /data-cover-why=""/);
@@ -276,12 +280,14 @@ test("GET / gives a shopper one Test this today hop on the paid cover", async ()
   assert.doesNotMatch(under, /data-list-after-why/);
   assert.doesNotMatch(under, /data-take-after-list/);
   assert.doesNotMatch(under, /data-list-after-take/);
+  assert.doesNotMatch(under, /data-first-click="take"/);
   assert.doesNotMatch(under, /Test this today/);
   assert.equal((body.match(/data-cover-hop/g) ?? []).length, 1);
   assert.equal((body.match(/data-cover-why=""/g) ?? []).length, 1);
   assert.equal((body.match(/data-list-after-why=""/g) ?? []).length, 1);
   assert.equal((body.match(/data-take-after-list=""/g) ?? []).length, 1);
   assert.equal((body.match(/data-list-after-take=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-first-click="take"/g) ?? []).length, 1);
 
   const hop = await app.inject({ method: "GET", url: "/r/lst-cover" });
   assert.equal(hop.statusCode, 302);
@@ -511,6 +517,7 @@ test("GET / takes the cover after list-after-why", async () => {
   assert.match(cover, /data-list-after-why=""/);
   assert.match(cover, /data-take-after-list=""/);
   assert.match(cover, /data-cover-hop=""/);
+  assert.match(cover, /data-first-click="take"/);
   assert.match(cover, />Test this today</);
   assert.match(cover, /href="\/r\/lst-cover"/);
   const whyLineAt = cover.indexOf("cover-why-line");
@@ -586,6 +593,7 @@ test("GET / lists after Test this today", async () => {
   assert.match(cover, /data-list-after-why=""/);
   assert.match(cover, /data-take-after-list=""/);
   assert.match(cover, /data-cover-hop=""/);
+  assert.match(cover, /data-first-click="take"/);
   assert.match(cover, /data-list-after-take=""/);
   assert.match(cover, /class="list-after-take"[^>]*href="#claim"/);
   assert.match(cover, />List a product</);
@@ -624,6 +632,97 @@ test("GET / lists after Test this today", async () => {
   const empty = await emptyApp.inject({ method: "GET", url: "/" });
   assert.match(empty.body, /data-empty-board/);
   assert.match(empty.body, /Quiet morning/);
+  assert.doesNotMatch(empty.body, /data-list-after-take/);
+  assert.doesNotMatch(empty.body, /after Test this today/);
+  assert.doesNotMatch(empty.body, /data-take-after-list/);
+  assert.doesNotMatch(empty.body, /Test this today/);
+});
+
+test("GET / lets Test this today win the first click after list-after-take", async () => {
+  const db = openDatabase(":memory:");
+  const day = dayKey();
+  placeBid(db, {
+    id: "lst-cover",
+    day,
+    productUrl: "https://cover.example/apps/pick",
+    whyTestThisToday: "Cover app sellers should install this morning",
+    bidUsd: 20,
+    clicks: 3,
+    createdAt: "2026-08-22T09:00:00.000Z",
+  });
+  placeBid(db, {
+    id: "lst-under",
+    day,
+    productUrl: "https://under.example/sku",
+    whyTestThisToday: "Cheaper SKU still belongs on the brief",
+    bidUsd: 8,
+    createdAt: "2026-08-22T12:00:00.000Z",
+  });
+
+  const app = await buildApp({ db });
+  after(async () => {
+    await app.close();
+    db.close();
+  });
+
+  const response = await app.inject({ method: "GET", url: "/" });
+  assert.equal(response.statusCode, 200);
+  const body = response.body;
+  const coverStart = body.indexOf('data-listing-id="lst-cover"');
+  const coverEnd = body.indexOf("</article>", coverStart);
+  const cover = body.slice(coverStart, coverEnd);
+  const underStart = body.indexOf('data-listing-id="lst-under"');
+  const underEnd = body.indexOf("</article>", underStart);
+  const under = body.slice(underStart, underEnd);
+
+  assert.match(cover, /data-list-after-why=""/);
+  assert.match(cover, /data-take-after-list=""/);
+  assert.match(cover, /data-cover-hop=""/);
+  assert.match(cover, /data-first-click="take"/);
+  assert.match(cover, /data-list-after-take=""/);
+  assert.match(cover, />Test this today</);
+  assert.match(cover, /href="\/r\/lst-cover"/);
+  assert.match(cover, /class="list-after-take"[^>]*href="#claim"/);
+  assert.match(cover, /after Test this today/);
+  const whyLineAt = cover.indexOf("cover-why-line");
+  const listAfterAt = cover.indexOf("data-list-after-why");
+  const takeAt = cover.indexOf("data-take-after-list");
+  const hopAt = cover.indexOf("data-cover-hop");
+  const firstClickAt = cover.indexOf('data-first-click="take"');
+  const listAfterTakeAt = cover.indexOf("data-list-after-take");
+  const bidAt = cover.indexOf(">$20<");
+  const hostAt = cover.indexOf('class="host"');
+  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
+  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "take-after-list stays the shopper hop after listing");
+  assert.ok(firstClickAt > takeAt && firstClickAt < listAfterTakeAt, "Test this today is the first click, before list-after-take");
+  assert.ok(listAfterTakeAt > hopAt, "seller write stays the next control after Test this today");
+  assert.ok(listAfterTakeAt < bidAt && listAfterTakeAt < hostAt, "listing after the take is not buried under host or $bid");
+  assert.ok((cover.match(/data-first-click="take"/g) ?? []).length === 1, "one first-click take");
+  assert.ok((cover.match(/data-cover-hop/g) ?? []).length === 1, "one cover hop");
+
+  assert.doesNotMatch(under, /data-first-click="take"/);
+  assert.doesNotMatch(under, /data-list-after-take/);
+  assert.doesNotMatch(under, /after Test this today/);
+  assert.doesNotMatch(under, /data-take-after-list/);
+  assert.doesNotMatch(under, /data-cover-hop/);
+  assert.doesNotMatch(under, /Test this today/);
+  assert.equal((body.match(/data-first-click="take"/g) ?? []).length, 1);
+  assert.equal((body.match(/data-list-after-take=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-take-after-list=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-cover-hop/g) ?? []).length, 1);
+  assert.equal((body.match(/data-list-after-why=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-list-under-cover=""/g) ?? []).length, 1);
+
+  const hop = await app.inject({ method: "GET", url: "/r/lst-cover" });
+  assert.equal(hop.statusCode, 302);
+  assert.equal(hop.headers.location, "https://cover.example/apps/pick");
+
+  const emptyApp = await buildApp({ databasePath: ":memory:" });
+  after(() => emptyApp.close());
+  const empty = await emptyApp.inject({ method: "GET", url: "/" });
+  assert.match(empty.body, /data-empty-board/);
+  assert.match(empty.body, /Quiet morning/);
+  assert.doesNotMatch(empty.body, /data-first-click="take"/);
   assert.doesNotMatch(empty.body, /data-list-after-take/);
   assert.doesNotMatch(empty.body, /after Test this today/);
   assert.doesNotMatch(empty.body, /data-take-after-list/);
