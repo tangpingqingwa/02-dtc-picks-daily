@@ -455,6 +455,14 @@ a.row-link:hover { color: var(--primary); }
   text-transform: uppercase;
   text-decoration: none;
 }
+.cover-hop-first {
+  min-height: 2.75rem;
+  height: auto;
+  padding: 0.55rem 1.15rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  box-shadow: 0.22rem 0.22rem 0 0 color-mix(in oklab, var(--primary) 45%, transparent);
+}
 .cover-hop:hover {
   background: color-mix(in oklab, var(--primary) 80%, black);
   color: var(--primary-foreground);
@@ -517,24 +525,15 @@ a.row-link:hover { color: var(--primary); }
   text-wrap: pretty;
 }
 .list-after-take {
-  display: inline-flex;
-  align-items: center;
-  height: 2.25rem;
-  padding: 0 0.95rem;
-  border: 1px solid var(--rule);
-  border-radius: 2px;
-  background: transparent;
-  color: var(--foreground);
-  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-decoration: none;
-  vertical-align: middle;
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
 }
 .list-after-take:hover {
-  background: var(--foreground);
-  color: var(--background);
+  color: var(--foreground);
 }
 .cover-hop-wrap + .list-after-take-wrap {
   margin-top: 0.35rem;
