@@ -59,6 +59,12 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
         <a class="cover-hop" href="${href}" data-cover-hop="" aria-label="Test this today at ${host}">Test this today</a>
       </p>`
     : "";
+  const listAfterTake = isCover
+    ? html`<p class="list-after-take-wrap">
+        <a class="list-after-take" href="#claim" data-list-after-take="">List a product</a>
+        after Test this today. Paying less than #1 still lists.
+      </p>`
+    : "";
   const stackBlurb = isCover ? "" : html`<p class="blurb">${blurb}</p>`;
   const inner = html`<div class="row-meta">
       <span class="rank">#${rank}</span>
@@ -67,6 +73,7 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
       <p class="row-kicker">${eyebrow}</p>
       ${coverWhy}
       ${coverHop}
+      ${listAfterTake}
       <div class="row-top">
         <p class="host">${host}</p>
         <p class="bid">${bid}</p>
