@@ -96,7 +96,7 @@ if [[ -f package.json ]]; then
     tests/fixtures/polar/checkout-expired.json tests/fixtures/polar/underbid-paid.json \
     tests/fixtures/polar/checkout-created.json \
     src/core/urls.ts tests/raise.test.ts tests/urls.test.ts \
-    src/http/pages/about.ts src/http/pages/rules.ts; do
+    src/http/pages/about.ts src/http/pages/rules.ts tests/day.test.ts; do
     [[ -f "$f" ]] || fail "missing $f"
     [[ -s "$f" ]] || fail "empty $f"
   done
@@ -178,6 +178,30 @@ if [[ -f package.json ]]; then
     || fail "about page test did not run"
   grep -q '/rules' "$test_log" \
     || fail "rules page test did not run"
+  grep -q 'dayKey is YYYY-MM-DD' "$test_log" \
+    || fail "day key test did not run"
+  grep -q 'formatIssueDate' "$test_log" \
+    || fail "issue date test did not run"
+  grep -q 'date as the issue' "$test_log" \
+    || fail "morning cover issue-date test did not run"
+  grep -q 'Claim #1 for' src/views/board.ts \
+    || fail "board missing Claim #1 chrome"
+  grep -q 'Outbid' src/views/board.ts \
+    || fail "board missing Outbid button"
+  grep -q 'data-empty-board' src/views/board.ts \
+    || fail "board missing honest empty marker"
+  grep -q 'Quiet morning' src/views/board.ts \
+    || fail "empty state is not a quiet morning"
+  grep -q 'Morning merch desk' src/views/board.ts \
+    || fail "board missing morning-desk chrome"
+  grep -q 'data-issue-date' src/views/board.ts \
+    || fail "board missing issue date"
+  grep -q 'Why test this today' src/views/board.ts \
+    || fail "listing missing why-test-this-today"
+  grep -q 'You pay only the difference' src/views/board.ts \
+    || fail "board missing raise-pays-difference copy"
+  grep -q 'text-decoration-style: dashed' src/views/styles.ts \
+    || fail "bid amount is not dashed"
   grep -q 'no ads' src/http/pages/about.ts \
     || grep -q 'No ads' src/http/pages/about.ts \
     || fail "about copy missing no ads"

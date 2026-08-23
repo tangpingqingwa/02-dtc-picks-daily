@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { boardTimeZone } from "../../core/day.js";
+import { boardTimeZone, dayKey } from "../../core/day.js";
 import { escapeHtml, html } from "../../views/html.js";
 import { renderLayout, SITE_TITLE } from "../../views/layout.js";
 
@@ -7,6 +7,7 @@ export const RULES_PATH = "/rules" as const;
 
 export type RulesViewModel = {
   tz: string;
+  day?: string;
 };
 
 export function renderRulesBody(model: RulesViewModel): string {
@@ -113,18 +114,23 @@ export function renderRulesBody(model: RulesViewModel): string {
 }
 
 export function renderRulesPage(model: RulesViewModel): string {
+  const tz = model.tz;
+  const day = model.day ?? dayKey(new Date(), tz);
   return renderLayout({
     title: `Rules · ${SITE_TITLE}`,
     description:
       "Ranking, raise, URL stripping, banned chat and NSFW, daily UTC reset, Polar. Rank is the bid. Minimum $5.",
     active: "rules",
+    day,
+    tz,
     body: renderRulesBody(model),
   });
 }
 
 export const rulesRoutes: FastifyPluginAsync = async (app) => {
   app.get(RULES_PATH, async (_request, reply) => {
-    const htmlPage = renderRulesPage({ tz: boardTimeZone() });
+    const tz = boardTimeZone();
+    const htmlPage = renderRulesPage({ tz, day: dayKey(new Date(), tz) });
     return reply.type("text/html; charset=utf-8").send(htmlPage);
   });
 };

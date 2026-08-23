@@ -5,8 +5,8 @@ import {
   rankForBid,
   type RankedListing,
 } from "../core/board.js";
+import { formatIssueDate } from "../core/day.js";
 import {
-  avatarLetter,
   displayHostPath,
   escapeHtml,
   formatUsd,
@@ -29,27 +29,33 @@ export function claimRankUsd(listing: RankedListing): number {
 
 export function renderListingRow(listing: RankedListing, now?: Date): string {
   const rank = listing.rank;
-  const topClass =
-    rank === 1 ? " row-top3 row-1" : rank === 2 ? " row-top3 row-2" : rank === 3 ? " row-top3 row-3" : "";
+  const isCover = rank === 1;
+  const topClass = isCover
+    ? " row-cover row-1"
+    : rank === 2
+      ? " row-stack row-2"
+      : rank === 3
+        ? " row-stack row-3"
+        : " row-stack";
   const host = escapeHtml(displayHostPath(listing.productUrl));
   const blurb = escapeHtml(listing.whyTestThisToday);
-  const letter = escapeHtml(avatarLetter(listing.productUrl));
   const when = escapeHtml(relativeTime(listing.createdAt, now));
   const bid = escapeHtml(formatUsd(listing.bidUsd));
   const claim = escapeHtml(formatUsd(claimRankUsd(listing)));
   const href = escapeHtml(`/r/${listing.id}`);
+  const eyebrow = isCover ? "This morning’s cover" : `Also on the desk · #${rank}`;
   return html`<article class="row${topClass}" data-rank="${rank}" data-listing-id="${escapeHtml(listing.id)}">
   <a class="row-link" href="${href}">
     <div class="row-meta">
       <span class="rank">#${rank}</span>
-      <span class="avatar" aria-hidden="true">${letter}</span>
     </div>
     <div class="row-body">
+      <p class="row-kicker">${eyebrow}</p>
       <div class="row-top">
         <p class="host">${host}</p>
         <p class="bid">${bid}</p>
       </div>
-      <p class="blurb">${blurb}</p>
+      <p class="blurb">${isCover ? html`<span class="why-label">Why test this today</span> ${blurb}` : blurb}</p>
       <p class="row-foot">
         <span class="when"><time datetime="${escapeHtml(listing.createdAt)}">${when}</time></span>
         <span class="clicks"><span class="live-dot" aria-hidden="true"></span>${listing.clicks} clicks</span>
@@ -69,29 +75,26 @@ export function renderBoardBody(model: BoardViewModel): string {
       : projected === 1
         ? "Claim #1 for"
         : `Claim #${projected} for`;
+  const issueSpoken = escapeHtml(formatIssueDate(model.day, model.tz));
   const rows =
     model.listings.length === 0
       ? html`<div class="empty" data-empty-board>
+          <p class="empty-kicker">Quiet morning</p>
           <p><strong>No listings yet today.</strong></p>
-          <p>An empty morning is valid. Bid ${escapeHtml(formatUsd(MIN_BID_USD))} to take the cover.</p>
+          <p>The desk is open. An empty morning is valid — not a broken site. Bid ${escapeHtml(formatUsd(MIN_BID_USD))} to take the cover.</p>
         </div>`
-      : model.listings
-          .map((listing) => {
-            const row = renderListingRow(listing, model.now);
-            const afterTop3 =
-              listing.rank === 3 && model.listings.length > 3
-                ? html`<div class="band" role="separator" aria-label="End of top 3"><span class="band-line"></span><span class="band-label">Top 3</span><span class="band-line"></span></div>`
-                : "";
-            const afterTop10 =
-              listing.rank === 10 && model.listings.length > 10
-                ? html`<div class="band" role="separator" aria-label="End of top 10"><span class="band-line"></span><span class="band-label">Top 10</span><span class="band-line"></span></div>`
-                : "";
-            return `${row}${afterTop3}${afterTop10}`;
-          })
-          .join("");
+      : model.listings.map((listing) => renderListingRow(listing, model.now)).join("");
 
-  return html`<header>
-  <h1 class="sr-only">${SITE_TITLE}</h1>
+  return html`<header class="masthead">
+  <p class="masthead-kicker">Morning merch desk</p>
+  <h1 class="masthead-title">${SITE_TITLE}</h1>
+  <p class="masthead-issue">
+    <span class="issue-label">Issue</span>
+    <time datetime="${escapeHtml(model.day)}" data-issue-date="${escapeHtml(model.day)}">${issueSpoken}</time>
+    <span class="issue-rule" aria-hidden="true"></span>
+    <span class="issue-tz">${escapeHtml(model.tz)}</span>
+  </p>
+  <p class="masthead-dek">One cover. Product URL plus why test this today. Rank is the bid.</p>
 </header>
 <section id="claim">
   <h2 class="claim-title">
@@ -116,19 +119,14 @@ export function renderBoardBody(model: BoardViewModel): string {
   <form id="bid-form" class="bid-form" method="post" action="/checkout">
     <div class="bid-row">
       <div class="field">
-        <span class="field-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"></circle>
-            <ellipse cx="12" cy="12" rx="4" ry="10" stroke="currentColor" stroke-width="1.5"></ellipse>
-            <path d="M2 12H22" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"></path>
-          </svg>
-        </span>
-        <input id="productUrl" name="productUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" required placeholder="Product URL"/>
+        <label class="field-label" for="productUrl">Product URL</label>
+        <input id="productUrl" name="productUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" required placeholder="https://store.example/sku"/>
       </div>
       <button type="submit" class="outbid">Outbid</button>
     </div>
     <div class="field why-field">
-      <input id="whyTestThisToday" name="whyTestThisToday" type="text" maxlength="140" minlength="8" required placeholder="Why test this today"/>
+      <label class="field-label" for="whyTestThisToday">Why test this today</label>
+      <input id="whyTestThisToday" name="whyTestThisToday" type="text" maxlength="140" minlength="8" required placeholder="What a seller should try this morning"/>
     </div>
     <p class="form-hint">Already on the list? Enter the same URL and up your bid. You pay only the difference.</p>
   </form>
@@ -189,6 +187,9 @@ export function renderBoardPage(model: BoardViewModel): string {
     description:
       "Daily public auction for this morning’s DTC / Shopify / Amazon picks cover. Rank is the bid.",
     active: "leaderboard",
+    day: model.day,
+    tz: model.tz,
+    now: model.now,
     body: renderBoardBody({
       ...model,
       defaultBidUsd: model.defaultBidUsd || defaultClaimBidUsd(model.listings),

@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import { buildApp } from "../src/app.js";
 import { placeBid } from "../src/core/board.js";
-import { dayKey } from "../src/core/day.js";
+import { dayKey, formatIssueDate } from "../src/core/day.js";
 import { openDatabase } from "../src/db.js";
 import { renderAboutPage } from "../src/http/pages/about.js";
 import { renderRulesPage } from "../src/http/pages/rules.js";
+import { renderBoardPage } from "../src/views/board.js";
+import { formatFolioDate } from "../src/views/html.js";
 
 test("GET / is a public empty board with bid form", async () => {
   const app = await buildApp({ databasePath: ":memory:" });
@@ -19,15 +21,23 @@ test("GET / is a public empty board with bid form", async () => {
   assert.match(body, /Leaderboard/);
   assert.match(body, /About/);
   assert.match(body, /Rules/);
+  assert.match(body, /Claim #1 for/);
   assert.match(body, /aria-label="Decrease bid by one dollar"/);
   assert.match(body, /aria-label="Increase bid by one dollar"/);
+  assert.match(body, />Outbid</);
   assert.match(body, /name="productUrl"/);
   assert.match(body, /name="whyTestThisToday"/);
   assert.match(body, /Why test this today/);
   assert.match(body, /New spots start at \$5/);
   assert.match(body, /whatever place that bid can take/);
+  assert.match(body, /You pay only the difference/);
   assert.match(body, /data-empty-board/);
   assert.match(body, /No listings yet today/);
+  assert.match(body, /Quiet morning/);
+  assert.match(body, /Morning merch desk/);
+  assert.match(body, /data-issue-date="/);
+  assert.match(body, /One cover/);
+  assert.doesNotMatch(body, /category zoo|Fulfillment tools|Browse categories/);
   assert.doesNotMatch(body, /POLAR_LIVE/);
   assert.doesNotMatch(body, /api\.polar\.sh/);
 });
@@ -83,6 +93,10 @@ test("GET / ranks fixture-seeded rows by bid then older createdAt", async () => 
   assert.match(body, /\$20/);
   assert.match(body, /3 clicks/);
   assert.match(body, /claim this rank for \$21/);
+  assert.match(body, /This morning’s cover/);
+  assert.match(body, /Why test this today/);
+  assert.match(body, /Also on the desk/);
+  assert.match(body, /row-cover/);
 
   const order = [...body.matchAll(/data-listing-id="([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(order, ["lst-cover", "lst-old-tie", "lst-new-tie", "lst-under"]);
@@ -111,8 +125,45 @@ test("GET / does not show yesterday's cover on a new day", async () => {
   const response = await app.inject({ method: "GET", url: "/" });
   assert.equal(response.statusCode, 200);
   assert.match(response.body, /data-empty-board/);
+  assert.match(response.body, /Quiet morning/);
   assert.doesNotMatch(response.body, /yesterday\.example/);
   assert.doesNotMatch(response.body, /\$99/);
+});
+
+test("masthead, folio, and data-issue-date name the same day in UTC+12", () => {
+  const day = "2026-08-23";
+  const tz = "Pacific/Auckland";
+  const body = renderBoardPage({
+    day,
+    tz,
+    listings: [],
+    defaultBidUsd: 5,
+  });
+  const spoken = formatIssueDate(day, tz);
+  const folio = formatFolioDate(day);
+  assert.equal(spoken, "Sunday, August 23, 2026");
+  assert.match(body, /data-issue-date="2026-08-23"/);
+  assert.match(body, new RegExp(spoken.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(body, new RegExp(folio.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.doesNotMatch(body, /August 24, 2026/);
+  assert.doesNotMatch(body, /Aug 24, 2026/);
+});
+
+test("GET / prints today's date as the issue on a morning desk", async () => {
+  const app = await buildApp({ databasePath: ":memory:" });
+  after(() => app.close());
+
+  const response = await app.inject({ method: "GET", url: "/" });
+  assert.equal(response.statusCode, 200);
+  const day = dayKey();
+  const body = response.body;
+  assert.match(body, new RegExp(`data-issue-date="${day}"`));
+  assert.match(body, new RegExp(formatIssueDate(day).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(body, new RegExp(formatFolioDate(day).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(body, /Morning merch desk/);
+  assert.match(body, /Date is the issue/);
+  assert.match(body, /bid-field/);
+  assert.match(body, /text-decoration-style: dashed/);
 });
 
 test("SPEC acceptance 10: GET /about and GET /rules are 200", async () => {
