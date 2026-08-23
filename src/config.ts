@@ -12,6 +12,11 @@ export function polarWebhookSecret(env: NodeJS.ProcessEnv = process.env): string
   return secret && secret.trim() !== "" ? secret : undefined;
 }
 
+export function polarProductId(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const id = env.POLAR_PRODUCT_ID;
+  return id && id.trim() !== "" ? id.trim() : undefined;
+}
+
 export function publicBaseUrl(env: NodeJS.ProcessEnv = process.env): string {
   const raw = env.PUBLIC_BASE_URL?.trim();
   if (raw) {

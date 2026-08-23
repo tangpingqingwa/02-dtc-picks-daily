@@ -211,6 +211,8 @@ Each PR is independently mergeable. Dependencies are hard.
 | `POLAR_LIVE` | unset | Opt in to real Polar |
 | `POLAR_ACCESS_TOKEN` | unset | Live Polar; name locked for smoke |
 | `POLAR_WEBHOOK_SECRET` | unset | Verify live webhooks |
+| `POLAR_API_BASE` | `https://api.polar.sh` | Polar API host. Sandbox smoke sets `https://sandbox-api.polar.sh` |
+| `POLAR_PRODUCT_ID` | unset | Polar product for hosted Checkout (custom amount) |
 | `DATABASE_PATH` | `./data/board.sqlite` | SQLite file |
 
 CI and `scripts/test.sh` must not set `POLAR_LIVE=1`.

@@ -112,7 +112,7 @@ if [[ -f package.json ]]; then
   fi
 
   echo "== Polar stays offline =="
-  unset POLAR_LIVE POLAR_ACCESS_TOKEN POLAR_WEBHOOK_SECRET || true
+  unset POLAR_LIVE POLAR_ACCESS_TOKEN POLAR_WEBHOOK_SECRET POLAR_FIXTURE_ONLY || true
   [[ "${POLAR_LIVE:-}" != "1" ]] || fail "POLAR_LIVE must stay unset in test.sh"
   if grep -E '"@polar-sh/sdk"|"@polar-sh/' package.json >/dev/null 2>&1; then
     fail "do not add a live Polar SDK; polar.ts is env-gated fetch only"
@@ -120,11 +120,11 @@ if [[ -f package.json ]]; then
   if grep -R --include='*.ts' -E "from ['\"]@polar-sh" src tests >/dev/null 2>&1; then
     fail "src/tests must not import a Polar SDK"
   fi
-  if grep -R --include='*.ts' -E "api\\.polar\\.sh" tests >/dev/null 2>&1; then
+  if grep -R --include='*.ts' -E "https://api\\.polar\\.sh" tests >/dev/null 2>&1; then
     fail "tests must not call live Polar"
   fi
-  if grep -R --include='*.ts' -E "api\\.polar\\.sh" src >/dev/null 2>&1; then
-    if grep -R --include='*.ts' -E "api\\.polar\\.sh" src | grep -v 'src/billing/polar.ts' >/dev/null 2>&1; then
+  if grep -R --include='*.ts' -E "https://api\\.polar\\.sh" src >/dev/null 2>&1; then
+    if grep -R --include='*.ts' -E "https://api\\.polar\\.sh" src | grep -v 'src/billing/polar.ts' >/dev/null 2>&1; then
       fail "only src/billing/polar.ts may mention the Polar API host"
     fi
   fi
