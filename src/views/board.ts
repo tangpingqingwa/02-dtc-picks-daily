@@ -48,6 +48,10 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
     ? html`<div class="cover-why" data-cover-why="">
       <p class="cover-why-label">Why test this today</p>
       <p class="cover-why-line">${blurb}</p>
+      <p class="list-after-why-wrap">
+        <a class="list-after-why" href="#claim" data-list-after-why="">List a product</a>
+        under this reason. Paying less than #1 still lists.
+      </p>
     </div>`
     : "";
   const stackBlurb = isCover ? "" : html`<p class="blurb">${blurb}</p>`;

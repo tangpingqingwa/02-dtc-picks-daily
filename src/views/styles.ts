@@ -480,6 +480,28 @@ a.row-link:hover { color: var(--primary); }
   color: var(--foreground);
   text-wrap: pretty;
 }
+.list-after-why-wrap {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  font-family: var(--font);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.45;
+  text-transform: none;
+  color: var(--muted-foreground);
+  text-wrap: pretty;
+}
+.list-after-why {
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+}
+.list-after-why:hover {
+  color: var(--foreground);
+}
 @media (min-width: 768px) {
   .row-meta {
     width: auto;
