@@ -189,6 +189,8 @@ if [[ -f package.json ]]; then
     || fail "cover-hop shopper test did not run"
   grep -q 'List a product hop' "$test_log" \
     || fail "seller list-under-cover test did not run"
+  grep -q 'why this is today’s cover' "$test_log" \
+    || fail "cover why-line shopper test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -207,6 +209,10 @@ if board < 0 or claim < 0 or board > claim:
 list_hop = src.find("data-list-under-cover")
 if list_hop < 0 or list_hop > board:
     raise SystemExit(1)
+cover_why = src.find("data-cover-why")
+cover_hop = src.find("data-cover-hop")
+if cover_why < 0 or cover_hop < 0 or cover_why > cover_hop:
+    raise SystemExit(1)
 PY
   grep -q 'Morning merch desk' src/views/board.ts \
     || fail "board missing morning-desk chrome"
@@ -222,6 +228,10 @@ PY
     || fail "paid morning missing List a product hop"
   grep -q 'href="#claim"' src/views/board.ts \
     || fail "seller hop does not jump to the listing form"
+  grep -q 'data-cover-why' src/views/board.ts \
+    || fail "paid cover missing labeled why-line"
+  grep -q 'cover-why-line' src/views/board.ts \
+    || fail "cover reason is not a first-read why-line"
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
   grep -q 'text-decoration-style: dashed' src/views/styles.ts \

@@ -459,6 +459,27 @@ a.row-link:hover { color: var(--primary); }
   background: color-mix(in oklab, var(--primary) 80%, black);
   color: var(--primary-foreground);
 }
+.cover-why {
+  margin: 0.15rem 0 0.55rem;
+}
+.cover-why-label {
+  margin: 0 0 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.cover-why-line {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--foreground);
+  text-wrap: pretty;
+}
 @media (min-width: 768px) {
   .row-meta {
     width: auto;
@@ -606,10 +627,8 @@ a.row-link:hover { color: var(--primary); }
   font-size: 1.25rem;
   white-space: normal;
 }
-.row-cover .blurb {
-  white-space: normal;
-  font-size: 1rem;
-  line-height: 1.45;
+.row-cover .cover-why-line {
+  font-size: 1.35rem;
 }
 .row-cover .row-link { padding-bottom: 0.35rem; }
 .row-cover .claim-rank {
