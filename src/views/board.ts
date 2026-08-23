@@ -44,9 +44,7 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
   const claim = escapeHtml(formatUsd(claimRankUsd(listing)));
   const href = escapeHtml(`/r/${listing.id}`);
   const eyebrow = isCover ? "This morning’s cover" : `Also on the desk · #${rank}`;
-  return html`<article class="row${topClass}" data-rank="${rank}" data-listing-id="${escapeHtml(listing.id)}">
-  <a class="row-link" href="${href}">
-    <div class="row-meta">
+  const inner = html`<div class="row-meta">
       <span class="rank">#${rank}</span>
     </div>
     <div class="row-body">
@@ -55,13 +53,24 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
         <p class="host">${host}</p>
         <p class="bid">${bid}</p>
       </div>
-      <p class="blurb">${isCover ? html`<span class="why-label">Why test this today</span> ${blurb}` : blurb}</p>
+      <p class="blurb">${blurb}</p>
+      ${
+        isCover
+          ? html`<p class="cover-hop-wrap">
+        <a class="cover-hop" href="${href}" data-cover-hop="" aria-label="Test this today at ${host}">Test this today</a>
+      </p>`
+          : ""
+      }
       <p class="row-foot">
         <span class="when"><time datetime="${escapeHtml(listing.createdAt)}">${when}</time></span>
         <span class="clicks"><span class="live-dot" aria-hidden="true"></span>${listing.clicks} clicks</span>
       </p>
-    </div>
-  </a>
+    </div>`;
+  const wrap = isCover
+    ? html`<div class="row-link">${inner}</div>`
+    : html`<a class="row-link" href="${href}">${inner}</a>`;
+  return html`<article class="row${topClass}" data-rank="${rank}" data-listing-id="${escapeHtml(listing.id)}">
+  ${wrap}
   <button type="button" class="claim-rank" data-claim-bid="${claimRankUsd(listing)}">claim this rank for ${claim}</button>
 </article>`;
 }

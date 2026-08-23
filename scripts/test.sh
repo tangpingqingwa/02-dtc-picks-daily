@@ -112,7 +112,8 @@ if [[ -f package.json ]]; then
   fi
 
   echo "== Polar stays offline =="
-  unset POLAR_LIVE POLAR_ACCESS_TOKEN POLAR_WEBHOOK_SECRET POLAR_FIXTURE_ONLY || true
+  unset POLAR_LIVE POLAR_ACCESS_TOKEN POLAR_WEBHOOK_SECRET || true
+  export POLAR_FIXTURE_ONLY=1
   [[ "${POLAR_LIVE:-}" != "1" ]] || fail "POLAR_LIVE must stay unset in test.sh"
   if grep -E '"@polar-sh/sdk"|"@polar-sh/' package.json >/dev/null 2>&1; then
     fail "do not add a live Polar SDK; polar.ts is env-gated fetch only"
@@ -184,6 +185,8 @@ if [[ -f package.json ]]; then
     || fail "issue date test did not run"
   grep -q 'date as the issue' "$test_log" \
     || fail "morning cover issue-date test did not run"
+  grep -q 'Test this today hop' "$test_log" \
+    || fail "cover-hop shopper test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -206,6 +209,10 @@ PY
     || fail "board missing issue date"
   grep -q 'Why test this today' src/views/board.ts \
     || fail "listing missing why-test-this-today"
+  grep -q 'data-cover-hop' src/views/board.ts \
+    || fail "paid cover missing Test this today hop"
+  grep -q '>Test this today<' src/views/board.ts \
+    || fail "cover hop is not labeled Test this today"
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
   grep -q 'text-decoration-style: dashed' src/views/styles.ts \
