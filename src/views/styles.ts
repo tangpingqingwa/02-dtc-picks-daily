@@ -555,6 +555,12 @@ a.row-link:hover { color: var(--primary); }
   text-decoration: none;
   vertical-align: middle;
 }
+.list-after-take-two {
+  min-height: 2.75rem;
+  padding: 0 1.15rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+}
 .list-after-take:hover {
   color: var(--foreground);
 }
