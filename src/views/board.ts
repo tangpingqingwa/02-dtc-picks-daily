@@ -96,7 +96,11 @@ export function renderBoardBody(model: BoardViewModel): string {
   </p>
   <p class="masthead-dek">One cover. Product URL plus why test this today. Rank is the bid.</p>
 </header>
+<section id="leaderboard" aria-label="Today’s cover">
+  ${rows}
+</section>
 <section id="claim">
+  <p class="claim-kicker">List a product</p>
   <h2 class="claim-title">
     <span data-claim-copy>${claimCopy}</span>
     <span class="bid-stepper">
@@ -131,9 +135,6 @@ export function renderBoardBody(model: BoardViewModel): string {
     <p class="form-hint">Already on the list? Enter the same URL and up your bid. You pay only the difference.</p>
   </form>
 </section>
-<div id="leaderboard">
-  ${rows}
-</div>
 <script>
   (function () {
     var min = ${MIN_BID_USD};

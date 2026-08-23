@@ -192,6 +192,14 @@ if [[ -f package.json ]]; then
     || fail "board missing honest empty marker"
   grep -q 'Quiet morning' src/views/board.ts \
     || fail "empty state is not a quiet morning"
+  python3 - <<'PY' || fail "today’s cover or quiet morning must precede claim chrome"
+from pathlib import Path
+src = Path("src/views/board.ts").read_text()
+board = src.find('id="leaderboard"')
+claim = src.find('id="claim"')
+if board < 0 or claim < 0 or board > claim:
+    raise SystemExit(1)
+PY
   grep -q 'Morning merch desk' src/views/board.ts \
     || fail "board missing morning-desk chrome"
   grep -q 'data-issue-date' src/views/board.ts \
