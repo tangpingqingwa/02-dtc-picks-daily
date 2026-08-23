@@ -56,7 +56,7 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
     : "";
   const coverHop = isCover
     ? html`<p class="cover-hop-wrap" data-take-after-list="">
-        <a class="cover-hop cover-hop-first take-after-list-first" href="${href}" data-cover-hop="" data-first-click="take" data-take-after-list-first="" aria-label="Test this today at ${host}">Test this today</a>
+        <a class="cover-hop cover-hop-first take-after-list-first take-after-list-two" href="${href}" data-cover-hop="" data-first-click="take" data-take-after-list-first="" data-take-after-list-two="" aria-label="Test this today at ${host}">Test this today</a>
       </p>`
     : "";
   const listAfterTake = isCover
