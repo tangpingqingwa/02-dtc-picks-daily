@@ -198,7 +198,22 @@ nav[aria-label="Main"] a:hover {
   color: var(--muted-foreground);
   font-size: 0.95rem;
 }
-#claim { scroll-margin-top: 1.5rem; }
+#leaderboard { scroll-margin-top: 1.5rem; margin-top: 0; }
+#claim {
+  scroll-margin-top: 1.5rem;
+  margin-top: 2.25rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+.claim-kicker {
+  margin: 0 0 0.45rem;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
 .claim-title {
   display: flex;
   flex-wrap: wrap;
@@ -353,7 +368,6 @@ nav[aria-label="Main"] a:hover {
   color: var(--muted-foreground);
   text-wrap: pretty;
 }
-#leaderboard { scroll-margin-top: 1.5rem; margin-top: 1.75rem; }
 .empty {
   margin-top: 0.25rem;
   padding: 2.4rem 1.25rem;

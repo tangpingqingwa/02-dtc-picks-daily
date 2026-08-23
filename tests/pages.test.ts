@@ -37,6 +37,10 @@ test("GET / is a public empty board with bid form", async () => {
   assert.match(body, /Morning merch desk/);
   assert.match(body, /data-issue-date="/);
   assert.match(body, /One cover/);
+  assert.match(body, /List a product/);
+  const emptyAt = body.indexOf("data-empty-board");
+  const claimAt = body.indexOf('id="claim"');
+  assert.ok(emptyAt > -1 && claimAt > emptyAt, "quiet morning must precede claim chrome");
   assert.doesNotMatch(body, /category zoo|Fulfillment tools|Browse categories/);
   assert.doesNotMatch(body, /POLAR_LIVE/);
   assert.doesNotMatch(body, /api\.polar\.sh/);
@@ -97,6 +101,12 @@ test("GET / ranks fixture-seeded rows by bid then older createdAt", async () => 
   assert.match(body, /Why test this today/);
   assert.match(body, /Also on the desk/);
   assert.match(body, /row-cover/);
+  assert.match(body, /List a product/);
+  const coverAt = body.indexOf("row-cover");
+  const claimAt = body.indexOf('id="claim"');
+  const stackAt = body.indexOf("Also on the desk");
+  assert.ok(coverAt > -1 && claimAt > coverAt, "today’s #1 must precede claim chrome");
+  assert.ok(stackAt > coverAt && stackAt < claimAt, "desk-stack rows stay under the cover, still before listing");
 
   const order = [...body.matchAll(/data-listing-id="([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(order, ["lst-cover", "lst-old-tie", "lst-new-tie", "lst-under"]);
@@ -164,6 +174,9 @@ test("GET / prints today's date as the issue on a morning desk", async () => {
   assert.match(body, /Date is the issue/);
   assert.match(body, /bid-field/);
   assert.match(body, /text-decoration-style: dashed/);
+  const boardAt = body.indexOf('id="leaderboard"');
+  const claimAt = body.indexOf('id="claim"');
+  assert.ok(boardAt > -1 && claimAt > boardAt, "first-time read is the desk, then the claim form");
 });
 
 test("SPEC acceptance 10: GET /about and GET /rules are 200", async () => {
