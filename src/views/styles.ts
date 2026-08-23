@@ -399,10 +399,11 @@ nav[aria-label="Main"] a:hover {
   gap: 0.5rem;
   padding: 0.5rem 0;
 }
+a.row-link { text-decoration: none; }
 @media (min-width: 768px) {
   .row-link { gap: 0.75rem; padding: 0.75rem 0; }
 }
-.row-link:hover { color: var(--primary); }
+a.row-link:hover { color: var(--primary); }
 .row-meta {
   display: flex;
   width: 2.5rem;
@@ -419,14 +420,27 @@ nav[aria-label="Main"] a:hover {
   text-transform: uppercase;
   color: var(--primary);
 }
-.why-label {
-  display: inline-block;
-  margin-right: 0.35rem;
-  font-size: 0.68rem;
+.cover-hop-wrap {
+  margin: 0.55rem 0 0.15rem;
+}
+.cover-hop {
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  padding: 0 0.95rem;
+  border: 0;
+  border-radius: 2px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--foreground);
+  text-decoration: none;
+}
+.cover-hop:hover {
+  background: color-mix(in oklab, var(--primary) 80%, black);
+  color: var(--primary-foreground);
 }
 @media (min-width: 768px) {
   .row-meta {
@@ -580,6 +594,7 @@ nav[aria-label="Main"] a:hover {
   font-size: 1rem;
   line-height: 1.45;
 }
+.row-cover .row-link { padding-bottom: 0.35rem; }
 .row-cover .claim-rank {
   top: 0;
   transform: translate(-50%, -50%);

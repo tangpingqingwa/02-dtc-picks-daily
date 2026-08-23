@@ -38,6 +38,8 @@ test("GET / is a public empty board with bid form", async () => {
   assert.match(body, /data-issue-date="/);
   assert.match(body, /One cover/);
   assert.match(body, /List a product/);
+  assert.doesNotMatch(body, /data-cover-hop/);
+  assert.doesNotMatch(body, /Test this today/);
   const emptyAt = body.indexOf("data-empty-board");
   const claimAt = body.indexOf('id="claim"');
   assert.ok(emptyAt > -1 && claimAt > emptyAt, "quiet morning must precede claim chrome");
@@ -102,11 +104,24 @@ test("GET / ranks fixture-seeded rows by bid then older createdAt", async () => 
   assert.match(body, /Also on the desk/);
   assert.match(body, /row-cover/);
   assert.match(body, /List a product/);
+  assert.match(body, /data-cover-hop=""/);
+  assert.match(body, /href="\/r\/lst-cover"/);
+  assert.match(body, /aria-label="Test this today at cover\.example\/apps\/pick"/);
   const coverAt = body.indexOf("row-cover");
+  const hopAt = body.indexOf("data-cover-hop");
   const claimAt = body.indexOf('id="claim"');
   const stackAt = body.indexOf("Also on the desk");
+  const whyAt = body.indexOf("Why test this today");
+  const hopLabelAt = body.indexOf(">Test this today<");
   assert.ok(coverAt > -1 && claimAt > coverAt, "today’s #1 must precede claim chrome");
+  assert.ok(hopAt > coverAt && hopAt < claimAt, "cover hop lives on today’s #1, not the listing form");
+  assert.ok(hopLabelAt > hopAt && hopLabelAt < claimAt, "Test this today is the cover action, not a field label");
+  assert.ok(whyAt > claimAt, "Why test this today stays the listing field, not the cover hop");
   assert.ok(stackAt > coverAt && stackAt < claimAt, "desk-stack rows stay under the cover, still before listing");
+  assert.ok(stackAt > hopAt, "stack rows sit under the cover hop");
+  assert.equal((body.match(/data-cover-hop/g) ?? []).length, 1);
+  assert.equal((body.match(/href="\/r\/lst-cover"/g) ?? []).length, 1);
+  assert.doesNotMatch(body, /class="row-cover"[\s\S]*class="row-link" href=/);
 
   const order = [...body.matchAll(/data-listing-id="([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(order, ["lst-cover", "lst-old-tie", "lst-new-tie", "lst-under"]);
@@ -177,6 +192,58 @@ test("GET / prints today's date as the issue on a morning desk", async () => {
   const boardAt = body.indexOf('id="leaderboard"');
   const claimAt = body.indexOf('id="claim"');
   assert.ok(boardAt > -1 && claimAt > boardAt, "first-time read is the desk, then the claim form");
+});
+
+test("GET / gives a shopper one Test this today hop on the paid cover", async () => {
+  const db = openDatabase(":memory:");
+  const day = dayKey();
+  placeBid(db, {
+    id: "lst-cover",
+    day,
+    productUrl: "https://cover.example/apps/pick",
+    whyTestThisToday: "Cover app sellers should install this morning",
+    bidUsd: 20,
+    clicks: 3,
+    createdAt: "2026-08-22T09:00:00.000Z",
+  });
+  placeBid(db, {
+    id: "lst-under",
+    day,
+    productUrl: "https://under.example/sku",
+    whyTestThisToday: "Cheaper SKU still belongs on the brief",
+    bidUsd: 8,
+    createdAt: "2026-08-22T12:00:00.000Z",
+  });
+
+  const app = await buildApp({ db });
+  after(async () => {
+    await app.close();
+    db.close();
+  });
+
+  const response = await app.inject({ method: "GET", url: "/" });
+  assert.equal(response.statusCode, 200);
+  const body = response.body;
+  const coverStart = body.indexOf('data-listing-id="lst-cover"');
+  const coverEnd = body.indexOf("</article>", coverStart);
+  const cover = body.slice(coverStart, coverEnd);
+  const underStart = body.indexOf('data-listing-id="lst-under"');
+  const underEnd = body.indexOf("</article>", underStart);
+  const under = body.slice(underStart, underEnd);
+
+  assert.match(cover, /data-cover-hop=""/);
+  assert.match(cover, />Test this today</);
+  assert.match(cover, /href="\/r\/lst-cover"/);
+  assert.doesNotMatch(cover, /class="row-link" href=/);
+  assert.doesNotMatch(cover, /Why test this today/);
+  assert.match(under, /href="\/r\/lst-under"/);
+  assert.doesNotMatch(under, /data-cover-hop/);
+  assert.doesNotMatch(under, /Test this today/);
+  assert.equal((body.match(/data-cover-hop/g) ?? []).length, 1);
+
+  const hop = await app.inject({ method: "GET", url: "/r/lst-cover" });
+  assert.equal(hop.statusCode, 302);
+  assert.equal(hop.headers.location, "https://cover.example/apps/pick");
 });
 
 test("SPEC acceptance 10: GET /about and GET /rules are 200", async () => {
