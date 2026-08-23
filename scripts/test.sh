@@ -193,6 +193,8 @@ if [[ -f package.json ]]; then
     || fail "cover why-line shopper test did not run"
   grep -q 'lists after the why-line' "$test_log" \
     || fail "seller list-after-why test did not run"
+  grep -q 'takes the cover after list-after-why' "$test_log" \
+    || fail "shopper take-after-list test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -218,6 +220,12 @@ if cover_why < 0 or cover_hop < 0 or cover_why > cover_hop:
 list_after = src.find("data-list-after-why")
 if list_after < 0 or list_after < cover_why or list_after > cover_hop:
     raise SystemExit(1)
+take_after = src.find("data-take-after-list")
+if take_after < 0 or take_after < list_after or take_after > cover_hop:
+    raise SystemExit(1)
+host_after = src.find("<p class=\"host\">")
+if host_after < 0 or cover_hop > host_after:
+    raise SystemExit(1)
 PY
   grep -q 'Morning merch desk' src/views/board.ts \
     || fail "board missing morning-desk chrome"
@@ -241,6 +249,8 @@ PY
     || fail "paid cover missing list-after-why hop"
   grep -q 'under this reason' src/views/board.ts \
     || fail "list-after-why hop does not sit under the cover reason"
+  grep -q 'data-take-after-list' src/views/board.ts \
+    || fail "paid cover missing take-after-list wrap on Test this today"
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
   grep -q 'text-decoration-style: dashed' src/views/styles.ts \

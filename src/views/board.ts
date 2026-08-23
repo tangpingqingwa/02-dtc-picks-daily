@@ -54,6 +54,11 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
       </p>
     </div>`
     : "";
+  const coverHop = isCover
+    ? html`<p class="cover-hop-wrap" data-take-after-list="">
+        <a class="cover-hop" href="${href}" data-cover-hop="" aria-label="Test this today at ${host}">Test this today</a>
+      </p>`
+    : "";
   const stackBlurb = isCover ? "" : html`<p class="blurb">${blurb}</p>`;
   const inner = html`<div class="row-meta">
       <span class="rank">#${rank}</span>
@@ -61,18 +66,12 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
     <div class="row-body">
       <p class="row-kicker">${eyebrow}</p>
       ${coverWhy}
+      ${coverHop}
       <div class="row-top">
         <p class="host">${host}</p>
         <p class="bid">${bid}</p>
       </div>
       ${stackBlurb}
-      ${
-        isCover
-          ? html`<p class="cover-hop-wrap">
-        <a class="cover-hop" href="${href}" data-cover-hop="" aria-label="Test this today at ${host}">Test this today</a>
-      </p>`
-          : ""
-      }
       <p class="row-foot">
         <span class="when"><time datetime="${escapeHtml(listing.createdAt)}">${when}</time></span>
         <span class="clicks"><span class="live-dot" aria-hidden="true"></span>${listing.clicks} clicks</span>

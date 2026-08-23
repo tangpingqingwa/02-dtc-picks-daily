@@ -438,7 +438,7 @@ a.row-link:hover { color: var(--primary); }
   color: var(--primary);
 }
 .cover-hop-wrap {
-  margin: 0.55rem 0 0.15rem;
+  margin: 0.15rem 0 0.7rem;
 }
 .cover-hop {
   display: inline-flex;
@@ -460,7 +460,7 @@ a.row-link:hover { color: var(--primary); }
   color: var(--primary-foreground);
 }
 .cover-why {
-  margin: 0.15rem 0 0.55rem;
+  margin: 0.15rem 0 0.35rem;
 }
 .cover-why-label {
   margin: 0 0 0.25rem;
@@ -501,6 +501,9 @@ a.row-link:hover { color: var(--primary); }
 }
 .list-after-why:hover {
   color: var(--foreground);
+}
+.cover-why + .cover-hop-wrap {
+  margin-top: 0;
 }
 @media (min-width: 768px) {
   .row-meta {
