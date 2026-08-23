@@ -532,8 +532,28 @@ a.row-link:hover { color: var(--primary); }
   text-underline-offset: 4px;
   text-decoration-thickness: 1px;
 }
+.list-after-take-first {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  height: auto;
+  padding: 0 0.95rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  vertical-align: middle;
+}
 .list-after-take:hover {
   color: var(--foreground);
+}
+.list-after-take-first:hover {
+  background: var(--foreground);
+  color: var(--background);
 }
 .cover-hop-wrap + .list-after-take-wrap {
   margin-top: 0.35rem;

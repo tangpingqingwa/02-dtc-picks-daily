@@ -199,6 +199,8 @@ if [[ -f package.json ]]; then
     || fail "seller list-after-take test did not run"
   grep -q 'win the first click after list-after-take' "$test_log" \
     || fail "shopper take-after-list-hop first-click test did not run"
+  grep -q 'concentrates List a product as the first write' "$test_log" \
+    || fail "seller list-after-take first-write test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -232,6 +234,9 @@ if list_after_take < 0 or list_after_take < cover_hop:
     raise SystemExit(1)
 first_click = src.find('data-first-click="take"')
 if first_click < 0 or first_click < take_after or first_click > list_after_take:
+    raise SystemExit(1)
+first_write = src.find('data-first-write="list"')
+if first_write < 0 or first_write < list_after_take:
     raise SystemExit(1)
 host_after = src.find("<p class=\"host\">")
 if host_after < 0 or cover_hop > host_after or list_after_take > host_after:
@@ -269,6 +274,12 @@ PY
     || fail "paid cover missing first-click take on Test this today"
   grep -q 'cover-hop-first' src/views/styles.ts \
     || fail "first-click take is not louder than list-after-take"
+  grep -q 'data-first-write="list"' src/views/board.ts \
+    || fail "paid cover missing first-write list on List a product"
+  grep -q 'list-after-take-first' src/views/board.ts \
+    || fail "list-after-take is not concentrated as the first write"
+  grep -q 'list-after-take-first' src/views/styles.ts \
+    || fail "first-write list is not more certain than dashed ink"
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
   grep -q 'text-decoration-style: dashed' src/views/styles.ts \
