@@ -38,14 +38,14 @@ export function dayKey(now: Date = new Date(), tz: string = boardTimeZone()): st
   return `${year}-${month}-${day}`;
 }
 
-/** Long weekday + month + day for the morning issue masthead. */
-export function formatIssueDate(day: string, tz: string = boardTimeZone()): string {
+/** Long weekday + month + day for the morning issue. `day` is the BOARD_TZ civil date. */
+export function formatIssueDate(day: string, _tz: string = boardTimeZone()): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
   if (!match) {
     return day;
   }
   const noonUtc = new Date(`${match[1]}-${match[2]}-${match[3]}T12:00:00.000Z`);
-  const parts = formatInZone(noonUtc, tz, {
+  const parts = formatInZone(noonUtc, "UTC", {
     weekday: "long",
     month: "long",
     day: "numeric",

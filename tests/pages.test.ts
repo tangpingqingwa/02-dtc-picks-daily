@@ -6,6 +6,7 @@ import { dayKey, formatIssueDate } from "../src/core/day.js";
 import { openDatabase } from "../src/db.js";
 import { renderAboutPage } from "../src/http/pages/about.js";
 import { renderRulesPage } from "../src/http/pages/rules.js";
+import { renderBoardPage } from "../src/views/board.js";
 import { formatFolioDate } from "../src/views/html.js";
 
 test("GET / is a public empty board with bid form", async () => {
@@ -127,6 +128,25 @@ test("GET / does not show yesterday's cover on a new day", async () => {
   assert.match(response.body, /Quiet morning/);
   assert.doesNotMatch(response.body, /yesterday\.example/);
   assert.doesNotMatch(response.body, /\$99/);
+});
+
+test("masthead, folio, and data-issue-date name the same day in UTC+12", () => {
+  const day = "2026-08-23";
+  const tz = "Pacific/Auckland";
+  const body = renderBoardPage({
+    day,
+    tz,
+    listings: [],
+    defaultBidUsd: 5,
+  });
+  const spoken = formatIssueDate(day, tz);
+  const folio = formatFolioDate(day);
+  assert.equal(spoken, "Sunday, August 23, 2026");
+  assert.match(body, /data-issue-date="2026-08-23"/);
+  assert.match(body, new RegExp(spoken.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(body, new RegExp(folio.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.doesNotMatch(body, /August 24, 2026/);
+  assert.doesNotMatch(body, /Aug 24, 2026/);
 });
 
 test("GET / prints today's date as the issue on a morning desk", async () => {

@@ -31,3 +31,11 @@ test("formatIssueDate prints the morning issue from the day key", () => {
   assert.equal(formatIssueDate("not-a-day"), "not-a-day");
   assert.equal(formatFolioDate("later"), "later");
 });
+
+test("formatIssueDate keeps the day key in UTC+12", () => {
+  const day = "2026-08-23";
+  const spoken = formatIssueDate(day, "Pacific/Auckland");
+  assert.equal(spoken, "Sunday, August 23, 2026");
+  assert.equal(formatFolioDate(day), "Aug 23, 2026");
+  assert.doesNotMatch(spoken, /August 24/);
+});
