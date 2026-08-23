@@ -44,16 +44,24 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
   const claim = escapeHtml(formatUsd(claimRankUsd(listing)));
   const href = escapeHtml(`/r/${listing.id}`);
   const eyebrow = isCover ? "This morning’s cover" : `Also on the desk · #${rank}`;
+  const coverWhy = isCover
+    ? html`<div class="cover-why" data-cover-why="">
+      <p class="cover-why-label">Why test this today</p>
+      <p class="cover-why-line">${blurb}</p>
+    </div>`
+    : "";
+  const stackBlurb = isCover ? "" : html`<p class="blurb">${blurb}</p>`;
   const inner = html`<div class="row-meta">
       <span class="rank">#${rank}</span>
     </div>
     <div class="row-body">
       <p class="row-kicker">${eyebrow}</p>
+      ${coverWhy}
       <div class="row-top">
         <p class="host">${host}</p>
         <p class="bid">${bid}</p>
       </div>
-      <p class="blurb">${blurb}</p>
+      ${stackBlurb}
       ${
         isCover
           ? html`<p class="cover-hop-wrap">
