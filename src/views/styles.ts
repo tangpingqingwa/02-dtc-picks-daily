@@ -1,17 +1,19 @@
 export const BOARD_CSS = /* css */ `
 :root {
-  --background: #fffdfa;
-  --foreground: #282624;
-  --card: #fffdfa;
-  --primary: #e57255;
-  --primary-foreground: #fff;
-  --muted: #f6f3ef;
-  --muted-foreground: #67625d;
-  --border: #e6e0da;
-  --input: #e6e0da;
-  --ring: #e57255;
-  --radius: 0.875rem;
-  --font: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --background: #f4efe4;
+  --foreground: #1c1914;
+  --card: #fbf7ee;
+  --primary: #9a3412;
+  --primary-foreground: #fff8ef;
+  --muted: #ebe3d4;
+  --muted-foreground: #6b6256;
+  --border: #d8cbb6;
+  --input: #d8cbb6;
+  --ring: #9a3412;
+  --rule: #1c1914;
+  --radius: 0.25rem;
+  --font: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Newsreader", "Iowan Old Style", "Palatino Linotype", Palatino, serif;
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -21,7 +23,9 @@ body {
   display: flex;
   flex-direction: column;
   font-family: var(--font);
-  background: var(--background);
+  background:
+    radial-gradient(900px 280px at 50% -120px, color-mix(in oklab, var(--primary) 10%, transparent), transparent),
+    var(--background);
   color: var(--foreground);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -42,24 +46,62 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
   padding-right: 1rem;
 }
 .site-header-inner {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-top: 1.25rem;
-  padding-bottom: 1rem;
+  gap: 0.75rem;
+  padding-top: 0.85rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
 }
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 1.375rem;
-  font-weight: 500;
-  letter-spacing: -0.04em;
+  gap: 0.45rem;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
 }
-.brand-mark { height: 1.25rem; width: auto; }
+.brand-mark {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 1px;
+  background: var(--primary);
+  box-shadow: 0.22rem 0.22rem 0 0 color-mix(in oklab, var(--primary) 45%, transparent);
+}
 .brand-dot { color: var(--primary); }
-.nav-wrap { display: flex; align-items: center; gap: 1rem; }
+.rail-folio {
+  margin: 0;
+  text-align: center;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.rail-kicker {
+  display: block;
+  font-weight: 700;
+  color: var(--primary);
+}
+.rail-folio time {
+  display: block;
+  margin-top: 0.15rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+}
+@media (max-width: 640px) {
+  .site-header-inner {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "brand nav"
+      "folio folio";
+  }
+  .brand { grid-area: brand; }
+  .rail-folio { grid-area: folio; text-align: left; }
+  .nav-wrap { grid-area: nav; }
+}
+.nav-wrap { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; }
 nav[aria-label="Main"] ul {
   display: flex;
   align-items: center;
@@ -104,6 +146,58 @@ nav[aria-label="Main"] a:hover {
   white-space: nowrap;
   border: 0;
 }
+.masthead {
+  margin: 0 0 1.75rem;
+  padding: 1.35rem 0 1.15rem;
+  border-bottom: 3px double var(--rule);
+  text-align: center;
+}
+.masthead-kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+.masthead-title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(2.1rem, 6vw, 3.4rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+}
+.masthead-issue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem 0.7rem;
+  margin: 0.85rem 0 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.issue-label {
+  font-weight: 700;
+  color: var(--primary);
+}
+.masthead-issue time {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.issue-rule {
+  width: 2.5rem;
+  height: 1px;
+  background: var(--border);
+}
+.issue-tz { color: var(--muted-foreground); }
+.masthead-dek {
+  margin: 0.55rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.95rem;
+}
 #claim { scroll-margin-top: 1.5rem; }
 .claim-title {
   display: flex;
@@ -113,8 +207,9 @@ nav[aria-label="Main"] a:hover {
   gap: 0.5rem 0.5rem;
   margin: 0;
   text-align: center;
+  font-family: var(--serif);
   font-size: 1.75rem;
-  font-weight: 700;
+  font-weight: 650;
   letter-spacing: -0.03em;
   text-wrap: pretty;
 }
@@ -125,9 +220,9 @@ nav[aria-label="Main"] a:hover {
 .step {
   width: 1.5rem;
   height: 1.5rem;
-  border: 0;
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--primary) 15%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary) 35%, transparent);
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
   color: var(--primary);
   font-weight: 700;
   font-size: 0.875rem;
@@ -197,19 +292,13 @@ nav[aria-label="Main"] a:hover {
   min-width: 0;
   flex: 1;
 }
-.field-icon {
-  pointer-events: none;
-  position: absolute;
-  top: 50%;
-  left: 0.625rem;
-  transform: translateY(-50%);
-  width: 2rem;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: var(--muted);
+.field-label {
+  display: block;
+  margin: 0 0 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--muted-foreground);
 }
 .field input,
@@ -218,9 +307,9 @@ nav[aria-label="Main"] a:hover {
   min-width: 0;
   height: 2.75rem;
   border: 1px solid var(--input);
-  border-radius: 0.75rem;
-  background: transparent;
-  padding: 0.25rem 0.75rem 0.25rem 2.75rem;
+  border-radius: 2px;
+  background: var(--card);
+  padding: 0.25rem 0.75rem;
   outline: none;
 }
 .field textarea {
@@ -241,12 +330,15 @@ nav[aria-label="Main"] a:hover {
   height: 2.75rem;
   width: 100%;
   flex-shrink: 0;
+  align-self: flex-end;
   border: 0;
-  border-radius: 999px;
+  border-radius: 2px;
   background: var(--primary);
   color: var(--primary-foreground);
   font-weight: 700;
   font-size: 0.875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   padding: 0 1.25rem;
 }
 @media (min-width: 768px) {
@@ -261,14 +353,22 @@ nav[aria-label="Main"] a:hover {
   color: var(--muted-foreground);
   text-wrap: pretty;
 }
-#leaderboard { scroll-margin-top: 1.5rem; margin-top: 1.5rem; }
+#leaderboard { scroll-margin-top: 1.5rem; margin-top: 1.75rem; }
 .empty {
-  margin-top: 2rem;
-  padding: 2rem 1rem;
+  margin-top: 0.25rem;
+  padding: 2.4rem 1.25rem;
   text-align: center;
   color: var(--muted-foreground);
   border: 1px dashed var(--border);
-  border-radius: 1rem;
+  background: color-mix(in oklab, var(--card) 70%, transparent);
+}
+.empty-kicker {
+  margin: 0 0 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--primary);
 }
 .empty strong { color: var(--foreground); }
 .row {
@@ -297,6 +397,23 @@ nav[aria-label="Main"] a:hover {
   align-items: center;
   gap: 0.375rem;
 }
+.row-kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+.why-label {
+  display: inline-block;
+  margin-right: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--foreground);
+}
 @media (min-width: 768px) {
   .row-meta {
     width: auto;
@@ -315,21 +432,6 @@ nav[aria-label="Main"] a:hover {
 @media (min-width: 768px) {
   .rank { min-width: 2.5rem; font-size: 1rem; }
 }
-.avatar {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.375rem;
-  background: var(--muted);
-  color: var(--muted-foreground);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-  flex-shrink: 0;
-}
-@media (min-width: 768px) {
-  .avatar { width: 3.5rem; height: 3.5rem; }
-}
 .row-body { min-width: 0; flex: 1; }
 .row-top {
   display: flex;
@@ -342,8 +444,9 @@ nav[aria-label="Main"] a:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-family: var(--serif);
+  font-size: 1rem;
+  font-weight: 650;
 }
 .bid {
   flex-shrink: 0;
@@ -356,10 +459,10 @@ nav[aria-label="Main"] a:hover {
   .host, .bid { font-size: 1rem; }
 }
 .blurb {
-  margin: 0;
+  margin: 0.15rem 0 0;
   min-width: 0;
-  font-size: 0.75rem;
-  color: color-mix(in oklab, var(--muted-foreground) 70%, transparent);
+  font-size: 0.875rem;
+  color: color-mix(in oklab, var(--muted-foreground) 85%, var(--foreground));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -420,12 +523,13 @@ nav[aria-label="Main"] a:hover {
   z-index: 20;
   transform: translateX(-50%);
   border: 0;
-  border-radius: 999px;
+  border-radius: 2px;
   background: var(--primary);
   color: var(--primary-foreground);
   padding: 0.125rem 0.625rem;
   font-size: 0.75rem;
   font-weight: 700;
+  letter-spacing: 0.02em;
   white-space: nowrap;
   box-shadow: 0 1px 2px rgb(40 38 36 / 0.12);
   opacity: 0;
@@ -437,41 +541,38 @@ nav[aria-label="Main"] a:hover {
   opacity: 1;
   pointer-events: auto;
 }
-.row-top3 {
-  margin: 0.375rem 0;
-  padding: 0 0.625rem;
-  border: 2px solid color-mix(in oklab, var(--primary) 15%, transparent);
-  border-radius: 0.75rem;
-  background: color-mix(in oklab, var(--primary) 3%, transparent);
+.row-cover {
+  margin: 0 0 1rem;
+  padding: 0.85rem 0.85rem 0.65rem;
+  border: 1px solid var(--rule);
+  background: var(--card);
+  box-shadow: 0.4rem 0.4rem 0 0 color-mix(in oklab, var(--primary) 18%, transparent);
 }
-.row-top3 + .row-top3 { border-top: 2px solid color-mix(in oklab, var(--primary) 15%, transparent); }
-.row-1 {
-  border-color: var(--primary);
-  background: color-mix(in oklab, var(--primary) 22%, transparent);
-}
-.row-2 {
-  border-color: color-mix(in oklab, var(--primary) 40%, transparent);
-  background: color-mix(in oklab, var(--primary) 8%, transparent);
-}
-@media (min-width: 768px) {
-  .row-top3 {
-    margin: 0.75rem 0;
-    padding: 0 0.875rem;
-    border-radius: 1rem;
-  }
-}
-.row-top3 .rank {
+.row-cover + .row { border-top: 0; }
+.row-1 .rank {
   min-width: 1.75rem;
-  border-radius: 999px;
+  border-radius: 2px;
   background: var(--primary);
   color: var(--primary-foreground);
-  font-weight: 600;
-  padding: 0 0.375rem;
+  font-weight: 700;
+  padding: 0.1rem 0.375rem;
 }
-.row-top3 .host { font-weight: 700; }
-.row-top3 .claim-rank {
+.row-cover .host {
+  font-size: 1.25rem;
+  white-space: normal;
+}
+.row-cover .blurb {
+  white-space: normal;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+.row-cover .claim-rank {
   top: 0;
   transform: translate(-50%, -50%);
+}
+.row-stack { padding-left: 0.25rem; }
+@media (min-width: 768px) {
+  .row-cover { padding: 1.1rem 1.15rem 0.85rem; }
 }
 .band {
   display: flex;
@@ -552,12 +653,13 @@ nav[aria-label="Main"] a:hover {
 }
 .doc td { color: var(--muted-foreground); }
 html.dark {
-  --background: #1a1512;
-  --foreground: #f7f5f1;
-  --card: #231e1b;
-  --muted: #2d2824;
-  --muted-foreground: #aba39b;
-  --border: #ffffff1a;
+  --background: #16130f;
+  --foreground: #f4efe4;
+  --card: #211c16;
+  --muted: #2a241c;
+  --muted-foreground: #b3a896;
+  --border: #ffffff1f;
   --input: #ffffff26;
+  --rule: #f4efe4;
 }
 `;

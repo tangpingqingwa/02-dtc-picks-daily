@@ -1,5 +1,6 @@
+import { boardTimeZone, dayKey, formatIssueDate } from "../core/day.js";
+import { escapeHtml, formatFolioDate, html } from "./html.js";
 import { BOARD_CSS } from "./styles.js";
-import { escapeHtml, html } from "./html.js";
 
 export const SITE_NAME = "picks.daily";
 export const SITE_TITLE = "DTC Picks Daily";
@@ -11,6 +12,9 @@ export type LayoutInput = {
   description?: string;
   active: NavId;
   body: string;
+  day?: string;
+  tz?: string;
+  now?: Date;
 };
 
 function navItem(href: string, label: string, current: boolean): string {
@@ -18,11 +22,15 @@ function navItem(href: string, label: string, current: boolean): string {
 }
 
 export function renderLayout(input: LayoutInput): string {
+  const tz = input.tz ?? boardTimeZone();
+  const day = input.day ?? dayKey(input.now, tz);
   const title = escapeHtml(input.title ?? SITE_TITLE);
   const description = escapeHtml(
     input.description ??
       "Bid USD. Own this morning’s cover. Sellers see your product link first.",
   );
+  const folio = escapeHtml(formatFolioDate(day));
+  const issueSpoken = escapeHtml(formatIssueDate(day, tz));
   return `<!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
@@ -32,20 +40,20 @@ export function renderLayout(input: LayoutInput): string {
   <meta name="description" content="${description}"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,650;0,6..72,700;1,6..72,500&display=swap" rel="stylesheet"/>
   <style>${BOARD_CSS}</style>
 </head>
 <body>
   <header class="site-header">
     <div class="site-header-inner">
       <a class="brand" href="/">
-        <svg viewBox="0 0 36 28" fill="none" aria-hidden="true" class="brand-mark">
-          <rect x="22" y="0" width="14" height="6" rx="3" fill="var(--primary)"></rect>
-          <rect x="12" y="11" width="24" height="6" rx="3" fill="currentColor"></rect>
-          <rect x="0" y="22" width="36" height="6" rx="3" fill="currentColor"></rect>
-        </svg>
+        <span class="brand-mark" aria-hidden="true"></span>
         <span>picks<span class="brand-dot">.</span>daily</span>
       </a>
+      <p class="rail-folio">
+        <span class="rail-kicker">Morning edition</span>
+        <time datetime="${escapeHtml(day)}" data-issue-date="${escapeHtml(day)}">${folio}</time>
+      </p>
       <div class="nav-wrap">
         <nav aria-label="Main">
           <ul>
@@ -59,6 +67,7 @@ export function renderLayout(input: LayoutInput): string {
         </button>
       </div>
     </div>
+    <p class="sr-only">${issueSpoken}. Date is the issue.</p>
   </header>
   <div class="page">
     ${input.body}

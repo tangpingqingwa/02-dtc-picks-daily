@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { boardTimeZone } from "../../core/day.js";
+import { boardTimeZone, dayKey } from "../../core/day.js";
 import { escapeHtml, html } from "../../views/html.js";
 import { renderLayout, SITE_TITLE } from "../../views/layout.js";
 
@@ -7,6 +7,7 @@ export const ABOUT_PATH = "/about" as const;
 
 export type AboutViewModel = {
   tz: string;
+  day?: string;
 };
 
 export function renderAboutBody(model: AboutViewModel): string {
@@ -57,18 +58,23 @@ export function renderAboutBody(model: AboutViewModel): string {
 }
 
 export function renderAboutPage(model: AboutViewModel): string {
+  const tz = model.tz;
+  const day = model.day ?? dayKey(new Date(), tz);
   return renderLayout({
     title: `About · ${SITE_TITLE}`,
     description:
       "Daily public auction for this morning’s DTC / Shopify / Amazon picks cover. No ads, no API keys, no revenue share. Rank is the bid.",
     active: "about",
+    day,
+    tz,
     body: renderAboutBody(model),
   });
 }
 
 export const aboutRoutes: FastifyPluginAsync = async (app) => {
   app.get(ABOUT_PATH, async (_request, reply) => {
-    const htmlPage = renderAboutPage({ tz: boardTimeZone() });
+    const tz = boardTimeZone();
+    const htmlPage = renderAboutPage({ tz, day: dayKey(new Date(), tz) });
     return reply.type("text/html; charset=utf-8").send(htmlPage);
   });
 };
