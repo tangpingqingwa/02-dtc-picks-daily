@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import {
   polarAccessToken,
   polarLiveEnabled,
+  polarProductId,
   polarWebhookSecret,
   publicBaseUrl,
 } from "../config.js";
@@ -13,8 +14,16 @@ import type {
   WebhookResult,
 } from "./port.js";
 
-/** Only used when POLAR_LIVE=1. tests/ never fetch this host. */
+/** Production Polar API. Override with POLAR_API_BASE (sandbox-api for operator smoke). */
 export const POLAR_API_BASE = "https://api.polar.sh";
+
+export function polarApiBase(env: NodeJS.ProcessEnv = process.env): string {
+  const fromEnv = env.POLAR_API_BASE?.trim();
+  if (fromEnv) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  return POLAR_API_BASE;
+}
 
 export type PolarCheckoutOptions = {
   env?: NodeJS.ProcessEnv;
@@ -43,25 +52,30 @@ export class PolarCheckout implements CheckoutPort {
 
   async createSession(draft: CheckoutDraft): Promise<CheckoutSession> {
     const token = this.requireToken();
-    const response = await this.fetchFn(`${POLAR_API_BASE}/v1/checkouts/`, {
+    const body: Record<string, unknown> = {
+      amount: draft.chargeUsd * 100,
+      currency: "usd",
+      success_url: `${publicBaseUrl(this.env)}/checkout/complete?session={CHECKOUT_ID}`,
+      metadata: {
+        productUrl: draft.productUrl,
+        whyTestThisToday: draft.whyTestThisToday,
+        bidUsd: String(draft.bidUsd),
+        chargeUsd: String(draft.chargeUsd),
+        day: draft.day,
+      },
+    };
+    const productId = polarProductId(this.env);
+    if (productId) {
+      body.product_id = productId;
+    }
+    const response = await this.fetchFn(`${polarApiBase(this.env)}/v1/checkouts/`, {
       method: "POST",
       headers: {
         authorization: `Bearer ${token}`,
         "content-type": "application/json",
         accept: "application/json",
       },
-      body: JSON.stringify({
-        amount: draft.chargeUsd * 100,
-        currency: "usd",
-        success_url: `${publicBaseUrl(this.env)}/checkout/complete?session={CHECKOUT_ID}`,
-        metadata: {
-          productUrl: draft.productUrl,
-          whyTestThisToday: draft.whyTestThisToday,
-          bidUsd: String(draft.bidUsd),
-          chargeUsd: String(draft.chargeUsd),
-          day: draft.day,
-        },
-      }),
+      body: JSON.stringify(body),
     });
     if (!response.ok) {
       throw new Error(`polar checkout failed: ${response.status}`);

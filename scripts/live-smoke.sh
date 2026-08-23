@@ -246,7 +246,7 @@ if [[ -z "${BASE}" ]]; then
   echo "database=${DB_PATH}"
   (
     cd "$root"
-    unset POLAR_LIVE POLAR_ACCESS_TOKEN POLAR_WEBHOOK_SECRET || true
+    unset POLAR_LIVE POLAR_ACCESS_TOKEN POLAR_WEBHOOK_SECRET POLAR_FIXTURE_ONLY || true
     export PORT
     export DATABASE_PATH="${DB_PATH}"
     export BOARD_TZ="${BOARD_TZ:-UTC}"
@@ -268,6 +268,7 @@ fi
 
 echo "base=${BASE}"
 echo "POLAR_LIVE=${POLAR_LIVE:-<unset>}"
+echo "POLAR_API_BASE=${POLAR_API_BASE:-<unset>}"
 
 # --- healthz ---
 health_body="${WORKDIR}/healthz.json"
@@ -435,6 +436,9 @@ if [[ "${POLAR_LIVE:-}" == "1" ]]; then
   if [[ -z "${POLAR_ACCESS_TOKEN:-}" ]]; then
     echo "BLOCKED-SECRET: POLAR_ACCESS_TOKEN"
     record "polar-live" "BLOCKED-SECRET" "POLAR_ACCESS_TOKEN"
+  elif [[ -z "${POLAR_PRODUCT_ID:-}" ]]; then
+    echo "BLOCKED-SECRET: POLAR_PRODUCT_ID"
+    record "polar-live" "BLOCKED-SECRET" "POLAR_PRODUCT_ID"
   else
     live_port="$(pick_port)"
     live_db="${WORKDIR}/polar-live.sqlite"
@@ -444,8 +448,13 @@ if [[ "${POLAR_LIVE:-}" == "1" ]]; then
     (
       cd "$root"
       export POLAR_LIVE=1
+      unset POLAR_FIXTURE_ONLY || true
       export POLAR_ACCESS_TOKEN
       export POLAR_WEBHOOK_SECRET="${POLAR_WEBHOOK_SECRET:-}"
+      export POLAR_API_BASE="${POLAR_API_BASE:-https://sandbox-api.polar.sh}"
+      if [[ -n "${POLAR_PRODUCT_ID:-}" ]]; then
+        export POLAR_PRODUCT_ID
+      fi
       export PORT="${live_port}"
       export DATABASE_PATH="${live_db}"
       export PUBLIC_BASE_URL="${live_base}"
@@ -478,8 +487,12 @@ if [[ "${POLAR_LIVE:-}" == "1" ]]; then
       curl -sS -o "$live_board" "${live_base}/" >/dev/null || true
       if html_has "$live_board" "live.example/sku-${STAMP}"; then
         record "polar-live" "FAIL" "unpaid live Polar session appeared on the board"
+      elif [[ "$live_code" == "303" && "$live_loc" == https://sandbox.polar.sh/* ]]; then
+        record "polar-live" "PASS" "live sandbox checkout ${live_loc}; unpaid session not listed"
+      elif [[ "$live_code" == "303" && "$live_loc" == https://polar.sh/* ]]; then
+        record "polar-live" "FAIL" "live checkout hit production Polar (${live_loc}); sandbox required"
       elif [[ "$live_code" == "303" && "$live_loc" == https://*polar.sh* ]]; then
-        record "polar-live" "PASS" "live checkout redirected to Polar; unpaid session not listed"
+        record "polar-live" "PASS-ERROR" "live Polar HTTP ${live_code} loc=${live_loc} (not sandbox.polar.sh)"
       else
         record "polar-live" "PASS-ERROR" "live Polar HTTP ${live_code} loc=${live_loc} (no invented listing)"
       fi
