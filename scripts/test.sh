@@ -205,6 +205,8 @@ if [[ -f package.json ]]; then
     || fail "shopper take-after-list-first test did not run"
   grep -q 'concentrates List a product after Test this today is re-concentrated' "$test_log" \
     || fail "seller list-after-take-two test did not run"
+  grep -q 'concentrates Test this today after List a product is re-concentrated' "$test_log" \
+    || fail "shopper take-after-list-two test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -247,6 +249,9 @@ if take_first < 0 or take_first < first_click or take_first > list_after_take:
     raise SystemExit(1)
 list_two = src.find("data-list-after-take-two")
 if list_two < 0 or list_two < first_write:
+    raise SystemExit(1)
+take_two = src.find("data-take-after-list-two")
+if take_two < 0 or take_two < take_first or take_two > list_after_take:
     raise SystemExit(1)
 host_after = src.find("<p class=\"host\">")
 if host_after < 0 or cover_hop > host_after or list_after_take > host_after:
@@ -298,6 +303,10 @@ PY
     || fail "paid cover missing list-after-take-two stamp on List a product"
   grep -q 'list-after-take-two' src/views/styles.ts \
     || fail "List a product is not taller than the first-write outline after the take"
+  grep -q 'data-take-after-list-two' src/views/board.ts \
+    || fail "paid cover missing take-after-list-two stamp on Test this today"
+  grep -q 'take-after-list-two' src/views/styles.ts \
+    || fail "Test this today is not louder than the re-concentrated list hop"
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
   grep -q 'text-decoration-style: dashed' src/views/styles.ts \

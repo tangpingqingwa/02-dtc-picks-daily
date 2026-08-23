@@ -470,6 +470,13 @@ a.row-link:hover { color: var(--primary); }
   letter-spacing: 0.12em;
   box-shadow: 0.28rem 0.28rem 0 0 color-mix(in oklab, var(--primary) 45%, transparent);
 }
+.take-after-list-two {
+  min-height: 3.55rem;
+  padding: 0.85rem 1.65rem;
+  font-size: 1.15rem;
+  letter-spacing: 0.14em;
+  box-shadow: 0.34rem 0.34rem 0 0 color-mix(in oklab, var(--primary) 45%, transparent);
+}
 .cover-hop:hover {
   background: color-mix(in oklab, var(--primary) 80%, black);
   color: var(--primary-foreground);
