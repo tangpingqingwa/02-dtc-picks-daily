@@ -198,6 +198,23 @@ nav[aria-label="Main"] a:hover {
   color: var(--muted-foreground);
   font-size: 0.95rem;
 }
+.masthead-list {
+  margin: 0.85rem 0 0;
+  font-size: 0.9rem;
+  color: var(--muted-foreground);
+  text-wrap: pretty;
+}
+.list-under-cover {
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+}
+.list-under-cover:hover {
+  color: var(--foreground);
+}
 #leaderboard { scroll-margin-top: 1.5rem; margin-top: 0; }
 #claim {
   scroll-margin-top: 1.5rem;

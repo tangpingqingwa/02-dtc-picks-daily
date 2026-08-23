@@ -187,6 +187,8 @@ if [[ -f package.json ]]; then
     || fail "morning cover issue-date test did not run"
   grep -q 'Test this today hop' "$test_log" \
     || fail "cover-hop shopper test did not run"
+  grep -q 'List a product hop' "$test_log" \
+    || fail "seller list-under-cover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -202,6 +204,9 @@ board = src.find('id="leaderboard"')
 claim = src.find('id="claim"')
 if board < 0 or claim < 0 or board > claim:
     raise SystemExit(1)
+list_hop = src.find("data-list-under-cover")
+if list_hop < 0 or list_hop > board:
+    raise SystemExit(1)
 PY
   grep -q 'Morning merch desk' src/views/board.ts \
     || fail "board missing morning-desk chrome"
@@ -213,6 +218,10 @@ PY
     || fail "paid cover missing Test this today hop"
   grep -q '>Test this today<' src/views/board.ts \
     || fail "cover hop is not labeled Test this today"
+  grep -q 'data-list-under-cover' src/views/board.ts \
+    || fail "paid morning missing List a product hop"
+  grep -q 'href="#claim"' src/views/board.ts \
+    || fail "seller hop does not jump to the listing form"
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
   grep -q 'text-decoration-style: dashed' src/views/styles.ts \

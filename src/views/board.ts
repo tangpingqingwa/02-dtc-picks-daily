@@ -85,14 +85,20 @@ export function renderBoardBody(model: BoardViewModel): string {
         ? "Claim #1 for"
         : `Claim #${projected} for`;
   const issueSpoken = escapeHtml(formatIssueDate(model.day, model.tz));
-  const rows =
-    model.listings.length === 0
-      ? html`<div class="empty" data-empty-board>
+  const occupied = model.listings.length > 0;
+  const rows = occupied
+    ? model.listings.map((listing) => renderListingRow(listing, model.now)).join("")
+    : html`<div class="empty" data-empty-board>
           <p class="empty-kicker">Quiet morning</p>
           <p><strong>No listings yet today.</strong></p>
           <p>The desk is open. An empty morning is valid — not a broken site. Bid ${escapeHtml(formatUsd(MIN_BID_USD))} to take the cover.</p>
-        </div>`
-      : model.listings.map((listing) => renderListingRow(listing, model.now)).join("");
+        </div>`;
+  const listHop = occupied
+    ? html`<p class="masthead-list">
+    <a class="list-under-cover" href="#claim" data-list-under-cover="">List a product</a>
+    under today’s cover. Paying less than #1 still lists.
+  </p>`
+    : "";
 
   return html`<header class="masthead">
   <p class="masthead-kicker">Morning merch desk</p>
@@ -104,6 +110,7 @@ export function renderBoardBody(model: BoardViewModel): string {
     <span class="issue-tz">${escapeHtml(model.tz)}</span>
   </p>
   <p class="masthead-dek">One cover. Product URL plus why test this today. Rank is the bid.</p>
+  ${listHop}
 </header>
 <section id="leaderboard" aria-label="Today’s cover">
   ${rows}

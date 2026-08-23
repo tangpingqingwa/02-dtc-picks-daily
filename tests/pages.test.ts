@@ -40,6 +40,7 @@ test("GET / is a public empty board with bid form", async () => {
   assert.match(body, /List a product/);
   assert.doesNotMatch(body, /data-cover-hop/);
   assert.doesNotMatch(body, /Test this today/);
+  assert.doesNotMatch(body, /data-list-under-cover/);
   const emptyAt = body.indexOf("data-empty-board");
   const claimAt = body.indexOf('id="claim"');
   assert.ok(emptyAt > -1 && claimAt > emptyAt, "quiet morning must precede claim chrome");
@@ -104,16 +105,20 @@ test("GET / ranks fixture-seeded rows by bid then older createdAt", async () => 
   assert.match(body, /Also on the desk/);
   assert.match(body, /row-cover/);
   assert.match(body, /List a product/);
+  assert.match(body, /data-list-under-cover=""/);
+  assert.match(body, /href="#claim"/);
   assert.match(body, /data-cover-hop=""/);
   assert.match(body, /href="\/r\/lst-cover"/);
   assert.match(body, /aria-label="Test this today at cover\.example\/apps\/pick"/);
-  const coverAt = body.indexOf("row-cover");
+  const coverAt = body.indexOf('data-listing-id="lst-cover"');
   const hopAt = body.indexOf("data-cover-hop");
+  const listHopAt = body.indexOf('data-list-under-cover=""');
   const claimAt = body.indexOf('id="claim"');
   const stackAt = body.indexOf("Also on the desk");
   const whyAt = body.indexOf("Why test this today");
   const hopLabelAt = body.indexOf(">Test this today<");
   assert.ok(coverAt > -1 && claimAt > coverAt, "today’s #1 must precede claim chrome");
+  assert.ok(listHopAt > -1 && listHopAt < coverAt, "seller list hop sits above the paid cover");
   assert.ok(hopAt > coverAt && hopAt < claimAt, "cover hop lives on today’s #1, not the listing form");
   assert.ok(hopLabelAt > hopAt && hopLabelAt < claimAt, "Test this today is the cover action, not a field label");
   assert.ok(whyAt > claimAt, "Why test this today stays the listing field, not the cover hop");
@@ -244,6 +249,56 @@ test("GET / gives a shopper one Test this today hop on the paid cover", async ()
   const hop = await app.inject({ method: "GET", url: "/r/lst-cover" });
   assert.equal(hop.statusCode, 302);
   assert.equal(hop.headers.location, "https://cover.example/apps/pick");
+});
+
+test("GET / gives a seller one List a product hop under a paid cover", async () => {
+  const db = openDatabase(":memory:");
+  const day = dayKey();
+  placeBid(db, {
+    id: "lst-cover",
+    day,
+    productUrl: "https://cover.example/apps/pick",
+    whyTestThisToday: "Cover app sellers should install this morning",
+    bidUsd: 20,
+    clicks: 3,
+    createdAt: "2026-08-22T09:00:00.000Z",
+  });
+  placeBid(db, {
+    id: "lst-under",
+    day,
+    productUrl: "https://under.example/sku",
+    whyTestThisToday: "Cheaper SKU still belongs on the brief",
+    bidUsd: 8,
+    createdAt: "2026-08-22T12:00:00.000Z",
+  });
+
+  const app = await buildApp({ db });
+  after(async () => {
+    await app.close();
+    db.close();
+  });
+
+  const response = await app.inject({ method: "GET", url: "/" });
+  assert.equal(response.statusCode, 200);
+  const body = response.body;
+  const listHopAt = body.indexOf('data-list-under-cover=""');
+  const coverAt = body.indexOf('data-listing-id="lst-cover"');
+  const hopAt = body.indexOf("data-cover-hop");
+  const claimAt = body.indexOf('id="claim"');
+  const whyAt = body.indexOf("Why test this today");
+  const kickerAt = body.indexOf('class="claim-kicker"');
+
+  assert.match(body, /data-list-under-cover=""/);
+  assert.match(body, /href="#claim"/);
+  assert.match(body, /under today’s cover/);
+  assert.match(body, /Paying less than #1 still lists/);
+  assert.equal((body.match(/data-list-under-cover=""/g) ?? []).length, 1);
+  assert.ok(listHopAt > -1 && listHopAt < coverAt, "seller list hop sits above today’s cover, not below the fold");
+  assert.ok(listHopAt < hopAt, "listing hop is not the shopper cover hop");
+  assert.ok(claimAt > coverAt, "the listing form still lives under the cover");
+  assert.ok(kickerAt > claimAt, "List a product kicker stays on the form");
+  assert.ok(whyAt > claimAt, "Why test this today stays the listing field");
+  assert.equal((body.match(/data-cover-hop/g) ?? []).length, 1);
 });
 
 test("SPEC acceptance 10: GET /about and GET /rules are 200", async () => {
