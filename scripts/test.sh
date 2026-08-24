@@ -259,6 +259,10 @@ if [[ -f package.json ]]; then
     || fail "later-rank quiet leftover test did not run"
   grep -q 'prize stays first' "$test_log" \
     || fail "later-rank prize-stays-first leftover test did not run"
+  grep -q 'occupied cover #1 as the paid product' "$test_log" \
+    || fail "paid-name leftover test did not run"
+  grep -q 'later ranks cannot wear it' "$test_log" \
+    || fail "paid-name later-rank leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -283,8 +287,16 @@ if [[ -f package.json ]]; then
     || fail "occupied later ranks missing later-stack grouping"
   grep -q 'data-later-rank' src/views/board.ts \
     || fail "occupied later ranks missing later-rank card stamp"
-  grep -q 'stack-host' src/views/board.ts \
-    || fail "later-rank product names are not a quieter host node"
+  grep -q 'class="dek"' src/views/board.ts \
+    || fail "later-rank product names must drop cover host anatomy"
+  grep -q 'class="slot"' src/views/board.ts \
+    || fail "later-rank blurbs must sit as a slot, not the paid name"
+  grep -q 'data-paid-name' src/views/board.ts \
+    || fail "occupied cover missing paid-name stamp"
+  grep -q 'data-later-listing' src/views/board.ts \
+    || fail "occupied claim rail missing later-listing stamp"
+  grep -q 'One-line listing' src/views/board.ts \
+    || fail "occupied claim rail must not wear the cover why placeholder"
   grep -q 'These product names are not this morning’s cover' src/views/board.ts \
     || fail "later stack must name later products as not the cover"
   grep -q 'data-listing-identity' src/views/board.ts \
@@ -303,9 +315,15 @@ if [[ -f package.json ]]; then
     || fail "empty morning CSS missing later-write Why composition"
   grep -q 'later-stack\[data-later-stack\]' src/views/styles.ts \
     || fail "later-rank CSS missing later-stack grouping"
-  grep -q 'host.stack-host' src/views/styles.ts \
-    || fail "later-rank CSS missing quieter stack-host anatomy"
-  if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven|data-later-rank-quiet|data-later-quiet|data-why-later-quiet' \
+  grep -q 'row\[data-later-rank\] \.dek' src/views/styles.ts \
+    || fail "later-rank CSS missing quieter dek anatomy"
+  grep -q 'row\[data-later-rank\] \.slot' src/views/styles.ts \
+    || fail "later-rank CSS missing quieter slot anatomy"
+  grep -q 'row-cover\[data-paid-name\]' src/views/styles.ts \
+    || fail "paid-name CSS missing occupied cover identity"
+  grep -q 'later-listing\[data-later-listing\]' src/views/styles.ts \
+    || fail "occupied claim CSS missing later-listing composition"
+  if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven|data-later-rank-quiet|data-later-quiet|data-why-later-quiet|data-paid-name-quiet' \
     src/views/board.ts src/views/styles.ts >/dev/null; then
     fail "do not stamp another named hop; compose empty vs occupied"
   fi
@@ -814,8 +832,12 @@ if 'class="bid-row"' not in occupied_form:
     raise SystemExit("occupied claim must keep Product URL on the bid-row with Outbid")
 if "${productUrlField}" not in occupied_form or ">Outbid<" not in occupied_form:
     raise SystemExit("occupied bid-row must still hold Product URL and Outbid")
-if "${whyField}" not in occupied_form:
-    raise SystemExit("occupied form must still hold Why under Product URL + Outbid")
+if "data-later-listing" not in occupied_form:
+    raise SystemExit("occupied form must stamp later-listing off the paid name")
+if "${occupiedListingField}" not in occupied_form:
+    raise SystemExit("occupied claim rail must not wear the cover why placeholder")
+if "${whyField}" in occupied_form:
+    raise SystemExit("occupied claim rail must drop empty Why later-write chrome")
 if 'class="bid-row"' in empty_form_html:
     raise SystemExit("empty morning must not keep Product URL in the same claim rail as Outbid")
 outbid_at = empty_form_html.find(">Outbid<")
@@ -839,6 +861,8 @@ block = empty_rule[1].split(".last24h {", 1)[0]
 hide = block.split("display: none", 1)[0]
 if ".cover-hop" not in hide or ".cover-later" not in hide or ".list-under-cover" not in hide:
     raise SystemExit("empty CSS must keep occupied cover hops off empty")
+if ".later-listing" not in hide or "[data-paid-name]" not in hide:
+    raise SystemExit("empty CSS must keep paid-name and later-listing off empty")
 if "display: none" not in block:
     raise SystemExit("empty occupied chrome must stay off, not restyled")
 if "background:" in hide:
@@ -909,26 +933,38 @@ if "data-later-stack" not in board:
     raise SystemExit("later ranks must group under the cover")
 if "data-later-rank" not in board:
     raise SystemExit("later ranks must stamp later-rank cards")
-if "stack-host" not in board:
-    raise SystemExit("later product names must use stack-host, not cover prize chrome")
+if 'data-paid-name=""' not in board:
+    raise SystemExit("occupied cover must stamp paid-name")
+if 'class="dek"' not in board:
+    raise SystemExit("later product names must drop cover host anatomy")
+if 'class="slot"' not in board:
+    raise SystemExit("later ranks must sit as a slot, not the paid name")
+if 'data-later-listing=""' not in board:
+    raise SystemExit("occupied claim rail must stamp later-listing")
+if "One-line listing" not in board:
+    raise SystemExit("occupied claim rail must not wear the cover why placeholder")
 row_fn = board.split("export function renderListingRow", 1)[-1].split("export function renderBoardBody", 1)[0]
 if 'data-cover-name=""' not in row_fn:
     raise SystemExit("cover host must still stamp data-cover-name")
-if "stack-host" not in row_fn:
-    raise SystemExit("later host must be a different node class than the cover prize")
+if 'data-paid-name=""' not in row_fn:
+    raise SystemExit("occupied cover row must stamp paid-name")
+if 'class="dek"' not in row_fn or 'class="slot"' not in row_fn:
+    raise SystemExit("later ranks must use dek + slot, not cover prize chrome")
 if 'data-later-rank=""' not in row_fn:
     raise SystemExit("later cards must stamp data-later-rank")
 if "Also on the desk · #" in row_fn:
     raise SystemExit("later ranks must not share the cover prize kicker")
 if 'class="host" data-cover-name' in row_fn and "stack-host" in row_fn[row_fn.find('class="host" data-cover-name'):row_fn.find('class="host" data-cover-name') + 80]:
     raise SystemExit("do not mute the cover name node for later ranks")
-if 'class="host" data-cover-name' not in row_fn or 'class="host stack-host"' not in row_fn:
-    raise SystemExit("later ranks must use a different host anatomy than the cover prize")
-if "data-later-rank-quiet" in board or "data-later-quiet" in css:
+if 'class="host" data-cover-name' not in row_fn:
+    raise SystemExit("cover prize must keep host anatomy")
+if 'class="host stack-host"' in row_fn:
+    raise SystemExit("later ranks must drop stack-host; stamp-only mute is REJECT")
+if "data-later-rank-quiet" in board or "data-later-quiet" in css or "data-paid-name-quiet" in board:
     raise SystemExit("stamp-only later-quiet is REJECT")
-later_css = css.split(".later-stack[data-later-stack] .row[data-later-rank] .host.stack-host", 1)
+later_css = css.split(".later-stack[data-later-stack] .row[data-later-rank] .dek", 1)
 if len(later_css) < 2:
-    raise SystemExit("later-rank CSS must target stack-host, not the cover name")
+    raise SystemExit("later-rank CSS must target dek, not the cover name")
 later_host_block = later_css[1].split("}", 1)[0]
 if "var(--primary)" in later_host_block or "background:" in later_host_block:
     raise SystemExit("do not recolor later-rank product names")
@@ -937,14 +973,48 @@ cover_size = re.search(
     r"\.row-cover \.host\[data-cover-name\]\s*\{[^}]*font-size:\s*([0-9.]+)rem",
     css,
 )
-if not later_size or not cover_size:
-    raise SystemExit("later-rank and cover name must both have sizes")
+paid_size = re.search(
+    r"\.row-cover\[data-paid-name\] \.host\[data-cover-name\]\s*\{[^}]*font-size:\s*([0-9.]+)rem",
+    css,
+)
+slot_css = css.split(".later-stack[data-later-stack] .row[data-later-rank] .slot", 1)
+if len(slot_css) < 2:
+    raise SystemExit("later-rank CSS must target slot, not the cover name")
+slot_block = slot_css[1].split("}", 1)[0]
+slot_size = re.search(r"font-size:\s*([0-9.]+)rem", slot_block)
+listing_css = css.split(".later-listing[data-later-listing] .field input", 1)
+if len(listing_css) < 2:
+    raise SystemExit("occupied claim CSS must compose later-listing")
+listing_block = listing_css[1].split("}", 1)[0]
+if "var(--primary)" in listing_block or "background:" in listing_block:
+    raise SystemExit("do not recolor the occupied later-listing rail")
+listing_size = re.search(r"font-size:\s*([0-9.]+)rem", listing_block)
+if not later_size or not cover_size or not paid_size or not slot_size or not listing_size:
+    raise SystemExit("later-rank, paid name, and later-listing must all have sizes")
 if float(later_size.group(1)) >= float(cover_size.group(1)):
     raise SystemExit("later-rank product names must stay quieter than the cover prize")
-if "0.78rem" in later_host_block and "--muted" in later_host_block:
+if float(later_size.group(1)) >= float(paid_size.group(1)):
+    raise SystemExit("later-rank dek must stay quieter than the paid name")
+if float(slot_size.group(1)) >= float(paid_size.group(1)):
+    raise SystemExit("later-rank slot must stay quieter than the paid name")
+if float(listing_size.group(1)) >= float(paid_size.group(1)):
+    raise SystemExit("occupied claim listing must stay quieter than the paid name")
+if "0.78rem" in later_host_block and "--muted" in later_host_block and "font-family: var(--serif)" in later_host_block:
     raise SystemExit("do not stamp 0.78rem --muted on the same name node")
 if ".desk:has(.empty) .later-stack" not in css:
     raise SystemExit("empty CSS must keep later-stack off empty")
+if ".desk:has(.empty) .later-listing" not in css:
+    raise SystemExit("empty CSS must keep later-listing off empty")
+if board.count("data-paid-name") < 1:
+    raise SystemExit("data-paid-name must stamp occupied cover #1")
+if row_fn.count("data-paid-name") != 1:
+    raise SystemExit("data-paid-name must stamp only occupied cover #1")
+if "What a seller should try this morning" not in board:
+    raise SystemExit("empty Why later-write placeholder must stay")
+if "${occupiedListingField}" not in occupied_form:
+    raise SystemExit("occupied claim must use One-line listing")
+if "What a seller should try this morning" in occupied_form:
+    raise SystemExit("occupied claim must drop the cover why placeholder")
 PY
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
