@@ -233,6 +233,10 @@ if [[ -f package.json ]]; then
     || fail "quiet-morning honesty test did not run"
   grep -q 'no invented cover on the last-24h strip' "$test_log" \
     || fail "quiet-morning no-invented-cover test did not run"
+  grep -q 'last-24h strip rank a last-24h fact' "$test_log" \
+    || fail "strip-rank-is-not-cover test did not run"
+  grep -q 'not today’s cover #1' "$test_log" \
+    || fail "strip-not-cover leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -568,7 +572,11 @@ PY
     || fail "empty last-24h strip does not refuse an invented #1"
   grep -q 'data-last24h-rank' src/views/board.ts \
     || fail "occupied last-24h strip missing rank that is not cover #1"
-  grep -q 'A strip rank is not today’s cover' src/views/board.ts \
+  grep -q 'data-last24h-fact' src/views/board.ts \
+    || fail "occupied last-24h strip rank is not stamped as a last-24h fact"
+  grep -q '24h ${listing.rank}' src/views/board.ts \
+    || fail "occupied last-24h strip still prints a bare rank that can read as cover #1"
+  grep -q 'A strip rank is a last-24h fact, not today’s cover #1' src/views/board.ts \
     || fail "last-24h strip must not claim today’s cover"
   grep -q 'rolling last 24 hours' src/views/board.ts \
     || fail "last-24h strip must name the rolling window"
@@ -607,8 +615,19 @@ if "No invented #1" not in board:
     raise SystemExit("empty strip must refuse an invented #1")
 if "not an invented cover" not in board:
     raise SystemExit("empty cover must refuse an invented #1")
-if "#${listing.rank}" in board.split("renderLast24hRow", 1)[-1].split("renderLast24hStrip", 1)[0]:
+row = board.split("renderLast24hRow", 1)[-1].split("renderLast24hStrip", 1)[0]
+if "#${listing.rank}" in row:
     raise SystemExit("strip rank must not print cover #N")
+if 'data-last24h-fact=""' not in row:
+    raise SystemExit("occupied strip rank must be a last-24h fact")
+if "24h ${listing.rank}" not in row:
+    raise SystemExit("occupied strip rank must read as a last-24h fact, not a bare 1")
+if ">${listing.rank}<" in row.replace("24h ${listing.rank}", ""):
+    raise SystemExit("bare strip rank 1 still reads as today’s cover")
+if 'data-last24h-empty=""' not in board:
+    raise SystemExit("empty strip must stay data-last24h-empty")
+if "data-take-after-list-seven" in board:
+    raise SystemExit("do not add another named hop")
 PY
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
