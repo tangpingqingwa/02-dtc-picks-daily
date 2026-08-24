@@ -8,6 +8,7 @@ import { renderAboutPage } from "../src/http/pages/about.js";
 import { renderRulesPage } from "../src/http/pages/rules.js";
 import { renderBoardPage } from "../src/views/board.js";
 import { formatFolioDate } from "../src/views/html.js";
+import { BOARD_CSS } from "../src/views/styles.js";
 
 function assertStripRankIsLast24hFact(stripHtml: string, ranks: number[]): void {
   for (const rank of ranks) {
@@ -47,7 +48,13 @@ test("GET / is a public empty board with bid form", async () => {
   assert.match(body, /Morning merch desk/);
   assert.match(body, /data-issue-date="/);
   assert.match(body, /One cover/);
-  assert.match(body, /List a product/);
+  assert.match(body, /data-empty-claim-first=""/);
+  assert.match(body, /class="empty-claim-first"/);
+  assert.match(body, /data-first-click="claim"/);
+  assert.match(body, /aria-label="Claim #1"/);
+  assert.match(body, /data-occupied="false"/);
+  assert.doesNotMatch(body, /List a product/);
+  assert.doesNotMatch(body, /class="claim-kicker"/);
   assert.match(body, /data-last24h=""/);
   assert.match(body, /data-last24h-window="rolling-24h"/);
   assert.match(body, /data-last24h-empty=""/);
@@ -83,11 +90,17 @@ test("GET / is a public empty board with bid form", async () => {
   assert.doesNotMatch(body, /data-cover-name=""/);
   assert.doesNotMatch(body, /data-later-fact=""/);
   assert.doesNotMatch(body, /class="bid later-fact"/);
+  assert.doesNotMatch(body, /data-occupied="true"/);
   const emptyAt = body.indexOf("data-empty-board");
   const stripAt = body.indexOf('data-last24h=""');
   const claimAt = body.indexOf('id="claim"');
+  const emptyClaimAt = body.indexOf('data-empty-claim-first=""', claimAt);
+  const firstClickAt = body.indexOf('data-first-click="claim"');
   assert.ok(emptyAt > -1 && claimAt > emptyAt, "quiet morning must precede claim chrome");
   assert.ok(stripAt > emptyAt && stripAt < claimAt, "last-24h strip sits under the one cover, before claim chrome");
+  assert.ok(emptyClaimAt > claimAt && firstClickAt > emptyClaimAt, "empty Claim #1 is the only first click");
+  assert.equal((body.match(/data-first-click="claim"/g) ?? []).length, 1);
+  assert.equal((body.match(/data-empty-claim-first=""/g) ?? []).length, 2);
   assert.doesNotMatch(body, /category zoo|Fulfillment tools|Browse categories/);
   assert.doesNotMatch(body, /POLAR_LIVE/);
   assert.doesNotMatch(body, /api\.polar\.sh/);
@@ -3492,6 +3505,119 @@ test("GET / keeps last-24h strip rank a last-24h fact, not today’s cover #1", 
   assert.ok(liveCoverAt > -1 && liveStripAt > liveCoverAt, "live cover stays today’s #1 above the strip");
   assertStripRankIsLast24hFact(liveSlice, [1]);
   assert.doesNotMatch(live.body, /data-last24h-empty=/);
+});
+
+test("GET / keeps empty cover Claim #1 the only first click — Test this today stays off empty", async () => {
+  const css = BOARD_CSS;
+  const emptyCss = css.split("Empty morning: Claim #1 is the only first click")[1] ?? "";
+  const hideCss = emptyCss.split(".last24h {")[0] ?? "";
+  assert.match(hideCss, /\.desk:has\(\.empty\) \.cover-hop/);
+  assert.match(hideCss, /\.desk:has\(\.empty\) \.cover-later/);
+  assert.match(hideCss, /\.desk:has\(\.empty\) \.list-under-cover/);
+  assert.match(hideCss, /\.desk:has\(\.empty\) \.claim-kicker/);
+  assert.match(hideCss, /\.desk:has\(\.empty\) #claim \.claim-title/);
+  assert.match(hideCss, /display:\s*none/);
+  assert.doesNotMatch(hideCss, /data-cover-hop|data-first-click="take"|data-cover-name|data-later-fact/);
+  assert.doesNotMatch(hideCss, /background:/);
+  assert.doesNotMatch(css, /data-empty-claim-after|data-claim-after-empty|take-after-list-seven/);
+
+  const emptyApp = await buildApp({ databasePath: ":memory:" });
+  after(() => emptyApp.close());
+  const empty = await emptyApp.inject({ method: "GET", url: "/" });
+  assert.equal(empty.statusCode, 200);
+  const quiet = empty.body.slice(empty.body.indexOf('<div class="page">'));
+  const emptyCoverAt = quiet.indexOf('data-empty-cover=""');
+  const claimAt = quiet.indexOf('id="claim"');
+  const emptyClaimAt = quiet.indexOf('data-empty-claim-first=""', claimAt);
+  const firstClickAt = quiet.indexOf('data-first-click="claim"');
+  const claimCopyAt = quiet.indexOf("Claim #1 for");
+  const outbidAt = quiet.indexOf(">Outbid<");
+  assert.ok(emptyCoverAt > -1 && claimAt > emptyCoverAt, "quiet morning still precedes Claim #1");
+  assert.ok(emptyClaimAt > claimAt && firstClickAt > emptyClaimAt, "Claim #1 is stamped the only first click");
+  assert.ok(claimCopyAt > firstClickAt && outbidAt > claimCopyAt, "the first click is Claim #1, then Outbid");
+  assert.equal((quiet.match(/data-empty-claim-first=""/g) ?? []).length, 2);
+  assert.equal((quiet.match(/data-first-click="claim"/g) ?? []).length, 1);
+  assert.match(quiet, /class="empty-claim-first"/);
+  assert.match(quiet, /data-empty-claim=""/);
+  assert.match(quiet, /aria-label="Claim #1"/);
+  assert.match(quiet, /data-occupied="false"/);
+  assert.match(quiet, /data-empty-board/);
+  assert.match(quiet, /Quiet morning/);
+  assert.match(quiet, /not an invented cover/);
+  assert.match(quiet, /Claim #1 for/);
+  assert.match(quiet, />Outbid</);
+  assert.match(quiet, /data-last24h-empty=""/);
+  assert.doesNotMatch(quiet, /data-occupied="true"/);
+  assert.doesNotMatch(quiet, /class="claim-kicker"/);
+  assert.doesNotMatch(quiet, /List a product/);
+  assert.doesNotMatch(quiet, /data-cover-hop/);
+  assert.doesNotMatch(quiet, /Test this today/);
+  assert.doesNotMatch(quiet, /data-first-click="take"/);
+  assert.doesNotMatch(quiet, /data-cover-name=""/);
+  assert.doesNotMatch(quiet, /data-later-fact=""/);
+  assert.doesNotMatch(quiet, /class="bid later-fact"/);
+  assert.doesNotMatch(quiet, /This morning’s cover/);
+  assert.doesNotMatch(quiet, /class="row-cover/);
+  assert.doesNotMatch(quiet, /data-list-under-cover/);
+  assert.doesNotMatch(quiet, /data-list-after-take/);
+  assert.doesNotMatch(quiet, /data-empty-claim-after/);
+  assert.doesNotMatch(quiet, /take-after-list-seven/);
+
+  const occupiedDb = openDatabase(":memory:");
+  const now = new Date("2026-08-22T13:00:00.000Z");
+  const day = dayKey(now);
+  placeBid(occupiedDb, {
+    id: "lst-cover",
+    day,
+    productUrl: "https://cover.example/apps/pick",
+    whyTestThisToday: "Cover app sellers should install this morning",
+    bidUsd: 20,
+    clicks: 3,
+    createdAt: "2026-08-22T09:00:00.000Z",
+  });
+  placeBid(occupiedDb, {
+    id: "lst-under",
+    day,
+    productUrl: "https://under.example/sku",
+    whyTestThisToday: "Cheaper SKU still belongs on the brief",
+    bidUsd: 8,
+    clicks: 1,
+    createdAt: "2026-08-22T12:00:00.000Z",
+  });
+  const occupiedApp = await buildApp({ db: occupiedDb, now });
+  after(async () => {
+    await occupiedApp.close();
+    occupiedDb.close();
+  });
+  const occupied = await occupiedApp.inject({ method: "GET", url: "/" });
+  assert.equal(occupied.statusCode, 200);
+  const paid = occupied.body.slice(occupied.body.indexOf('<div class="page">'));
+  const coverStart = paid.indexOf('data-listing-id="lst-cover"');
+  const cover = paid.slice(coverStart, paid.indexOf("</article>", coverStart));
+  const underStart = paid.indexOf('data-listing-id="lst-under"');
+  const under = paid.slice(underStart, paid.indexOf("</article>", underStart));
+  assert.match(paid, /data-occupied="true"/);
+  assert.doesNotMatch(paid, /data-empty-claim-first/);
+  assert.doesNotMatch(paid, /empty-claim-first/);
+  assert.doesNotMatch(paid, /data-first-click="claim"/);
+  assert.doesNotMatch(paid, /aria-label="Claim #1"/);
+  assert.doesNotMatch(paid, /data-occupied="false"/);
+  assert.match(cover, /data-cover-name=""/);
+  assert.match(cover, /data-later-fact=""/);
+  assert.match(cover, />Test this today</);
+  assert.match(cover, /data-first-click="take"/);
+  const nameAt = cover.indexOf("data-cover-name");
+  const hopAt = cover.indexOf("data-cover-hop");
+  const bidAt = cover.indexOf(">$20<");
+  assert.ok(nameAt > -1 && nameAt < bidAt, "occupied cover name still reads before $bid");
+  assert.ok(hopAt > -1 && hopAt < bidAt, "occupied Test this today still sits before $bid");
+  assert.match(under, /<p class="bid">\$8<\/p>/);
+  assert.doesNotMatch(under, /data-cover-name=""/);
+  assert.doesNotMatch(under, /data-later-fact=""/);
+  assert.doesNotMatch(under, /Test this today/);
+  assert.match(paid, /class="claim-kicker">List a product</);
+  assert.match(paid, /data-last24h-fact=""/);
+  assert.doesNotMatch(cover, />24h /);
 });
 
 test("SPEC acceptance 10: GET /about and GET /rules are 200", async () => {
