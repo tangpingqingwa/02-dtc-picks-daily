@@ -39,9 +39,9 @@ export function renderAboutBody(model: AboutViewModel): string {
     <strong>${tz}</strong>. Yesterday’s listings leave the cover. Raising yesterday’s
     URL today is a new listing and pays a full bid of at least $5.
     A last-24-hours strip on the desk is a <strong>rolling</strong> window, not that
-    midnight reset. An empty strip is honest. It is not a second cover. Strip ranks
-    are last-24h facts, not today’s cover #1. A quiet morning invents no #1 on the
-    cover or the strip.
+    midnight reset. An empty strip is honest. It is not a second cover. Cover #1 is
+    this morning’s slot. Strip ranks are last-24h facts, not today’s cover #1. A quiet
+    morning invents no #1 on the cover or the strip.
   </p>
   <p>
     Anyone can read the board without an account. Payment is the only write path.

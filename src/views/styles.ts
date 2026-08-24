@@ -310,6 +310,40 @@ nav[aria-label="Main"] a:hover {
   text-decoration-style: dashed;
   text-underline-offset: 3px;
 }
+.last24h-slot {
+  margin: 0 0 0.15rem;
+  font-family: var(--font);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.last24h-row[data-last24h-prize] .last24h-host {
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+.last24h-row[data-last24h-prize] .last24h-rank {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.desk[data-two-prizes] .row-cover[data-morning-slot] .host[data-cover-name] {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+.desk[data-two-prizes] .last24h-row[data-last24h-prize] .last24h-host {
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+.desk[data-two-prizes] .last24h-row[data-last24h-prize] .last24h-rank {
+  font-size: 0.62rem;
+}
 #claim {
   scroll-margin-top: 1.5rem;
   margin-top: 2.25rem;

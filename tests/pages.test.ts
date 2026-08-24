@@ -10,12 +10,55 @@ import { renderBoardPage } from "../src/views/board.js";
 import { formatFolioDate } from "../src/views/html.js";
 import { BOARD_CSS } from "../src/views/styles.js";
 
+function pageBody(html: string): string {
+  const start = html.indexOf('<div class="page">');
+  return start >= 0 ? html.slice(start) : html;
+}
+
 function assertStripRankIsLast24hFact(stripHtml: string, ranks: number[]): void {
   for (const rank of ranks) {
     assert.match(stripHtml, new RegExp(`>24h ${rank}<`));
     assert.doesNotMatch(stripHtml, new RegExp(`(?<!24h )>#?${rank}<`));
   }
   assert.doesNotMatch(stripHtml, /This morning’s cover/);
+  assert.doesNotMatch(stripHtml, /data-morning-slot=/);
+  assert.doesNotMatch(stripHtml, /data-cover-name=/);
+}
+
+function assertTwoPrizes(html: string, coverId: string, stripPrizeId: string): void {
+  html = pageBody(html);
+  const coverStart = html.indexOf(`class="row row-cover row-1"`);
+  const cover = html.slice(coverStart, html.indexOf("</article>", coverStart));
+  assert.match(cover, new RegExp(`data-listing-id="${coverId}"`));
+  const stripAt = html.indexOf('data-last24h=""');
+  const claimAt = html.indexOf('id="claim"');
+  const strip = html.slice(stripAt, claimAt);
+  const prizeStart = strip.indexOf(`data-last24h-id="${stripPrizeId}"`);
+  const prizeEnd = strip.indexOf("</li>", prizeStart);
+  const prize = strip.slice(prizeStart, prizeEnd);
+  assert.ok(coverStart > -1 && stripAt > coverStart, "morning slot stays above the rolling-window prize");
+  assert.match(cover, /data-morning-slot=""/);
+  assert.match(cover, /This morning’s cover/);
+  assert.match(cover, /data-cover-name=""/);
+  assert.match(cover, /class="row row-cover row-1"/);
+  assert.doesNotMatch(cover, /data-last24h-prize=/);
+  assert.doesNotMatch(cover, />24h /);
+  assert.match(strip, /data-last24h-occupied=""/);
+  assert.match(strip, /Cover #1 is this morning’s slot/);
+  assert.match(prize, /data-last24h-prize=""/);
+  assert.match(prize, /data-last24h-slot=""/);
+  assert.match(prize, /Rolling 24h spend/);
+  assert.match(prize, /data-last24h-fact=""/);
+  assert.match(prize, />24h 1</);
+  const hostAt = prize.indexOf("last24h-host");
+  const rankAt = prize.indexOf("data-last24h-rank");
+  assert.ok(hostAt > -1 && rankAt > hostAt, "strip 24h 1 recedes after the rolling-window host");
+  assert.doesNotMatch(prize, /This morning’s cover/);
+  assert.doesNotMatch(prize, /data-morning-slot=/);
+  assert.doesNotMatch(prize, /data-cover-name=/);
+  assert.equal((html.match(/data-morning-slot=""/g) ?? []).length, 1);
+  assert.equal((html.match(/data-last24h-prize=""/g) ?? []).length, 1);
+  assert.equal((html.match(/This morning’s cover/g) ?? []).length, 1);
 }
 
 test("GET / is a public empty board with bid form", async () => {
@@ -27,6 +70,7 @@ test("GET / is a public empty board with bid form", async () => {
   assert.equal(response.statusCode, 200);
   assert.match(response.headers["content-type"] ?? "", /text\/html/);
   const body = response.body;
+  const desk = pageBody(body);
   assert.match(body, /Leaderboard/);
   assert.match(body, /About/);
   assert.match(body, /Rules/);
@@ -91,6 +135,10 @@ test("GET / is a public empty board with bid form", async () => {
   assert.doesNotMatch(body, /data-later-fact=""/);
   assert.doesNotMatch(body, /class="bid later-fact"/);
   assert.doesNotMatch(body, /data-occupied="true"/);
+  assert.doesNotMatch(desk, /data-two-prizes=/);
+  assert.doesNotMatch(desk, /data-morning-slot=/);
+  assert.doesNotMatch(desk, /data-last24h-prize=/);
+  assert.doesNotMatch(desk, /data-last24h-occupied=/);
   const emptyAt = body.indexOf("data-empty-board");
   const stripAt = body.indexOf('data-last24h=""');
   const claimAt = body.indexOf('id="claim"');
@@ -3137,11 +3185,18 @@ test("GET / shows an honest last-24h strip so a newcomer can be seen today", asy
   assert.match(html, /newcomer\.example\/sku/);
   assert.match(html, /Last night’s \$6 still belongs on the last-24h strip/);
   assert.match(html, /A strip rank is a last-24h fact, not today’s cover #1/);
+  assert.match(html, /Cover #1 is this morning’s slot/);
+  assert.match(html, /data-two-prizes=""/);
+  assert.match(html, /data-morning-slot=""/);
+  assert.match(html, /data-last24h-prize=""/);
+  assert.match(html, /data-last24h-occupied=""/);
+  assert.match(html, /Rolling 24h spend/);
   assert.doesNotMatch(html, /stale\.example/);
   assert.doesNotMatch(html, /\$99/);
   assert.doesNotMatch(html, /href="\/today"/);
   assert.doesNotMatch(html, /outbid\.lol\/today/);
   assert.doesNotMatch(html, /data-last24h-empty=""/);
+  assertTwoPrizes(html, "lst-cover", "lst-cover");
   const coverAt = html.indexOf('data-listing-id="lst-cover"');
   const stripAt = html.indexOf('data-last24h=""');
   const newcomerAt = html.indexOf('data-last24h-id="lst-newcomer"');
@@ -3188,14 +3243,14 @@ test("GET / shows an honest last-24h strip so a newcomer can be seen today", asy
   assert.ok(liveNewcomerAt > liveStripAt, "live newcomer is seen on the last-24h strip");
   assertStripRankIsLast24hFact(liveStripSlice, [1, 2]);
 
-  const empty = renderBoardPage({
+  const empty = pageBody(renderBoardPage({
     day: "2026-08-23",
     tz: "UTC",
     listings: [],
     last24h: [],
     defaultBidUsd: 5,
     now,
-  });
+  }));
   assert.match(empty, /data-empty-board/);
   assert.match(empty, /data-empty-cover=""/);
   assert.match(empty, /Quiet morning/);
@@ -3206,6 +3261,10 @@ test("GET / shows an honest last-24h strip so a newcomer can be seen today", asy
   assert.match(empty, /No paid listings in the last 24 hours/);
   assert.match(empty, /not a second cover/);
   assert.match(empty, /No invented #1/);
+  assert.doesNotMatch(empty, /data-two-prizes=/);
+  assert.doesNotMatch(empty, /data-morning-slot=/);
+  assert.doesNotMatch(empty, /data-last24h-prize=/);
+  assert.doesNotMatch(empty, /data-last24h-occupied=/);
   assert.doesNotMatch(empty, /data-last24h-row/);
   assert.doesNotMatch(empty, /data-last24h-rank/);
   assert.doesNotMatch(empty, /data-last24h-fact/);
@@ -3229,7 +3288,7 @@ test("GET / keeps a quiet morning honest — no invented cover on the last-24h s
   after(() => emptyApp.close());
   const empty = await emptyApp.inject({ method: "GET", url: "/" });
   assert.equal(empty.statusCode, 200);
-  const quiet = empty.body;
+  const quiet = pageBody(empty.body);
   assert.match(quiet, /data-empty-board/);
   assert.match(quiet, /data-empty-cover=""/);
   assert.match(quiet, /Quiet morning/);
@@ -3275,7 +3334,7 @@ test("GET / keeps a quiet morning honest — no invented cover on the last-24h s
   });
   const overnight = await overnightApp.inject({ method: "GET", url: "/" });
   assert.equal(overnight.statusCode, 200);
-  const body = overnight.body;
+  const body = pageBody(overnight.body);
   assert.match(body, /data-empty-board/);
   assert.match(body, /data-empty-cover=""/);
   assert.match(body, /Quiet morning/);
@@ -3288,6 +3347,10 @@ test("GET / keeps a quiet morning honest — no invented cover on the last-24h s
   assert.match(body, /data-last24h-fact=""/);
   assert.match(body, /overnight\.example\/sku/);
   assert.match(body, /A strip rank is a last-24h fact, not today’s cover #1/);
+  assert.match(body, /data-last24h-prize=""/);
+  assert.match(body, /Rolling 24h spend/);
+  assert.doesNotMatch(body, /data-two-prizes=/);
+  assert.doesNotMatch(body, /data-morning-slot=/);
   assert.doesNotMatch(body, /data-last24h-empty=""/);
   assert.doesNotMatch(body, /This morning’s cover/);
   assert.doesNotMatch(body, /class="row-cover/);
@@ -3336,6 +3399,9 @@ test("GET / keeps a quiet morning honest — no invented cover on the last-24h s
   assert.match(occupied.body, /data-last24h-id="lst-cover"/);
   assert.match(occupied.body, /data-last24h-rank="1"/);
   assert.match(occupied.body, /data-last24h-fact=""/);
+  assert.match(occupied.body, /data-two-prizes=""/);
+  assert.match(occupied.body, /data-morning-slot=""/);
+  assert.match(occupied.body, /data-last24h-prize=""/);
   assert.doesNotMatch(occupied.body, /data-empty-board/);
   assert.doesNotMatch(occupied.body, /data-empty-cover/);
   const occupiedCoverAt = occupied.body.indexOf('data-listing-id="lst-cover"');
@@ -3360,7 +3426,7 @@ test("GET / keeps last-24h strip rank a last-24h fact, not today’s cover #1", 
   });
   const now = new Date("2026-08-23T00:30:00.000Z");
 
-  const emptyCoverHtml = renderBoardPage({
+  const emptyCoverHtml = pageBody(renderBoardPage({
     day: "2026-08-23",
     tz: "UTC",
     listings: [],
@@ -3380,7 +3446,7 @@ test("GET / keeps last-24h strip rank a last-24h fact, not today’s cover #1", 
     ],
     defaultBidUsd: 5,
     now,
-  });
+  }));
   const emptyCoverStripAt = emptyCoverHtml.indexOf('data-last24h=""');
   const emptyCoverClaimAt = emptyCoverHtml.indexOf('id="claim"');
   const emptyCoverSlice = emptyCoverHtml.slice(emptyCoverStripAt, emptyCoverClaimAt);
@@ -3449,6 +3515,10 @@ test("GET / keeps last-24h strip rank a last-24h fact, not today’s cover #1", 
   assert.match(differentCoverHtml, /data-last24h-rank="1"/);
   assert.match(differentCoverHtml, /data-last24h-rank="2"/);
   assert.match(differentCoverHtml, /data-last24h-fact=""/);
+  assert.match(differentCoverHtml, /data-two-prizes=""/);
+  assert.match(differentCoverHtml, /data-morning-slot=""/);
+  assert.match(differentCoverHtml, /data-last24h-prize=""/);
+  assert.match(differentCoverHtml, /Rolling 24h spend/);
   assert.ok(differentCoverAt > -1 && differentStripAt > differentCoverAt, "today’s cover stays above a different last-24h #1");
   assertStripRankIsLast24hFact(differentSlice, [1, 2]);
   assert.equal((differentCoverHtml.match(/This morning’s cover/g) ?? []).length, 1);
@@ -3502,6 +3572,9 @@ test("GET / keeps last-24h strip rank a last-24h fact, not today’s cover #1", 
   assert.match(live.body, /data-last24h-rank="1"/);
   assert.match(live.body, /data-last24h-fact=""/);
   assert.match(live.body, /data-last24h-window="rolling-24h"/);
+  assert.match(live.body, /data-two-prizes=""/);
+  assert.match(live.body, /data-morning-slot=""/);
+  assert.match(live.body, /data-last24h-prize=""/);
   assert.ok(liveCoverAt > -1 && liveStripAt > liveCoverAt, "live cover stays today’s #1 above the strip");
   assertStripRankIsLast24hFact(liveSlice, [1]);
   assert.doesNotMatch(live.body, /data-last24h-empty=/);
@@ -3620,6 +3693,199 @@ test("GET / keeps empty cover Claim #1 the only first click — Test this today 
   assert.doesNotMatch(cover, />24h /);
 });
 
+test("GET / keeps occupied cover #1 and last-24h #1 two prizes — strip 24h 1 is not this morning’s cover", async () => {
+  const css = BOARD_CSS;
+  const twoPrizes = (css.split(".desk[data-two-prizes]", 2)[1] ?? "").split("#claim {")[0] ?? "";
+  assert.match(css, /\.desk\[data-two-prizes\] \.row-cover\[data-morning-slot\] \.host\[data-cover-name\]/);
+  assert.match(css, /\.desk\[data-two-prizes\] \.last24h-row\[data-last24h-prize\] \.last24h-host/);
+  assert.match(css, /\.desk\[data-two-prizes\] \.last24h-row\[data-last24h-prize\] \.last24h-rank/);
+  assert.match(css, /\.last24h-row\[data-last24h-prize\] \.last24h-host/);
+  assert.match(css, /\.last24h-slot/);
+  const coverName = css.match(
+    /\.desk\[data-two-prizes\] \.row-cover\[data-morning-slot\] \.host\[data-cover-name\]\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
+  );
+  const stripHost = css.match(
+    /\.desk\[data-two-prizes\] \.last24h-row\[data-last24h-prize\] \.last24h-host\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
+  );
+  const stripRank = css.match(
+    /\.desk\[data-two-prizes\] \.last24h-row\[data-last24h-prize\] \.last24h-rank\s*\{[\s\S]*?font-size:\s*([0-9.]+)rem/,
+  );
+  assert.ok(coverName && stripHost && stripRank, "two-prize CSS must size both prizes");
+  assert.ok(Number(coverName[1]) > Number(stripHost[1]), "morning cover name stays larger than strip #1 host");
+  assert.ok(Number(stripHost[1]) > Number(stripRank[1]), "strip host stays larger than receded 24h 1");
+  assert.doesNotMatch(twoPrizes, /var\(--primary\)/);
+  assert.doesNotMatch(css, /take-after-list-seven|list-after-take-seven|data-empty-claim-after/);
+
+  const now = new Date("2026-08-23T00:30:00.000Z");
+  const differentCoverHtml = renderBoardPage({
+    day: "2026-08-23",
+    tz: "UTC",
+    listings: [
+      {
+        id: "lst-cover",
+        day: "2026-08-23",
+        productUrl: "https://cover.example/apps/pick",
+        whyTestThisToday: "Cover app sellers should install this morning",
+        bidUsd: 20,
+        paidUsd: 20,
+        clicks: 3,
+        createdAt: "2026-08-23T00:10:00.000Z",
+        updatedAt: "2026-08-23T00:10:00.000Z",
+        rank: 1,
+      },
+    ],
+    last24h: [
+      {
+        id: "lst-last-night",
+        day: "2026-08-22",
+        productUrl: "https://overnight.example/sku",
+        whyTestThisToday: "Last night’s $6 still belongs on the last-24h strip",
+        bidUsd: 9,
+        paidUsd: 9,
+        clicks: 1,
+        createdAt: "2026-08-22T12:00:00.000Z",
+        updatedAt: "2026-08-22T12:00:00.000Z",
+        rank: 1,
+      },
+      {
+        id: "lst-cover",
+        day: "2026-08-23",
+        productUrl: "https://cover.example/apps/pick",
+        whyTestThisToday: "Cover app sellers should install this morning",
+        bidUsd: 8,
+        paidUsd: 8,
+        clicks: 3,
+        createdAt: "2026-08-23T00:10:00.000Z",
+        updatedAt: "2026-08-23T00:10:00.000Z",
+        rank: 2,
+      },
+    ],
+    defaultBidUsd: 21,
+    now,
+  });
+  assert.match(differentCoverHtml, /data-two-prizes=""/);
+  assertTwoPrizes(differentCoverHtml, "lst-cover", "lst-last-night");
+  assert.match(differentCoverHtml, /data-last24h-id="lst-cover"/);
+  assert.match(differentCoverHtml, /data-last24h-rank="2"/);
+  const differentStrip = differentCoverHtml.slice(
+    differentCoverHtml.indexOf('data-last24h=""'),
+    differentCoverHtml.indexOf('id="claim"'),
+  );
+  const coverOnStrip = differentStrip.slice(
+    differentStrip.indexOf('data-last24h-id="lst-cover"'),
+    differentStrip.indexOf("</li>", differentStrip.indexOf('data-last24h-id="lst-cover"')),
+  );
+  assert.doesNotMatch(coverOnStrip, /data-last24h-prize=/);
+  assert.doesNotMatch(coverOnStrip, /Rolling 24h spend/);
+  assertStripRankIsLast24hFact(differentStrip, [1, 2]);
+
+  const previousTz = process.env.BOARD_TZ;
+  process.env.BOARD_TZ = "UTC";
+  after(() => {
+    if (previousTz === undefined) {
+      delete process.env.BOARD_TZ;
+    } else {
+      process.env.BOARD_TZ = previousTz;
+    }
+  });
+  const liveDb = openDatabase(":memory:");
+  placeBid(liveDb, {
+    id: "lst-last-night",
+    day: "2026-08-22",
+    productUrl: "https://overnight.example/sku",
+    whyTestThisToday: "Last night’s $6 still belongs on the last-24h strip",
+    bidUsd: 9,
+    createdAt: "2026-08-22T12:00:00.000Z",
+  });
+  placeBid(liveDb, {
+    id: "lst-cover",
+    day: "2026-08-23",
+    productUrl: "https://cover.example/apps/pick",
+    whyTestThisToday: "Cover app sellers should install this morning",
+    bidUsd: 5,
+    createdAt: "2026-08-23T00:10:00.000Z",
+  });
+  const liveApp = await buildApp({ db: liveDb, now });
+  after(async () => {
+    await liveApp.close();
+    liveDb.close();
+  });
+  const live = await liveApp.inject({ method: "GET", url: "/" });
+  assert.equal(live.statusCode, 200);
+  assert.match(live.body, /data-two-prizes=""/);
+  assertTwoPrizes(live.body, "lst-cover", "lst-last-night");
+  assert.doesNotMatch(live.body, /data-last24h-empty=/);
+  assert.doesNotMatch(live.body, /data-take-after-list-seven/);
+  assert.doesNotMatch(live.body, /data-list-after-take-seven/);
+
+  const emptyCoverHtml = pageBody(renderBoardPage({
+    day: "2026-08-23",
+    tz: "UTC",
+    listings: [],
+    last24h: [
+      {
+        id: "lst-last-night",
+        day: "2026-08-22",
+        productUrl: "https://overnight.example/sku",
+        whyTestThisToday: "Last night’s $6 still belongs on the last-24h strip",
+        bidUsd: 6,
+        paidUsd: 6,
+        clicks: 0,
+        createdAt: "2026-08-22T12:00:00.000Z",
+        updatedAt: "2026-08-22T12:00:00.000Z",
+        rank: 1,
+      },
+    ],
+    defaultBidUsd: 5,
+    now,
+  }));
+  assert.match(emptyCoverHtml, /data-empty-cover=""/);
+  assert.match(emptyCoverHtml, /data-empty-claim-first=""/);
+  assert.match(emptyCoverHtml, /data-first-click="claim"/);
+  assert.match(emptyCoverHtml, /Claim #1 for/);
+  assert.match(emptyCoverHtml, /data-last24h-prize=""/);
+  assert.match(emptyCoverHtml, /Rolling 24h spend/);
+  assert.doesNotMatch(emptyCoverHtml, /data-two-prizes=/);
+  assert.doesNotMatch(emptyCoverHtml, /data-morning-slot=/);
+  assert.doesNotMatch(emptyCoverHtml, /This morning’s cover/);
+  assert.doesNotMatch(emptyCoverHtml, /data-cover-hop/);
+  const emptyCoverStrip = emptyCoverHtml.slice(
+    emptyCoverHtml.indexOf('data-last24h=""'),
+    emptyCoverHtml.indexOf('id="claim"'),
+  );
+  assertStripRankIsLast24hFact(emptyCoverStrip, [1]);
+
+  const emptyStrip = pageBody(renderBoardPage({
+    day: "2026-08-23",
+    tz: "UTC",
+    listings: [
+      {
+        id: "lst-cover",
+        day: "2026-08-23",
+        productUrl: "https://cover.example/apps/pick",
+        whyTestThisToday: "Cover app sellers should install this morning",
+        bidUsd: 20,
+        paidUsd: 20,
+        clicks: 3,
+        createdAt: "2026-08-23T00:10:00.000Z",
+        updatedAt: "2026-08-23T00:10:00.000Z",
+        rank: 1,
+      },
+    ],
+    last24h: [],
+    defaultBidUsd: 21,
+    now,
+  }));
+  assert.match(emptyStrip, /data-morning-slot=""/);
+  assert.match(emptyStrip, /This morning’s cover/);
+  assert.match(emptyStrip, /data-last24h-empty=""/);
+  assert.match(emptyStrip, /data-last24h-empty-strip=""/);
+  assert.doesNotMatch(emptyStrip, /data-two-prizes=/);
+  assert.doesNotMatch(emptyStrip, /data-last24h-prize=/);
+  assert.doesNotMatch(emptyStrip, /data-last24h-occupied=/);
+  assert.doesNotMatch(emptyStrip, />24h 1</);
+});
+
 test("SPEC acceptance 10: GET /about and GET /rules are 200", async () => {
   const app = await buildApp({ databasePath: ":memory:" });
   after(() => app.close());
@@ -3660,6 +3926,7 @@ test("GET /about states no ads, no API keys, no revenue share, $5 floor, daily U
   assert.match(body, /not a second cover/i);
   assert.match(body, /last-24h facts/);
   assert.match(body, /not today’s cover #1/);
+  assert.match(body, /this morning’s slot/);
   assert.match(body, /dtc-picks-daily/);
   assert.match(body, /outbid\.lol/);
   assert.match(body, /Chat and invite links/);
@@ -3695,6 +3962,8 @@ test("GET /rules states ranking, raise difference, bans, reset, clicks, Polar", 
   assert.match(body, /Not a second cover/);
   assert.match(body, /last-24h facts/);
   assert.match(body, /not today’s cover #1/);
+  assert.match(body, /this morning’s slot/);
+  assert.match(body, /two prizes/);
   assert.match(body, /Telegram/);
   assert.match(body, /WhatsApp/);
   assert.match(body, /Discord/);

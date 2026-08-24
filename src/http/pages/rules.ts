@@ -77,8 +77,8 @@ export function renderRulesBody(model: RulesViewModel): string {
       <tr><th>Timezone</th><td><code>BOARD_TZ</code> IANA name. Default <strong>UTC</strong>. This board is on <strong>${tz}</strong>.</td></tr>
       <tr><th>Day key</th><td>Calendar date in <code>BOARD_TZ</code> (<code>YYYY-MM-DD</code>).</td></tr>
       <tr><th>Reset</th><td>At <strong>00:00</strong> in <code>BOARD_TZ</code>, a new empty board starts. Yesterday’s listings leave the cover.</td></tr>
-      <tr><th>Cover</th><td>Rank #1 right now for today’s day is the cover slot of this morning’s brief.</td></tr>
-      <tr><th>Last 24h</th><td>A strip on the desk ranks paid rows from the <strong>rolling last 24 hours</strong>. Not civil midnight. Empty strip stays empty. Not a second cover. Strip ranks are last-24h facts, not today’s cover #1.</td></tr>
+      <tr><th>Cover</th><td>Rank #1 right now for today’s day is the cover slot of this morning’s brief. Occupied cover #1 and last-24h #1 stay two prizes. No hold on the cover.</td></tr>
+      <tr><th>Last 24h</th><td>A strip on the desk ranks paid rows from the <strong>rolling last 24 hours</strong>. Not civil midnight. Empty strip stays empty. Not a second cover. Cover #1 is this morning’s slot. Strip ranks are last-24h facts, not today’s cover #1.</td></tr>
       <tr><th>History</th><td>We keep paid rows for audit. The public cover shows today only. Last night’s spend can still sit on the last-24h strip.</td></tr>
     </tbody>
   </table>
