@@ -209,6 +209,8 @@ if [[ -f package.json ]]; then
     || fail "shopper take-after-list-two test did not run"
   grep -q 'concentrates List a product after Test this today is re-concentrated again' "$test_log" \
     || fail "seller list-after-take-three test did not run"
+  grep -q 'concentrates Test this today after List a product is re-concentrated again' "$test_log" \
+    || fail "shopper take-after-list-three test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -254,6 +256,9 @@ if list_two < 0 or list_two < first_write:
     raise SystemExit(1)
 take_two = src.find("data-take-after-list-two")
 if take_two < 0 or take_two < take_first or take_two > list_after_take:
+    raise SystemExit(1)
+take_three = src.find("data-take-after-list-three")
+if take_three < 0 or take_three < take_two or take_three > list_after_take:
     raise SystemExit(1)
 list_three = src.find("data-list-after-take-three")
 if list_three < 0 or list_three < list_two:
@@ -316,6 +321,27 @@ PY
     || fail "paid cover missing list-after-take-three stamp on List a product"
   grep -q 'list-after-take-three' src/views/styles.ts \
     || fail "List a product is not taller than the outlined write after the louder take"
+  grep -q 'data-take-after-list-three' src/views/board.ts \
+    || fail "paid cover missing take-after-list-three stamp on Test this today"
+  grep -q 'take-after-list-three' src/views/styles.ts \
+    || fail "Test this today is not louder than the taller list-after-take-three hop"
+  python3 - <<'PY' || fail "take-after-list-three must stay taller than list-after-take-three"
+import re
+from pathlib import Path
+css = Path("src/views/styles.ts").read_text()
+
+def min_height(name: str) -> float:
+    m = re.search(rf"\.{re.escape(name)}\s*\{{[^}}]*min-height:\s*([0-9.]+)rem", css)
+    if not m:
+        raise SystemExit(1)
+    return float(m.group(1))
+
+take = min_height("take-after-list-three")
+listed = min_height("list-after-take-three")
+prior = min_height("take-after-list-two")
+if take <= listed or take <= prior:
+    raise SystemExit(1)
+PY
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
   grep -q 'text-decoration-style: dashed' src/views/styles.ts \
