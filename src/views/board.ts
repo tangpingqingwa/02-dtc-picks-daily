@@ -87,7 +87,6 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
   const bid = escapeHtml(formatUsd(listing.bidUsd));
   const claim = escapeHtml(formatUsd(claimRankUsd(listing)));
   const href = escapeHtml(`/r/${listing.id}`);
-  const eyebrow = isCover ? "This morning’s cover" : `Also on the desk · #${rank}`;
   const coverWhy = isCover
     ? html`<div class="cover-why" data-cover-why="">
       <p class="cover-why-label">Why test this today</p>
@@ -109,44 +108,44 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
         after Test this today. Paying less than #1 still lists.
       </p>`
     : "";
-  const stackBlurb = isCover ? "" : html`<p class="blurb">${blurb}</p>`;
-  const coverName = isCover ? ' data-cover-name=""' : "";
-  const coverLater = isCover
-    ? html`<p class="cover-later" data-later-fact="">
-        <span class="bid later-fact" data-later-fact="">${bid}</span>
-        <span class="clicks later-fact" data-later-fact=""><span class="live-dot" aria-hidden="true"></span>${listing.clicks} clicks</span>
-      </p>`
-    : "";
-  const stackMoney = isCover
-    ? ""
-    : html`<p class="bid">${bid}</p>`;
-  const stackClicks = isCover
-    ? ""
-    : html`<span class="clicks"><span class="live-dot" aria-hidden="true"></span>${listing.clicks} clicks</span>`;
-  const inner = html`<div class="row-meta">
+  if (isCover) {
+    const inner = html`<div class="row-meta">
       <span class="rank">#${rank}</span>
     </div>
     <div class="row-body">
-      <p class="row-kicker">${eyebrow}</p>
+      <p class="row-kicker">This morning’s cover</p>
       ${coverWhy}
       ${coverHop}
       ${listAfterTake}
       <div class="row-top">
-        <p class="host"${coverName}>${host}</p>
-        ${stackMoney}
+        <p class="host" data-cover-name="">${host}</p>
       </div>
-      ${coverLater}
-      ${stackBlurb}
-      <p class="row-foot">
-        <span class="when"><time datetime="${escapeHtml(listing.createdAt)}">${when}</time></span>
-        ${stackClicks}
+      <p class="cover-later" data-later-fact="">
+        <span class="bid later-fact" data-later-fact="">${bid}</span>
+        <span class="clicks later-fact" data-later-fact=""><span class="live-dot" aria-hidden="true"></span>${listing.clicks} clicks</span>
       </p>
     </div>`;
-  const wrap = isCover
-    ? html`<div class="row-link">${inner}</div>`
-    : html`<a class="row-link" href="${href}">${inner}</a>`;
-  return html`<article class="row${topClass}" data-rank="${rank}" data-listing-id="${escapeHtml(listing.id)}"${isCover ? ' data-morning-slot=""' : ""}>
-  ${wrap}
+    return html`<article class="row${topClass}" data-rank="${rank}" data-listing-id="${escapeHtml(listing.id)}" data-morning-slot="">
+  <div class="row-link">${inner}</div>
+  <button type="button" class="claim-rank" data-claim-bid="${claimRankUsd(listing)}">claim this rank for ${claim}</button>
+</article>`;
+  }
+  const inner = html`<div class="row-meta">
+      <span class="rank">#${rank}</span>
+    </div>
+    <div class="row-body">
+      <div class="row-top">
+        <p class="host stack-host">${host}</p>
+        <p class="bid">${bid}</p>
+      </div>
+      <p class="blurb">${blurb}</p>
+      <p class="row-foot">
+        <span class="when"><time datetime="${escapeHtml(listing.createdAt)}">${when}</time></span>
+        <span class="clicks"><span class="live-dot" aria-hidden="true"></span>${listing.clicks} clicks</span>
+      </p>
+    </div>`;
+  return html`<article class="row${topClass}" data-rank="${rank}" data-listing-id="${escapeHtml(listing.id)}" data-later-rank="">
+  <a class="row-link" href="${href}">${inner}</a>
   <button type="button" class="claim-rank" data-claim-bid="${claimRankUsd(listing)}">claim this rank for ${claim}</button>
 </article>`;
 }
@@ -163,8 +162,18 @@ export function renderBoardBody(model: BoardViewModel): string {
   const issueSpoken = escapeHtml(formatIssueDate(model.day, model.tz));
   const occupied = model.listings.length > 0;
   const stripOccupied = (model.last24h ?? []).length > 0;
-  const rows = occupied
-    ? model.listings.map((listing) => renderListingRow(listing, model.now)).join("")
+  const coverListing = model.listings.find((listing) => listing.rank === 1);
+  const laterListings = model.listings.filter((listing) => listing.rank !== 1);
+  const laterStack =
+    laterListings.length > 0
+      ? html`<section class="later-stack" data-later-stack="" aria-label="Also on the desk">
+  <p class="later-stack-kicker">Also on the desk</p>
+  <p class="later-stack-dek">Paying less than #1 still lists. These product names are not this morning’s cover.</p>
+  ${laterListings.map((listing) => renderListingRow(listing, model.now)).join("")}
+</section>`
+      : "";
+  const rows = occupied && coverListing
+    ? `${renderListingRow(coverListing, model.now)}${laterStack}`
     : html`<div class="empty" data-empty-board="" data-empty-cover="">
           <p class="empty-kicker">Quiet morning</p>
           <p><strong>No listings yet today.</strong></p>
