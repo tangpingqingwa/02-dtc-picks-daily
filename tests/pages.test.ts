@@ -3077,7 +3077,7 @@ test("GET / keeps the occupied cover product name the prize — $bid stays a lat
 
   assert.match(under, /<p class="bid">\$8<\/p>/);
   assert.match(under, /1 clicks/);
-  assert.match(under, /class="host"/);
+  assert.match(under, /class="host stack-host"/);
   assert.doesNotMatch(under, /data-cover-name=""/);
   assert.doesNotMatch(under, /data-later-fact=""/);
   assert.doesNotMatch(under, /class="bid later-fact"/);
@@ -4032,6 +4032,158 @@ test("GET / keeps empty morning Claim #1 the first click — product URL is a la
   assert.doesNotMatch(emptyCoverHtml, /class="bid-row"/);
   assert.doesNotMatch(emptyCoverHtml, /data-two-prizes=/);
   assert.doesNotMatch(emptyCoverHtml, /This morning’s cover/);
+});
+
+test("GET / keeps occupied later product names quieter than this morning’s cover — prize stays first", async () => {
+  const css = BOARD_CSS;
+  assert.match(css, /\.later-stack\[data-later-stack\] \.row\[data-later-rank\] \.host\.stack-host/);
+  assert.match(css, /\.later-stack\[data-later-stack\]/);
+  assert.match(css, /\.later-stack-kicker/);
+  const laterCss = (css.split(".later-stack[data-later-stack] .row[data-later-rank] .host.stack-host", 2)[1] ?? "")
+    .split(".later-stack[data-later-stack] .row[data-later-rank] .bid", 1)[0] ?? "";
+  const coverName = css.match(
+    /\.row-cover \.host\[data-cover-name\]\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
+  );
+  const laterHost = css.match(
+    /\.later-stack\[data-later-stack\] \.row\[data-later-rank\] \.host\.stack-host\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
+  );
+  assert.ok(coverName && laterHost, "cover prize and later-rank host must both be sized");
+  assert.ok(Number(coverName[1]) > Number(laterHost[1]), "later-rank product names stay quieter than the cover prize");
+  assert.doesNotMatch(laterCss, /var\(--primary\)/);
+  assert.doesNotMatch(laterCss, /background:/);
+  assert.doesNotMatch(css, /data-later-rank-quiet|data-later-quiet|0\.78rem --muted/);
+  assert.doesNotMatch(css, /take-after-list-seven|list-after-take-seven|data-empty-claim-after/);
+
+  const db = openDatabase(":memory:");
+  const now = new Date("2026-08-22T13:00:00.000Z");
+  const day = dayKey(now);
+  placeBid(db, {
+    id: "lst-cover",
+    day,
+    productUrl: "https://cover.example/apps/pick",
+    whyTestThisToday: "Cover app sellers should install this morning",
+    bidUsd: 20,
+    clicks: 3,
+    createdAt: "2026-08-22T09:00:00.000Z",
+  });
+  placeBid(db, {
+    id: "lst-under",
+    day,
+    productUrl: "https://under.example/sku",
+    whyTestThisToday: "Cheaper SKU still belongs on the brief",
+    bidUsd: 8,
+    clicks: 1,
+    createdAt: "2026-08-22T12:00:00.000Z",
+  });
+  placeBid(db, {
+    id: "lst-third",
+    day,
+    productUrl: "https://third.example/sku",
+    whyTestThisToday: "A third product still lists under the cover",
+    bidUsd: 6,
+    clicks: 0,
+    createdAt: "2026-08-22T12:30:00.000Z",
+  });
+
+  const app = await buildApp({ db, now });
+  after(async () => {
+    await app.close();
+    db.close();
+  });
+
+  const response = await app.inject({ method: "GET", url: "/" });
+  assert.equal(response.statusCode, 200);
+  const body = pageBody(response.body);
+  const coverStart = body.indexOf('data-listing-id="lst-cover"');
+  const cover = body.slice(coverStart, body.indexOf("</article>", coverStart));
+  const stackAt = body.indexOf('data-later-stack=""');
+  const underStart = body.indexOf('data-listing-id="lst-under"');
+  const under = body.slice(underStart, body.indexOf("</article>", underStart));
+  const thirdStart = body.indexOf('data-listing-id="lst-third"');
+  const third = body.slice(thirdStart, body.indexOf("</article>", thirdStart));
+  const stripAt = body.indexOf('data-last24h=""');
+  const claimAt = body.indexOf('id="claim"');
+  const hopAt = cover.indexOf('data-first-click="take"');
+  const coverNameAt = cover.indexOf("data-cover-name");
+
+  assert.match(cover, /data-morning-slot=""/);
+  assert.match(cover, /This morning’s cover/);
+  assert.match(cover, /data-cover-name=""/);
+  assert.match(cover, /<p class="host" data-cover-name="">cover\.example\/apps\/pick<\/p>/);
+  assert.match(cover, /data-first-click="take"/);
+  assert.match(cover, />Test this today</);
+  assert.match(body, /data-later-stack=""/);
+  assert.match(body, /Also on the desk/);
+  assert.match(body, /These product names are not this morning’s cover/);
+  assert.match(under, /data-later-rank=""/);
+  assert.match(under, /class="host stack-host"/);
+  assert.match(under, /<p class="host stack-host">under\.example\/sku<\/p>/);
+  assert.match(under, /<p class="bid">\$8<\/p>/);
+  assert.match(third, /data-later-rank=""/);
+  assert.match(third, /class="host stack-host"/);
+  assert.doesNotMatch(under, /data-cover-name=/);
+  assert.doesNotMatch(under, /This morning’s cover/);
+  assert.doesNotMatch(under, /row-kicker/);
+  assert.doesNotMatch(under, /data-first-click="take"/);
+  assert.doesNotMatch(under, /Test this today/);
+  assert.doesNotMatch(third, /data-cover-name=/);
+  assert.doesNotMatch(cover, /data-later-rank=/);
+  assert.doesNotMatch(cover, /stack-host/);
+  assert.equal((body.match(/data-cover-name=""/g) ?? []).length, 1);
+  assert.equal((body.match(/This morning’s cover/g) ?? []).length, 1);
+  assert.equal((body.match(/data-later-stack=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-later-rank=""/g) ?? []).length, 2);
+  assert.ok(coverStart > -1 && hopAt > -1 && hopAt < coverNameAt, "Take / the cover hop stays the first occupied click");
+  assert.ok(stackAt > coverStart && underStart > stackAt, "later ranks group under the cover, not beside it");
+  assert.ok(thirdStart > underStart && stripAt > thirdStart, "later ranks stay above the last-24h strip");
+  assert.ok(claimAt > stripAt, "claim chrome stays after the desk");
+  assert.match(body, /data-occupied="true"/);
+  assert.match(body, /data-two-prizes=""/);
+  assert.match(body, /data-last24h-prize=""/);
+  assert.match(body, /class="bid-row"/);
+  assert.doesNotMatch(body, /data-later-write=/);
+  assert.doesNotMatch(body, /data-later-rank-quiet/);
+  assert.doesNotMatch(body, /data-later-quiet/);
+  assert.doesNotMatch(body, /take-after-list-seven/);
+  assert.doesNotMatch(body, /data-empty-claim-first/);
+
+  const onlyCover = pageBody(renderBoardPage({
+    day,
+    tz: "UTC",
+    listings: [
+      {
+        id: "lst-cover",
+        day,
+        productUrl: "https://cover.example/apps/pick",
+        whyTestThisToday: "Cover app sellers should install this morning",
+        bidUsd: 20,
+        paidUsd: 20,
+        clicks: 3,
+        createdAt: "2026-08-22T09:00:00.000Z",
+        updatedAt: "2026-08-22T09:00:00.000Z",
+        rank: 1,
+      },
+    ],
+    last24h: [],
+    defaultBidUsd: 21,
+    now,
+  }));
+  assert.match(onlyCover, /data-morning-slot=""/);
+  assert.match(onlyCover, /data-cover-name=""/);
+  assert.doesNotMatch(onlyCover, /data-later-stack=/);
+  assert.doesNotMatch(onlyCover, /data-later-rank=/);
+  assert.match(onlyCover, /data-last24h-empty=""/);
+
+  const emptyApp = await buildApp({ databasePath: ":memory:" });
+  after(() => emptyApp.close());
+  const empty = await emptyApp.inject({ method: "GET", url: "/" });
+  const quiet = pageBody(empty.body);
+  assert.match(quiet, /data-empty-cover=""/);
+  assert.match(quiet, /data-first-click="claim"/);
+  assert.match(quiet, /data-later-write=""/);
+  assert.doesNotMatch(quiet, /data-later-stack=/);
+  assert.doesNotMatch(quiet, /data-later-rank=/);
+  assert.doesNotMatch(quiet, /These product names are not this morning’s cover/);
 });
 
 test("SPEC acceptance 10: GET /about and GET /rules are 200", async () => {

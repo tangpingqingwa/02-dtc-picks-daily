@@ -253,6 +253,10 @@ if [[ -f package.json ]]; then
     || fail "empty-morning later-write leftover test did not run"
   grep -q 'product URL is a later write' "$test_log" \
     || fail "empty-morning product-URL later-write leftover test did not run"
+  grep -q 'occupied later product names quieter than this morning’s cover' "$test_log" \
+    || fail "later-rank quiet leftover test did not run"
+  grep -q 'prize stays first' "$test_log" \
+    || fail "later-rank prize-stays-first leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -273,6 +277,14 @@ if [[ -f package.json ]]; then
     || fail "empty Claim #1 must win the first click"
   grep -q 'data-later-write' src/views/board.ts \
     || fail "empty morning missing later-write stamp on the product URL"
+  grep -q 'data-later-stack' src/views/board.ts \
+    || fail "occupied later ranks missing later-stack grouping"
+  grep -q 'data-later-rank' src/views/board.ts \
+    || fail "occupied later ranks missing later-rank card stamp"
+  grep -q 'stack-host' src/views/board.ts \
+    || fail "later-rank product names are not a quieter host node"
+  grep -q 'These product names are not this morning’s cover' src/views/board.ts \
+    || fail "later stack must name later products as not the cover"
   grep -q 'data-listing-identity' src/views/board.ts \
     || fail "empty morning missing listing-identity wrap"
   grep -q 'Then the product URL' src/views/board.ts \
@@ -281,7 +293,11 @@ if [[ -f package.json ]]; then
     || fail "empty cover CSS missing Claim #1 first-click composition"
   grep -q 'listing-identity\[data-later-write\]' src/views/styles.ts \
     || fail "empty morning CSS missing later-write product URL composition"
-  if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven' \
+  grep -q 'later-stack\[data-later-stack\]' src/views/styles.ts \
+    || fail "later-rank CSS missing later-stack grouping"
+  grep -q 'host.stack-host' src/views/styles.ts \
+    || fail "later-rank CSS missing quieter stack-host anatomy"
+  if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven|data-later-rank-quiet|data-later-quiet' \
     src/views/board.ts src/views/styles.ts >/dev/null; then
     fail "do not stamp another named hop; compose empty vs occupied"
   fi
@@ -352,6 +368,10 @@ if take_six < 0 or take_six < take_five or take_six > list_after_take:
     raise SystemExit(1)
 host_after = src.find("<p class=\"host\"")
 if host_after < 0 or cover_hop > host_after or list_after_take > host_after:
+    raise SystemExit(1)
+later_stack = src.find("data-later-stack")
+later_rank = src.find("data-later-rank")
+if later_stack < 0 or later_rank < 0 or later_stack < cover_hop:
     raise SystemExit(1)
 name_prize = src.find("data-cover-name")
 later_money = src.find("data-later-fact")
@@ -841,6 +861,46 @@ if "var(--primary)" in two:
     raise SystemExit("do not recolor the two prizes")
 if "take-after-list-seven" in two or "list-after-take-seven" in two:
     raise SystemExit("do not stamp another named hop")
+if "data-later-stack" not in board:
+    raise SystemExit("later ranks must group under the cover")
+if "data-later-rank" not in board:
+    raise SystemExit("later ranks must stamp later-rank cards")
+if "stack-host" not in board:
+    raise SystemExit("later product names must use stack-host, not cover prize chrome")
+row_fn = board.split("export function renderListingRow", 1)[-1].split("export function renderBoardBody", 1)[0]
+if 'data-cover-name=""' not in row_fn:
+    raise SystemExit("cover host must still stamp data-cover-name")
+if "stack-host" not in row_fn:
+    raise SystemExit("later host must be a different node class than the cover prize")
+if 'data-later-rank=""' not in row_fn:
+    raise SystemExit("later cards must stamp data-later-rank")
+if "Also on the desk · #" in row_fn:
+    raise SystemExit("later ranks must not share the cover prize kicker")
+if 'class="host" data-cover-name' in row_fn and "stack-host" in row_fn[row_fn.find('class="host" data-cover-name'):row_fn.find('class="host" data-cover-name') + 80]:
+    raise SystemExit("do not mute the cover name node for later ranks")
+if 'class="host" data-cover-name' not in row_fn or 'class="host stack-host"' not in row_fn:
+    raise SystemExit("later ranks must use a different host anatomy than the cover prize")
+if "data-later-rank-quiet" in board or "data-later-quiet" in css:
+    raise SystemExit("stamp-only later-quiet is REJECT")
+later_css = css.split(".later-stack[data-later-stack] .row[data-later-rank] .host.stack-host", 1)
+if len(later_css) < 2:
+    raise SystemExit("later-rank CSS must target stack-host, not the cover name")
+later_host_block = later_css[1].split("}", 1)[0]
+if "var(--primary)" in later_host_block or "background:" in later_host_block:
+    raise SystemExit("do not recolor later-rank product names")
+later_size = re.search(r"font-size:\s*([0-9.]+)rem", later_host_block)
+cover_size = re.search(
+    r"\.row-cover \.host\[data-cover-name\]\s*\{[^}]*font-size:\s*([0-9.]+)rem",
+    css,
+)
+if not later_size or not cover_size:
+    raise SystemExit("later-rank and cover name must both have sizes")
+if float(later_size.group(1)) >= float(cover_size.group(1)):
+    raise SystemExit("later-rank product names must stay quieter than the cover prize")
+if "0.78rem" in later_host_block and "--muted" in later_host_block:
+    raise SystemExit("do not stamp 0.78rem --muted on the same name node")
+if ".desk:has(.empty) .later-stack" not in css:
+    raise SystemExit("empty CSS must keep later-stack off empty")
 PY
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"

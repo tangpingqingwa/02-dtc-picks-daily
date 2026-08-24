@@ -225,6 +225,7 @@ nav[aria-label="Main"] a:hover {
 .desk:has(.empty) .list-after-why,
 .desk:has(.empty) .list-after-take,
 .desk:has(.empty) .row-cover,
+.desk:has(.empty) .later-stack,
 .desk:has(.empty) .claim-kicker {
   display: none;
 }
@@ -942,6 +943,73 @@ a.row-link:hover { color: var(--primary); }
   box-shadow: 0.4rem 0.4rem 0 0 color-mix(in oklab, var(--primary) 18%, transparent);
 }
 .row-cover + .row { border-top: 0; }
+.later-stack {
+  margin: 0 0 0.35rem;
+  padding: 0.65rem 0.15rem 0.15rem;
+  border-top: 1px dashed var(--border);
+}
+.later-stack-kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.later-stack-dek {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+  text-wrap: pretty;
+}
+.later-stack[data-later-stack] .row[data-later-rank] {
+  padding-left: 0;
+  padding-right: 0;
+}
+.later-stack[data-later-stack] .row[data-later-rank] + .row[data-later-rank] {
+  border-top: 1px dashed var(--border);
+}
+.later-stack[data-later-stack] .row[data-later-rank] .row-link {
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.35rem 0;
+}
+.later-stack[data-later-stack] .row[data-later-rank] .row-meta {
+  width: 1.85rem;
+  padding-top: 0.15rem;
+}
+.later-stack[data-later-stack] .row[data-later-rank] .rank {
+  min-width: 1.5rem;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.later-stack[data-later-stack] .row[data-later-rank] .host.stack-host {
+  font-family: var(--font);
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.35;
+  color: var(--foreground);
+}
+.later-stack[data-later-stack] .row[data-later-rank] .bid {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.later-stack[data-later-stack] .row[data-later-rank] .blurb {
+  font-size: 0.78rem;
+}
+.later-stack[data-later-stack] .row[data-later-rank] .row-foot {
+  font-size: 0.62rem;
+}
+@media (min-width: 768px) {
+  .later-stack[data-later-stack] .row[data-later-rank] .host.stack-host {
+    font-size: 0.92rem;
+  }
+  .later-stack[data-later-stack] .row[data-later-rank] .rank {
+    font-size: 0.75rem;
+  }
+}
 .row-1 .rank {
   min-width: 1.75rem;
   border-radius: 2px;
