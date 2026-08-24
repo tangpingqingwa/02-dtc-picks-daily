@@ -125,7 +125,7 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
         <span class="clicks later-fact" data-later-fact=""><span class="live-dot" aria-hidden="true"></span>${listing.clicks} clicks</span>
       </p>
     </div>`;
-    return html`<article class="row${topClass}" data-rank="${rank}" data-listing-id="${escapeHtml(listing.id)}" data-morning-slot="">
+    return html`<article class="row${topClass}" data-rank="${rank}" data-listing-id="${escapeHtml(listing.id)}" data-morning-slot="" data-paid-name="">
   <div class="row-link">${inner}</div>
   <button type="button" class="claim-rank" data-claim-bid="${claimRankUsd(listing)}">claim this rank for ${claim}</button>
 </article>`;
@@ -135,10 +135,10 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
     </div>
     <div class="row-body">
       <div class="row-top">
-        <p class="host stack-host">${host}</p>
+        <p class="dek">${host}</p>
         <p class="bid">${bid}</p>
       </div>
-      <p class="blurb">${blurb}</p>
+      <p class="slot">${blurb}</p>
       <p class="row-foot">
         <span class="when"><time datetime="${escapeHtml(listing.createdAt)}">${when}</time></span>
         <span class="clicks"><span class="live-dot" aria-hidden="true"></span>${listing.clicks} clicks</span>
@@ -201,6 +201,10 @@ export function renderBoardBody(model: BoardViewModel): string {
       <label class="field-label" for="whyTestThisToday">Why test this today</label>
       <input id="whyTestThisToday" name="whyTestThisToday" type="text" maxlength="140" minlength="8" required placeholder="What a seller should try this morning"/>
     </div>`;
+  const occupiedListingField = html`<div class="field why-field">
+      <label class="field-label" for="whyTestThisToday">One-line listing</label>
+      <input id="whyTestThisToday" name="whyTestThisToday" type="text" maxlength="140" minlength="8" required placeholder="One-line listing"/>
+    </div>`;
   const formHint = html`<p class="form-hint">Already on the list? Enter the same URL and up your bid. You pay only the difference.</p>`;
   const bidForm = occupied
     ? html`<form id="bid-form" class="bid-form" method="post" action="/checkout">
@@ -208,7 +212,9 @@ export function renderBoardBody(model: BoardViewModel): string {
       ${productUrlField}
       <button type="submit" class="outbid">Outbid</button>
     </div>
-    ${whyField}
+    <div class="later-listing" data-later-listing="">
+      ${occupiedListingField}
+    </div>
     ${formHint}
   </form>`
     : html`<form id="bid-form" class="bid-form" method="post" action="/checkout">

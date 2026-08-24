@@ -226,6 +226,8 @@ nav[aria-label="Main"] a:hover {
 .desk:has(.empty) .list-after-take,
 .desk:has(.empty) .row-cover,
 .desk:has(.empty) .later-stack,
+.desk:has(.empty) .later-listing,
+.desk:has(.empty) [data-paid-name],
 .desk:has(.empty) .claim-kicker {
   display: none;
 }
@@ -344,6 +346,12 @@ nav[aria-label="Main"] a:hover {
 }
 .desk[data-two-prizes] .last24h-row[data-last24h-prize] .last24h-rank {
   font-size: 0.62rem;
+}
+.desk[data-two-prizes] .row-cover[data-morning-slot][data-paid-name] .host[data-cover-name] {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
 }
 #claim {
   scroll-margin-top: 1.5rem;
@@ -1014,31 +1022,63 @@ a.row-link:hover { color: var(--primary); }
   font-weight: 500;
   color: var(--muted-foreground);
 }
-.later-stack[data-later-stack] .row[data-later-rank] .host.stack-host {
+.later-stack[data-later-stack] .row[data-later-rank] .dek {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
   font-family: var(--font);
-  font-size: 0.88rem;
-  font-weight: 500;
+  font-size: 0.78rem;
+  font-weight: 400;
   letter-spacing: 0;
   line-height: 1.35;
-  color: var(--foreground);
+  color: var(--muted-foreground);
+}
+.later-stack[data-later-stack] .row[data-later-rank] .slot {
+  margin: 0.15rem 0 0;
+  min-width: 0;
+  font-family: var(--font);
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .later-stack[data-later-stack] .row[data-later-rank] .bid {
   font-size: 0.78rem;
   font-weight: 600;
 }
-.later-stack[data-later-stack] .row[data-later-rank] .blurb {
-  font-size: 0.78rem;
-}
 .later-stack[data-later-stack] .row[data-later-rank] .row-foot {
   font-size: 0.62rem;
 }
 @media (min-width: 768px) {
-  .later-stack[data-later-stack] .row[data-later-rank] .host.stack-host {
-    font-size: 0.92rem;
+  .later-stack[data-later-stack] .row[data-later-rank] .dek,
+  .later-stack[data-later-stack] .row[data-later-rank] .slot {
+    font-size: 0.82rem;
+    white-space: normal;
   }
   .later-stack[data-later-stack] .row[data-later-rank] .rank {
     font-size: 0.75rem;
   }
+}
+.later-listing[data-later-listing] {
+  margin-top: 0.15rem;
+}
+.later-listing[data-later-listing] .field-label {
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--muted-foreground);
+}
+.later-listing[data-later-listing] .field input {
+  height: 1.85rem;
+  font-size: 0.78rem;
+  color: var(--muted-foreground);
 }
 .row-1 .rank {
   min-width: 1.75rem;
@@ -1053,6 +1093,12 @@ a.row-link:hover { color: var(--primary); }
   white-space: normal;
 }
 .row-cover .host[data-cover-name] {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+.row-cover[data-paid-name] .host[data-cover-name] {
   font-size: 1.85rem;
   font-weight: 700;
   letter-spacing: -0.03em;
