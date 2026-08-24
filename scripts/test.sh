@@ -269,6 +269,10 @@ if [[ -f package.json ]]; then
     || fail "unpaid-off Polar leftover test did not run"
   grep -q 'unpaid Polar checkout stays off the live board until paid' "$test_log" \
     || fail "unpaid Polar filter leftover test did not run"
+  grep -q 'occupied morning one first click' "$test_log" \
+    || fail "occupied take-before-claim leftover test did not run"
+  grep -q 'Take the cover, Claim stays after' "$test_log" \
+    || fail "occupied Claim-after-cover leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -329,7 +333,13 @@ if [[ -f package.json ]]; then
     || fail "paid-name CSS missing occupied cover identity"
   grep -q 'later-listing\[data-later-listing\]' src/views/styles.ts \
     || fail "occupied claim CSS missing later-listing composition"
-  if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven|data-later-rank-quiet|data-later-quiet|data-why-later-quiet|data-paid-name-quiet|data-unpaid-off-quiet|data-unpaid-off-board' \
+  grep -q 'data-claim-after-cover' src/views/board.ts \
+    || fail "occupied morning missing claim-after-cover wrap on Claim #1"
+  grep -q 'claim-after-cover' src/views/board.ts \
+    || fail "occupied claim must use the claim-after-cover wrap"
+  grep -q 'claim-after-cover\[data-claim-after-cover\]' src/views/styles.ts \
+    || fail "occupied morning CSS missing claim-after-cover composition"
+  if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven|data-later-rank-quiet|data-later-quiet|data-why-later-quiet|data-paid-name-quiet|data-unpaid-off-quiet|data-unpaid-off-board|data-later-claim|data-later-claim-quiet' \
     src/views/board.ts src/views/styles.ts >/dev/null; then
     fail "do not stamp another named hop; compose empty vs occupied"
   fi
@@ -376,6 +386,9 @@ if board < 0 or claim < 0 or board > claim:
     raise SystemExit(1)
 strip = src.find("renderLast24hStrip", board)
 if strip < 0 or strip > claim:
+    raise SystemExit(1)
+wrap = src.find("data-claim-after-cover")
+if wrap < 0 or wrap > claim:
     raise SystemExit(1)
 list_hop = src.find("data-list-under-cover")
 if list_hop < 0 or list_hop > board:
@@ -853,6 +866,10 @@ if 'data-first-click="claim"' not in board:
     raise SystemExit("empty Claim #1 must stamp the first click")
 if "empty-claim-first" not in board:
     raise SystemExit("empty claim must use the empty-claim-first class")
+if 'data-claim-after-cover=""' not in board:
+    raise SystemExit("occupied Claim #1 must stamp data-claim-after-cover")
+if "claim-after-cover" not in board:
+    raise SystemExit("occupied claim must use the claim-after-cover wrap")
 if 'data-occupied="false"' not in board or 'data-occupied="true"' not in board:
     raise SystemExit("desk must compose empty vs occupied")
 if 'data-later-write=""' not in board:
@@ -903,6 +920,8 @@ if ".cover-hop" not in hide or ".cover-later" not in hide or ".list-under-cover"
     raise SystemExit("empty CSS must keep occupied cover hops off empty")
 if ".later-listing" not in hide or "[data-paid-name]" not in hide:
     raise SystemExit("empty CSS must keep paid-name and later-listing off empty")
+if "claim-after-cover" not in hide:
+    raise SystemExit("empty CSS must keep occupied later Claim wrap off empty")
 if "display: none" not in block:
     raise SystemExit("empty occupied chrome must stay off, not restyled")
 if "background:" in hide:
@@ -962,7 +981,7 @@ if not cover_m or not strip_m:
     raise SystemExit("two-prize CSS missing cover vs strip sizes")
 if float(cover_m.group(1)) <= float(strip_m.group(1)):
     raise SystemExit("cover product name must stay larger than strip #1 host")
-two = css.split(".desk[data-two-prizes]", 1)[-1].split("#claim {", 1)[0]
+two = css.split(".desk[data-two-prizes]", 1)[-1].split("Occupied morning: Take is the only first click", 1)[0]
 if "empty-claim-first" in two or "data-later-write" in two or "data-why-later" in two:
     raise SystemExit("two-prize CSS must not swallow empty later-write composition")
 if "var(--primary)" in two:
@@ -1091,6 +1110,64 @@ if "background:" in note_block or "var(--primary)" in note_block:
     raise SystemExit("do not recolor the unpaid-off claim note")
 if ".desk[data-occupied=\"true\"] .row-cover[data-paid-name] .host[data-cover-name]" not in css:
     raise SystemExit("occupied paid-name prize CSS must stay paid-only")
+if "data-later-stack" not in board:
+    raise SystemExit("later ranks must group under the cover")
+occupied_claim = css.split("Occupied morning: Take is the only first click", 1)
+if len(occupied_claim) < 2:
+    raise SystemExit("occupied CSS must name Take as the only first click")
+later_claim_css = occupied_claim[1].split("Empty morning: Product URL is a later write after Claim #1 / Outbid", 1)[0]
+if ".desk[data-occupied=\"true\"] .claim-after-cover[data-claim-after-cover]" not in later_claim_css:
+    raise SystemExit("claim-after-cover CSS must recede occupied Claim after the cover")
+if "background:" in later_claim_css or "var(--primary)" in later_claim_css:
+    raise SystemExit("do not recolor occupied later Claim")
+if "take-after-list-seven" in later_claim_css or "data-empty-claim-after" in later_claim_css:
+    raise SystemExit("do not stamp another named hop on later Claim")
+if "empty-claim-first" in later_claim_css or "data-why-later" in later_claim_css or "data-unpaid-off" in later_claim_css:
+    raise SystemExit("occupied claim-after-cover CSS must not swallow empty later-write or unpaid-off")
+if "later-claim" in later_claim_css or "data-later-claim" in later_claim_css:
+    raise SystemExit("do not revive take-one-first hop restamp")
+claim_title = re.search(
+    r"\.desk\[data-occupied=\"true\"\] \.claim-after-cover\[data-claim-after-cover\] #claim \.claim-title\s*\{[^}]*font-size:\s*([0-9.]+)rem",
+    later_claim_css,
+)
+empty_title = re.search(
+    r"\.desk:has\(\.empty\) #claim \.claim-title\s*\{[^}]*font-size:\s*clamp\(([0-9.]+)rem",
+    css,
+)
+take_h = re.search(r"\.take-after-list-six\s*\{[^}]*min-height:\s*([0-9.]+)rem", css)
+outbid_h = re.search(
+    r"\.desk\[data-occupied=\"true\"\] \.claim-after-cover\[data-claim-after-cover\] #claim \.outbid\s*\{[^}]*height:\s*([0-9.]+)rem",
+    later_claim_css,
+)
+if not claim_title or not empty_title or not take_h or not outbid_h:
+    raise SystemExit("occupied later Claim, empty Claim, Take, and Outbid must all have sizes")
+if float(claim_title.group(1)) >= float(empty_title.group(1)):
+    raise SystemExit("occupied later Claim must stay quieter than empty Claim #1")
+if float(claim_title.group(1)) >= float(take_h.group(1)):
+    raise SystemExit("occupied later Claim must stay quieter than Test this today")
+if float(outbid_h.group(1)) >= float(take_h.group(1)):
+    raise SystemExit("occupied Outbid must stay quieter than Test this today")
+if float(claim_title.group(1)) >= float(paid_size.group(1)):
+    raise SystemExit("occupied later Claim must stay quieter than the paid cover name")
+if 'class="claim-after-cover"' not in board or 'data-claim-after-cover=""' not in board:
+    raise SystemExit("occupied claim markup must wrap later Claim after the cover")
+empty_claim_attrs = board.split("const claimAttrs = occupied", 1)[-1]
+if "data-claim-after-cover" in empty_claim_attrs.split(": '", 1)[-1].split(";", 1)[0]:
+    raise SystemExit("empty Claim must not stamp claim-after-cover")
+occupied_wrap = board.split("const claimAfterOpen = occupied", 1)
+if len(occupied_wrap) < 2 or "data-claim-after-cover" not in occupied_wrap[1].split(': "";', 1)[0]:
+    raise SystemExit("occupied Claim must wrap after the cover, not as empty-claim-first")
+if 'data-first-click="claim"' in occupied_form:
+    raise SystemExit("occupied Claim must not steal the first click from Take")
+if board.find("data-claim-after-cover") > board.find('id="claim"'):
+    raise SystemExit("occupied Claim wrap must precede #claim in source")
+if ".desk[data-unpaid-off] .claim-after-cover" not in unpaid_block:
+    raise SystemExit("unpaid leftover must keep occupied later Claim wrap off")
+if "data-later-claim" in board or "#claim.later-claim" in css:
+    raise SystemExit("do not revive take-one-first hop restamp")
+row_cover = row_fn.split("if (isCover)", 1)[-1].split("const claim =", 1)[0]
+if "claim-rank" in row_cover or "claim this rank" in row_cover:
+    raise SystemExit("occupied cover must not hang Claim on the prize")
 PY
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
