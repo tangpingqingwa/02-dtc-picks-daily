@@ -1,8 +1,11 @@
 import {
   claimPriceUsd,
   defaultClaimBidUsd,
+  isPaidListing,
   MIN_BID_USD,
+  paidListings,
   rankForBid,
+  withRanks,
   type RankedListing,
 } from "../core/board.js";
 import { formatIssueDate } from "../core/day.js";
@@ -20,6 +23,7 @@ export type BoardViewModel = {
   tz: string;
   listings: RankedListing[];
   last24h?: RankedListing[];
+  leftoverUnpaid?: boolean;
   defaultBidUsd: number;
   now?: Date;
 };
@@ -29,6 +33,9 @@ export function claimRankUsd(listing: RankedListing): number {
 }
 
 export function renderLast24hRow(listing: RankedListing, now?: Date): string {
+  if (!isPaidListing(listing)) {
+    return "";
+  }
   const host = escapeHtml(displayHostPath(listing.productUrl));
   const blurb = escapeHtml(listing.whyTestThisToday);
   const when = escapeHtml(relativeTime(listing.createdAt, now));
@@ -56,10 +63,11 @@ export function renderLast24hRow(listing: RankedListing, now?: Date): string {
 }
 
 export function renderLast24hStrip(listings: RankedListing[], now?: Date): string {
-  const occupied = listings.length > 0;
+  const paid = paidListings(listings);
+  const occupied = paid.length > 0;
   const rows = occupied
     ? html`<ol class="last24h-list">
-        ${listings.map((listing) => renderLast24hRow(listing, now)).join("")}
+        ${paid.map((listing) => renderLast24hRow(listing, now)).join("")}
       </ol>`
     : html`<p class="last24h-empty" data-last24h-empty="">
         No paid listings in the last 24 hours. The strip stays empty — not a second cover. No invented #1.
@@ -72,6 +80,9 @@ export function renderLast24hStrip(listings: RankedListing[], now?: Date): strin
 }
 
 export function renderListingRow(listing: RankedListing, now?: Date): string {
+  if (!isPaidListing(listing)) {
+    return "";
+  }
   const rank = listing.rank;
   const isCover = rank === 1;
   const topClass = isCover
@@ -151,19 +162,25 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
 }
 
 export function renderBoardBody(model: BoardViewModel): string {
+  const listings = withRanks(paidListings(model.listings));
+  const last24h = withRanks(paidListings(model.last24h ?? []));
+  const leftoverUnpaid =
+    Boolean(model.leftoverUnpaid) ||
+    model.listings.some((listing) => !isPaidListing(listing)) ||
+    (model.last24h ?? []).some((listing) => !isPaidListing(listing));
   const defaultBid = model.defaultBidUsd;
-  const projected = rankForBid(model.listings, defaultBid);
+  const projected = rankForBid(listings, defaultBid);
   const claimCopy =
-    model.listings.length === 0
+    listings.length === 0
       ? "Claim #1 for"
       : projected === 1
         ? "Claim #1 for"
         : `Claim #${projected} for`;
   const issueSpoken = escapeHtml(formatIssueDate(model.day, model.tz));
-  const occupied = model.listings.length > 0;
-  const stripOccupied = (model.last24h ?? []).length > 0;
-  const coverListing = model.listings.find((listing) => listing.rank === 1);
-  const laterListings = model.listings.filter((listing) => listing.rank !== 1);
+  const occupied = listings.length > 0;
+  const stripOccupied = last24h.length > 0;
+  const coverListing = listings.find((listing) => listing.rank === 1);
+  const laterListings = listings.filter((listing) => listing.rank !== 1);
   const laterStack =
     laterListings.length > 0
       ? html`<section class="later-stack" data-later-stack="" aria-label="Also on the desk">
@@ -187,7 +204,7 @@ export function renderBoardBody(model: BoardViewModel): string {
     : "";
   const deskAttrs = occupied
     ? ` data-occupied="true"${stripOccupied ? ' data-two-prizes=""' : ""}`
-    : ' data-occupied="false" data-empty-claim-first=""';
+    : ` data-occupied="false" data-empty-claim-first=""${leftoverUnpaid ? ' data-unpaid-off=""' : ""}`;
   const claimAttrs = occupied
     ? ""
     : ' class="empty-claim-first" data-empty-claim-first="" aria-label="Claim #1"';
@@ -246,7 +263,7 @@ export function renderBoardBody(model: BoardViewModel): string {
 <section id="leaderboard" aria-label="Today’s cover">
   ${rows}
 </section>
-${renderLast24hStrip(model.last24h ?? [], model.now)}
+${renderLast24hStrip(last24h, model.now)}
 <section id="claim"${claimAttrs}>
   ${claimKicker}
   <h2 class="claim-title"${claimTitleAttrs}>
@@ -264,7 +281,12 @@ ${renderLast24hStrip(model.last24h ?? [], model.now)}
       <button type="button" class="step" data-bid-step="1" aria-label="Increase bid by one dollar">+</button>
     </span>
   </h2>
-  <p class="claim-note">
+  <p class="claim-note"${occupied ? ' data-unpaid-off=""' : leftoverUnpaid ? ' data-unpaid-off=""' : ""}>
+    ${
+      occupied || leftoverUnpaid
+        ? html`<span class="unpaid-off-line">Unpaid Polar checkout stays off this desk until Polar reports paid. An abandoned listing is not cover #1.</span>`
+        : ""
+    }
     <span class="accent">New spots start at ${escapeHtml(formatUsd(MIN_BID_USD))}.</span>
     Paying less than the #1 price still puts you on the board at whatever place that bid can take.
   </p>
@@ -277,7 +299,7 @@ ${renderLast24hStrip(model.last24h ?? [], model.now)}
     var input = document.getElementById("bid");
     var sizer = document.querySelector(".bid-sizer");
     var copy = document.querySelector("[data-claim-copy]");
-    var bids = ${JSON.stringify(model.listings.map((row) => row.bidUsd))};
+    var bids = ${JSON.stringify(listings.map((row) => row.bidUsd))};
     function parseBid(raw) {
       var n = parseInt(String(raw).replace(/[^0-9]/g, ""), 10);
       return Number.isFinite(n) ? n : min;
@@ -329,7 +351,7 @@ export function renderBoardPage(model: BoardViewModel): string {
     now: model.now,
     body: renderBoardBody({
       ...model,
-      defaultBidUsd: model.defaultBidUsd || defaultClaimBidUsd(model.listings),
+      defaultBidUsd: model.defaultBidUsd || defaultClaimBidUsd(paidListings(model.listings)),
     }),
   });
 }
