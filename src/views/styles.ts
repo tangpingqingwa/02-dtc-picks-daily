@@ -216,6 +216,21 @@ nav[aria-label="Main"] a:hover {
   color: var(--foreground);
 }
 #leaderboard { scroll-margin-top: 1.5rem; margin-top: 0; }
+/* Empty morning: Claim #1 is the only first click. Occupied cover hops stay off. */
+.desk:has(.empty) .cover-hop,
+.desk:has(.empty) .cover-hop-wrap,
+.desk:has(.empty) .cover-later,
+.desk:has(.empty) .cover-why,
+.desk:has(.empty) .list-under-cover,
+.desk:has(.empty) .list-after-why,
+.desk:has(.empty) .list-after-take,
+.desk:has(.empty) .row-cover,
+.desk:has(.empty) .claim-kicker {
+  display: none;
+}
+.desk:has(.empty) #claim .claim-title {
+  font-size: clamp(2.1rem, 5vw, 2.85rem);
+}
 .last24h {
   margin-top: 1.75rem;
   padding-top: 1.15rem;

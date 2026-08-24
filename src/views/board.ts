@@ -169,8 +169,17 @@ export function renderBoardBody(model: BoardViewModel): string {
     under today’s cover. Paying less than #1 still lists.
   </p>`
     : "";
+  const deskAttrs = occupied
+    ? ' data-occupied="true"'
+    : ' data-occupied="false" data-empty-claim-first=""';
+  const claimAttrs = occupied
+    ? ""
+    : ' class="empty-claim-first" data-empty-claim-first="" aria-label="Claim #1"';
+  const claimTitleAttrs = occupied ? "" : ' data-empty-claim="" data-first-click="claim"';
+  const claimKicker = occupied ? html`<p class="claim-kicker">List a product</p>` : "";
 
-  return html`<header class="masthead">
+  return html`<div class="desk"${deskAttrs}>
+<header class="masthead">
   <p class="masthead-kicker">Morning merch desk</p>
   <h1 class="masthead-title">${SITE_TITLE}</h1>
   <p class="masthead-issue">
@@ -186,9 +195,9 @@ export function renderBoardBody(model: BoardViewModel): string {
   ${rows}
 </section>
 ${renderLast24hStrip(model.last24h ?? [], model.now)}
-<section id="claim">
-  <p class="claim-kicker">List a product</p>
-  <h2 class="claim-title">
+<section id="claim"${claimAttrs}>
+  ${claimKicker}
+  <h2 class="claim-title"${claimTitleAttrs}>
     <span data-claim-copy>${claimCopy}</span>
     <span class="bid-stepper">
       <button type="button" class="step" data-bid-step="-1" aria-label="Decrease bid by one dollar">−</button>
@@ -222,6 +231,7 @@ ${renderLast24hStrip(model.last24h ?? [], model.now)}
     <p class="form-hint">Already on the list? Enter the same URL and up your bid. You pay only the difference.</p>
   </form>
 </section>
+</div>
 <script>
   (function () {
     var min = ${MIN_BID_USD};

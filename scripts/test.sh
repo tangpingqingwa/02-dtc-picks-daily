@@ -241,6 +241,10 @@ if [[ -f package.json ]]; then
     || fail "cover-prize shopper test did not run"
   grep -q '\$bid stays a later fact' "$test_log" \
     || fail "cover-prize later-fact leftover test did not run"
+  grep -q 'empty cover Claim #1 the only first click' "$test_log" \
+    || fail "empty-cover Claim #1 leftover test did not run"
+  grep -q 'Test this today stays off empty' "$test_log" \
+    || fail "empty-cover Test this today off-empty leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -253,6 +257,18 @@ if [[ -f package.json ]]; then
     || fail "empty state is not a quiet morning"
   grep -q 'not an invented cover' src/views/board.ts \
     || fail "empty cover does not refuse an invented #1"
+  grep -q 'data-empty-claim-first' src/views/board.ts \
+    || fail "empty cover missing Claim #1 first-click stamp"
+  grep -q 'empty-claim-first' src/views/board.ts \
+    || fail "empty claim must use the empty-claim-first class"
+  grep -q 'data-first-click="claim"' src/views/board.ts \
+    || fail "empty Claim #1 must win the first click"
+  grep -q 'desk:has(.empty)' src/views/styles.ts \
+    || fail "empty cover CSS missing Claim #1 first-click composition"
+  if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven' \
+    src/views/board.ts src/views/styles.ts >/dev/null; then
+    fail "do not stamp another named hop; compose empty vs occupied"
+  fi
   python3 - <<'PY' || fail "today’s cover or quiet morning must precede claim chrome"
 from pathlib import Path
 src = Path("src/views/board.ts").read_text()
@@ -701,6 +717,29 @@ if 'data-last24h-empty=""' not in board:
     raise SystemExit("empty strip must stay data-last24h-empty")
 if "data-take-after-list-seven" in board:
     raise SystemExit("do not add another named hop")
+if 'data-empty-claim-first=""' not in board:
+    raise SystemExit("empty Claim #1 must stamp data-empty-claim-first")
+if 'data-first-click="claim"' not in board:
+    raise SystemExit("empty Claim #1 must stamp the first click")
+if "empty-claim-first" not in board:
+    raise SystemExit("empty claim must use the empty-claim-first class")
+if 'data-occupied="false"' not in board or 'data-occupied="true"' not in board:
+    raise SystemExit("desk must compose empty vs occupied")
+empty_rule = css.split("Empty morning: Claim #1 is the only first click", 1)
+if len(empty_rule) < 2:
+    raise SystemExit("empty CSS must name Claim #1 as the only first click")
+block = empty_rule[1].split(".last24h {", 1)[0]
+hide = block.split("display: none", 1)[0]
+if ".cover-hop" not in hide or ".cover-later" not in hide or ".list-under-cover" not in hide:
+    raise SystemExit("empty CSS must keep occupied cover hops off empty")
+if "display: none" not in block:
+    raise SystemExit("empty occupied chrome must stay off, not restyled")
+if "background:" in hide:
+    raise SystemExit("do not recolor empty; hide occupied chrome")
+if "data-cover-hop" in hide or 'data-first-click="take"' in hide:
+    raise SystemExit("do not leak occupied hop stamps into empty CSS")
+if "data-empty-claim-after" in board or "take-after-list-seven" in css:
+    raise SystemExit("do not stamp another named hop")
 PY
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
