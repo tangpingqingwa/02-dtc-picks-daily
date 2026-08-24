@@ -184,6 +184,33 @@ export function renderBoardBody(model: BoardViewModel): string {
     : ' class="empty-claim-first" data-empty-claim-first="" aria-label="Claim #1"';
   const claimTitleAttrs = occupied ? "" : ' data-empty-claim="" data-first-click="claim"';
   const claimKicker = occupied ? html`<p class="claim-kicker">List a product</p>` : "";
+  const productUrlField = html`<div class="field">
+      <label class="field-label" for="productUrl">Product URL</label>
+      <input id="productUrl" name="productUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" required placeholder="https://store.example/sku"/>
+    </div>`;
+  const whyField = html`<div class="field why-field">
+      <label class="field-label" for="whyTestThisToday">Why test this today</label>
+      <input id="whyTestThisToday" name="whyTestThisToday" type="text" maxlength="140" minlength="8" required placeholder="What a seller should try this morning"/>
+    </div>`;
+  const formHint = html`<p class="form-hint">Already on the list? Enter the same URL and up your bid. You pay only the difference.</p>`;
+  const bidForm = occupied
+    ? html`<form id="bid-form" class="bid-form" method="post" action="/checkout">
+    <div class="bid-row">
+      ${productUrlField}
+      <button type="submit" class="outbid">Outbid</button>
+    </div>
+    ${whyField}
+    ${formHint}
+  </form>`
+    : html`<form id="bid-form" class="bid-form" method="post" action="/checkout">
+    <button type="submit" class="outbid">Outbid</button>
+    <div class="listing-identity" data-listing-identity="" data-later-write="">
+      <p class="later-write-label">Then the product URL</p>
+      ${productUrlField}
+      ${whyField}
+    </div>
+    ${formHint}
+  </form>`;
 
   return html`<div class="desk"${deskAttrs}>
 <header class="masthead">
@@ -223,20 +250,7 @@ ${renderLast24hStrip(model.last24h ?? [], model.now)}
     <span class="accent">New spots start at ${escapeHtml(formatUsd(MIN_BID_USD))}.</span>
     Paying less than the #1 price still puts you on the board at whatever place that bid can take.
   </p>
-  <form id="bid-form" class="bid-form" method="post" action="/checkout">
-    <div class="bid-row">
-      <div class="field">
-        <label class="field-label" for="productUrl">Product URL</label>
-        <input id="productUrl" name="productUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" required placeholder="https://store.example/sku"/>
-      </div>
-      <button type="submit" class="outbid">Outbid</button>
-    </div>
-    <div class="field why-field">
-      <label class="field-label" for="whyTestThisToday">Why test this today</label>
-      <input id="whyTestThisToday" name="whyTestThisToday" type="text" maxlength="140" minlength="8" required placeholder="What a seller should try this morning"/>
-    </div>
-    <p class="form-hint">Already on the list? Enter the same URL and up your bid. You pay only the difference.</p>
-  </form>
+  ${bidForm}
 </section>
 </div>
 <script>
