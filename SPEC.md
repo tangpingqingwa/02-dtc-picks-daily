@@ -171,8 +171,8 @@ The auction is **today’s cover**, not a forever directory.
 | Timezone | `BOARD_TZ` IANA name. **Default `UTC`.** Documented on `/about` and `/rules`. |
 | Day key | Calendar date in `BOARD_TZ` (`YYYY-MM-DD`). |
 | Reset | At `00:00` in `BOARD_TZ`, a new empty board starts. Yesterday’s listings leave the cover. |
-| Cover | Rank #1 **right now** for today’s `day` is the cover slot of this morning’s brief. |
-| Last 24h | A strip on `/` ranks paid rows whose `createdAt` falls in the **rolling last 24 hours**. Not civil midnight. Empty strip is valid. Not a second cover. Strip ranks are last-24h facts, not today’s cover #1. |
+| Cover | Rank #1 **right now** for today’s `day` is the cover slot of this morning’s brief. Occupied cover #1 and last-24h #1 stay two prizes. No hold on the cover. |
+| Last 24h | A strip on `/` ranks paid rows whose `createdAt` falls in the **rolling last 24 hours**. Not civil midnight. Empty strip is valid. Not a second cover. Cover #1 is this morning’s slot. Strip ranks are last-24h facts, not today’s cover #1. |
 | History | Keep paid rows for audit. The public cover shows **today’s** `day` only. The last-24h strip can still show last night’s paid rows. |
 
 Do not carry bids across the reset. Raising yesterday’s URL today is a **new** listing on the new day and pays a full bid ≥ $5.
@@ -243,6 +243,7 @@ Must state every rule in sections 6–11 in operator language. No extra ranking 
 - Empty board is a valid morning. Show the empty state; do not seed fake SKUs.
 - Empty cover stays empty. Do not invent a #1 on the cover slot or the last-24h strip.
 - Occupied last-24h strip ranks are last-24h facts. They are not today’s cover #1.
+- Occupied cover #1 and last-24h #1 stay two prizes. Cover is the morning slot; strip #1 is only who spent in the rolling window. Empty strip stays empty. No hold on the cover.
 
 ---
 

@@ -245,6 +245,10 @@ if [[ -f package.json ]]; then
     || fail "empty-cover Claim #1 leftover test did not run"
   grep -q 'Test this today stays off empty' "$test_log" \
     || fail "empty-cover Test this today off-empty leftover test did not run"
+  grep -q 'occupied cover #1 and last-24h #1 two prizes' "$test_log" \
+    || fail "two-prizes leftover test did not run"
+  grep -q 'strip 24h 1 is not this morning’s cover' "$test_log" \
+    || fail "two-prizes strip-not-cover leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -340,6 +344,10 @@ if host_after < 0 or cover_hop > host_after or list_after_take > host_after:
 name_prize = src.find("data-cover-name")
 later_money = src.find("data-later-fact")
 if name_prize < 0 or later_money < 0 or name_prize > later_money:
+    raise SystemExit(1)
+morning = src.find("data-morning-slot")
+two_prizes = src.find("data-two-prizes")
+if morning < 0 or two_prizes < 0:
     raise SystemExit(1)
 PY
   grep -q 'Morning merch desk' src/views/board.ts \
@@ -665,6 +673,18 @@ PY
     || fail "occupied last-24h strip rank is not stamped as a last-24h fact"
   grep -q '24h ${listing.rank}' src/views/board.ts \
     || fail "occupied last-24h strip still prints a bare rank that can read as cover #1"
+  grep -q 'data-morning-slot' src/views/board.ts \
+    || fail "occupied cover missing morning-slot stamp"
+  grep -q 'data-two-prizes' src/views/board.ts \
+    || fail "occupied desk missing two-prizes composition stamp"
+  grep -q 'data-last24h-prize' src/views/board.ts \
+    || fail "occupied last-24h #1 missing window-prize stamp"
+  grep -q 'data-last24h-slot' src/views/board.ts \
+    || fail "occupied last-24h #1 missing Rolling 24h spend slot"
+  grep -q 'Rolling 24h spend' src/views/board.ts \
+    || fail "last-24h #1 does not name the rolling-window prize"
+  grep -q 'Cover #1 is this morning’s slot' src/views/board.ts \
+    || fail "strip dek must name cover as this morning’s slot"
   grep -q 'A strip rank is a last-24h fact, not today’s cover #1' src/views/board.ts \
     || fail "last-24h strip must not claim today’s cover"
   grep -q 'rolling last 24 hours' src/views/board.ts \
@@ -713,6 +733,18 @@ if "24h ${listing.rank}" not in row:
     raise SystemExit("occupied strip rank must read as a last-24h fact, not a bare 1")
 if ">${listing.rank}<" in row.replace("24h ${listing.rank}", ""):
     raise SystemExit("bare strip rank 1 still reads as today’s cover")
+if 'data-last24h-prize=""' not in row:
+    raise SystemExit("strip #1 must stamp a last-24h prize, not the morning cover")
+if "Rolling 24h spend" not in row:
+    raise SystemExit("strip #1 must name rolling-window spend, not this morning’s cover")
+if row.find("last24h-host") > row.find("data-last24h-rank"):
+    raise SystemExit("strip 24h N must recede after the rolling-window host")
+if 'data-morning-slot=""' not in board:
+    raise SystemExit("occupied cover must stamp the morning slot")
+if 'data-two-prizes=""' not in board:
+    raise SystemExit("occupied cover + occupied strip must stamp two prizes")
+if "Cover #1 is this morning’s slot" not in board:
+    raise SystemExit("dek must keep cover as the morning slot")
 if 'data-last24h-empty=""' not in board:
     raise SystemExit("empty strip must stay data-last24h-empty")
 if "data-take-after-list-seven" in board:
@@ -739,6 +771,28 @@ if "background:" in hide:
 if "data-cover-hop" in hide or 'data-first-click="take"' in hide:
     raise SystemExit("do not leak occupied hop stamps into empty CSS")
 if "data-empty-claim-after" in board or "take-after-list-seven" in css:
+    raise SystemExit("do not stamp another named hop")
+if ".desk[data-two-prizes]" not in css:
+    raise SystemExit("two-prize CSS must compose cover vs strip")
+if ".last24h-row[data-last24h-prize] .last24h-host" not in css:
+    raise SystemExit("strip prize host must stay quieter than the cover name")
+import re
+cover_m = re.search(
+    r"\.desk\[data-two-prizes\] \.row-cover\[data-morning-slot\] \.host\[data-cover-name\]\s*\{[^}]*font-size:\s*([0-9.]+)rem",
+    css,
+)
+strip_m = re.search(
+    r"\.desk\[data-two-prizes\] \.last24h-row\[data-last24h-prize\] \.last24h-host\s*\{[^}]*font-size:\s*([0-9.]+)rem",
+    css,
+)
+if not cover_m or not strip_m:
+    raise SystemExit("two-prize CSS missing cover vs strip sizes")
+if float(cover_m.group(1)) <= float(strip_m.group(1)):
+    raise SystemExit("cover product name must stay larger than strip #1 host")
+two = css.split(".desk[data-two-prizes]", 1)[-1].split("#claim {", 1)[0]
+if "var(--primary)" in two:
+    raise SystemExit("do not recolor the two prizes")
+if "take-after-list-seven" in two or "list-after-take-seven" in two:
     raise SystemExit("do not stamp another named hop")
 PY
   grep -q 'You pay only the difference' src/views/board.ts \

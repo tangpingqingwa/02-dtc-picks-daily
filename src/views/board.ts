@@ -33,10 +33,15 @@ export function renderLast24hRow(listing: RankedListing, now?: Date): string {
   const blurb = escapeHtml(listing.whyTestThisToday);
   const when = escapeHtml(relativeTime(listing.createdAt, now));
   const bid = escapeHtml(formatUsd(listing.bidUsd));
-  return html`<li class="last24h-row" data-last24h-row="" data-last24h-id="${escapeHtml(listing.id)}">
+  const isWindowPrize = listing.rank === 1;
+  const prizeAttr = isWindowPrize ? ' data-last24h-prize=""' : "";
+  const slot = isWindowPrize
+    ? html`<span class="last24h-slot" data-last24h-slot="">Rolling 24h spend</span>`
+    : "";
+  return html`<li class="last24h-row" data-last24h-row="" data-last24h-id="${escapeHtml(listing.id)}"${prizeAttr}>
   <div class="last24h-link">
-    <span class="last24h-rank" data-last24h-rank="${listing.rank}" data-last24h-fact="" aria-label="Last 24 hours rank ${listing.rank}, not today’s cover">24h ${listing.rank}</span>
     <span class="last24h-body">
+      ${slot}
       <span class="last24h-host">${host}</span>
       <span class="last24h-why">${blurb}</span>
     </span>
@@ -44,6 +49,7 @@ export function renderLast24hRow(listing: RankedListing, now?: Date): string {
       <span class="last24h-when"><time datetime="${escapeHtml(listing.createdAt)}">${when}</time></span>
       <span class="last24h-clicks">${listing.clicks} clicks</span>
       <span class="last24h-bid">${bid}</span>
+      <span class="last24h-rank" data-last24h-rank="${listing.rank}" data-last24h-fact="" aria-label="Last 24 hours rank ${listing.rank}, not today’s cover">24h ${listing.rank}</span>
     </span>
   </div>
 </li>`;
@@ -58,9 +64,9 @@ export function renderLast24hStrip(listings: RankedListing[], now?: Date): strin
     : html`<p class="last24h-empty" data-last24h-empty="">
         No paid listings in the last 24 hours. The strip stays empty — not a second cover. No invented #1.
       </p>`;
-  return html`<aside class="last24h" data-last24h="" data-last24h-window="rolling-24h"${occupied ? "" : ' data-last24h-empty-strip=""'}>
+  return html`<aside class="last24h" data-last24h="" data-last24h-window="rolling-24h"${occupied ? ' data-last24h-occupied=""' : ' data-last24h-empty-strip=""'}>
   <p class="last24h-kicker">Last 24 hours</p>
-  <p class="last24h-dek">Spend in the rolling last 24 hours. Not a midnight UTC reset. Not a second all-time board. A strip rank is a last-24h fact, not today’s cover #1.</p>
+  <p class="last24h-dek">Spend in the rolling last 24 hours. Not a midnight UTC reset. Not a second all-time board. Cover #1 is this morning’s slot. A strip rank is a last-24h fact, not today’s cover #1.</p>
   ${rows}
 </aside>`;
 }
@@ -139,7 +145,7 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
   const wrap = isCover
     ? html`<div class="row-link">${inner}</div>`
     : html`<a class="row-link" href="${href}">${inner}</a>`;
-  return html`<article class="row${topClass}" data-rank="${rank}" data-listing-id="${escapeHtml(listing.id)}">
+  return html`<article class="row${topClass}" data-rank="${rank}" data-listing-id="${escapeHtml(listing.id)}"${isCover ? ' data-morning-slot=""' : ""}>
   ${wrap}
   <button type="button" class="claim-rank" data-claim-bid="${claimRankUsd(listing)}">claim this rank for ${claim}</button>
 </article>`;
@@ -156,6 +162,7 @@ export function renderBoardBody(model: BoardViewModel): string {
         : `Claim #${projected} for`;
   const issueSpoken = escapeHtml(formatIssueDate(model.day, model.tz));
   const occupied = model.listings.length > 0;
+  const stripOccupied = (model.last24h ?? []).length > 0;
   const rows = occupied
     ? model.listings.map((listing) => renderListingRow(listing, model.now)).join("")
     : html`<div class="empty" data-empty-board="" data-empty-cover="">
@@ -170,7 +177,7 @@ export function renderBoardBody(model: BoardViewModel): string {
   </p>`
     : "";
   const deskAttrs = occupied
-    ? ' data-occupied="true"'
+    ? ` data-occupied="true"${stripOccupied ? ' data-two-prizes=""' : ""}`
     : ' data-occupied="false" data-empty-claim-first=""';
   const claimAttrs = occupied
     ? ""
