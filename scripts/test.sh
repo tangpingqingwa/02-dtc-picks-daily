@@ -219,6 +219,8 @@ if [[ -f package.json ]]; then
     || fail "seller list-after-take-five test did not run"
   grep -q 'concentrates Test this today after List a product is re-concentrated a fifth time' "$test_log" \
     || fail "shopper take-after-list-five test did not run"
+  grep -q 'concentrates List a product after Test this today is re-concentrated a sixth time' "$test_log" \
+    || fail "seller list-after-take-six test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -282,6 +284,9 @@ if list_five < 0 or list_five < list_four:
     raise SystemExit(1)
 take_five = src.find("data-take-after-list-five")
 if take_five < 0 or take_five < take_four or take_five > list_after_take:
+    raise SystemExit(1)
+list_six = src.find("data-list-after-take-six")
+if list_six < 0 or list_six < list_five:
     raise SystemExit(1)
 host_after = src.find("<p class=\"host\">")
 if host_after < 0 or cover_hop > host_after or list_after_take > host_after:
@@ -450,6 +455,30 @@ take = min_height("take-after-list-five")
 listed = min_height("list-after-take-five")
 prior = min_height("take-after-list-four")
 if take <= listed or take <= prior:
+    raise SystemExit(1)
+PY
+  grep -q 'data-list-after-take-six' src/views/board.ts \
+    || fail "paid cover missing list-after-take-six stamp on List a product"
+  grep -q 'list-after-take-six' src/views/styles.ts \
+    || fail "List a product is not taller than the outlined write after the taller take"
+  python3 - <<'PY' || fail "list-after-take-six must stay taller than list-after-take-five and shorter than take-after-list-five"
+import re
+from pathlib import Path
+css = Path("src/views/styles.ts").read_text()
+
+def min_height(name: str) -> float:
+    m = re.search(rf"\.{re.escape(name)}\s*\{{[^}}]*min-height:\s*([0-9.]+)rem", css)
+    if not m:
+        raise SystemExit(1)
+    return float(m.group(1))
+
+listed = min_height("list-after-take-six")
+prior = min_height("list-after-take-five")
+take = min_height("take-after-list-five")
+block = re.search(r"\.list-after-take-six\s*\{[^}]*\}", css)
+if listed <= prior or listed >= take:
+    raise SystemExit(1)
+if not block or "var(--primary)" in block.group(0) or "background:" in block.group(0):
     raise SystemExit(1)
 PY
   grep -q 'You pay only the difference' src/views/board.ts \
