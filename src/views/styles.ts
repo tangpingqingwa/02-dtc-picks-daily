@@ -394,6 +394,36 @@ nav[aria-label="Main"] a:hover {
   font-size: 0.88rem;
   color: var(--muted-foreground);
 }
+/* Empty morning: Why test this today is a later write after the product URL. */
+#claim.empty-claim-first[data-empty-claim-first] .why-later[data-why-later] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: 22rem;
+  margin: 0.55rem auto 0;
+  padding-top: 0.55rem;
+  border-top: 1px dotted var(--border);
+}
+#claim.empty-claim-first[data-empty-claim-first] .why-later-label {
+  margin: 0;
+  text-align: center;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+#claim.empty-claim-first[data-empty-claim-first] .why-later[data-why-later] .field-label {
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+}
+#claim.empty-claim-first[data-empty-claim-first] .why-later[data-why-later] .field input {
+  height: 1.85rem;
+  font-size: 0.78rem;
+  color: var(--muted-foreground);
+}
 .claim-kicker {
   margin: 0 0 0.45rem;
   text-align: center;

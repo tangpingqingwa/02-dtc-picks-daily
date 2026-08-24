@@ -253,6 +253,8 @@ if [[ -f package.json ]]; then
     || fail "empty-morning later-write leftover test did not run"
   grep -q 'product URL is a later write' "$test_log" \
     || fail "empty-morning product-URL later-write leftover test did not run"
+  grep -q 'Claim #1 the first click — Why test this today is a later write' "$test_log" \
+    || fail "empty-morning Why later-write leftover test did not run"
   grep -q 'occupied later product names quieter than this morning’s cover' "$test_log" \
     || fail "later-rank quiet leftover test did not run"
   grep -q 'prize stays first' "$test_log" \
@@ -289,15 +291,21 @@ if [[ -f package.json ]]; then
     || fail "empty morning missing listing-identity wrap"
   grep -q 'Then the product URL' src/views/board.ts \
     || fail "empty morning must name the product URL as a later write"
+  grep -q 'data-why-later' src/views/board.ts \
+    || fail "empty morning missing later-write stamp on Why test this today"
+  grep -q 'Then why test this today' src/views/board.ts \
+    || fail "empty morning must name Why test this today as a later write"
   grep -q 'desk:has(.empty)' src/views/styles.ts \
     || fail "empty cover CSS missing Claim #1 first-click composition"
   grep -q 'listing-identity\[data-later-write\]' src/views/styles.ts \
     || fail "empty morning CSS missing later-write product URL composition"
+  grep -q 'why-later\[data-why-later\]' src/views/styles.ts \
+    || fail "empty morning CSS missing later-write Why composition"
   grep -q 'later-stack\[data-later-stack\]' src/views/styles.ts \
     || fail "later-rank CSS missing later-stack grouping"
   grep -q 'host.stack-host' src/views/styles.ts \
     || fail "later-rank CSS missing quieter stack-host anatomy"
-  if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven|data-later-rank-quiet|data-later-quiet' \
+  if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven|data-later-rank-quiet|data-later-quiet|data-why-later-quiet' \
     src/views/board.ts src/views/styles.ts >/dev/null; then
     fail "do not stamp another named hop; compose empty vs occupied"
   fi
@@ -792,9 +800,13 @@ if 'data-occupied="false"' not in board or 'data-occupied="true"' not in board:
 if 'data-later-write=""' not in board:
     raise SystemExit("empty morning must stamp product URL as a later write")
 if 'data-listing-identity=""' not in board:
-    raise SystemExit("empty morning must wrap product URL + why as listing identity")
+    raise SystemExit("empty morning must wrap the product URL as listing identity")
 if "Then the product URL" not in board:
     raise SystemExit("empty morning must name the later product URL write")
+if 'data-why-later=""' not in board:
+    raise SystemExit("empty morning must stamp Why as a later write")
+if "Then why test this today" not in board:
+    raise SystemExit("empty morning must name Why as a later write after the product URL")
 forms = board.split("const bidForm = occupied", 1)[-1]
 occupied_form = forms.split("? html`", 1)[-1].split(": html`", 1)[0]
 empty_form_html = forms.split(": html`", 1)[-1].split("</form>`", 1)[0]
@@ -802,16 +814,24 @@ if 'class="bid-row"' not in occupied_form:
     raise SystemExit("occupied claim must keep Product URL on the bid-row with Outbid")
 if "${productUrlField}" not in occupied_form or ">Outbid<" not in occupied_form:
     raise SystemExit("occupied bid-row must still hold Product URL and Outbid")
+if "${whyField}" not in occupied_form:
+    raise SystemExit("occupied form must still hold Why under Product URL + Outbid")
 if 'class="bid-row"' in empty_form_html:
     raise SystemExit("empty morning must not keep Product URL in the same claim rail as Outbid")
 outbid_at = empty_form_html.find(">Outbid<")
 later_at = empty_form_html.find("data-later-write")
 url_at = empty_form_html.find("${productUrlField}")
+why_later_at = empty_form_html.find("data-why-later")
 why_at = empty_form_html.find("${whyField}")
-if outbid_at < 0 or later_at < 0 or url_at < 0 or why_at < 0:
-    raise SystemExit("empty form must keep Outbid, then later-write identity")
-if not (outbid_at < later_at < url_at < why_at):
-    raise SystemExit("empty Outbid must precede the later product URL write")
+identity_end = empty_form_html.find("</div>", later_at)
+if outbid_at < 0 or later_at < 0 or url_at < 0 or why_later_at < 0 or why_at < 0:
+    raise SystemExit("empty form must keep Outbid, then later product URL, then later Why")
+if not (outbid_at < later_at < url_at < why_later_at < why_at):
+    raise SystemExit("empty Why must be a later write after the product URL")
+if identity_end > 0 and why_at < identity_end:
+    raise SystemExit("Why must not sit as a twin field inside listing-identity")
+if "${whyField}" in empty_form_html[later_at:why_later_at]:
+    raise SystemExit("listing-identity must hold only the product URL, not Why")
 empty_rule = css.split("Empty morning: Claim #1 is the only first click", 1)
 if len(empty_rule) < 2:
     raise SystemExit("empty CSS must name Claim #1 as the only first click")
@@ -830,18 +850,42 @@ if "data-empty-claim-after" in board or "take-after-list-seven" in css:
 later_rule = css.split("Empty morning: Product URL is a later write after Claim #1 / Outbid", 1)
 if len(later_rule) < 2:
     raise SystemExit("empty CSS must name the product URL as a later write")
-later_block = later_rule[1].split(".claim-kicker {", 1)[0]
+later_block = later_rule[1].split("Empty morning: Why test this today is a later write after the product URL", 1)[0]
 if ".listing-identity[data-later-write]" not in later_block:
     raise SystemExit("later-write CSS must compose listing identity off the claim rail")
 if "background:" in later_block or "var(--primary)" in later_block:
     raise SystemExit("do not recolor the later product URL write")
 if "take-after-list-seven" in later_block or "data-empty-claim-after" in later_block:
     raise SystemExit("do not stamp another named hop on the later write")
+if "why-later" in later_block:
+    raise SystemExit("product-URL later-write CSS must not swallow Why later-write")
+why_rule = css.split("Empty morning: Why test this today is a later write after the product URL", 1)
+if len(why_rule) < 2:
+    raise SystemExit("empty CSS must name Why as a later write after the product URL")
+why_block = why_rule[1].split(".claim-kicker {", 1)[0]
+if ".why-later[data-why-later]" not in why_block:
+    raise SystemExit("Why later-write CSS must compose Why off the product URL")
+if "listing-identity" in why_block or "data-later-write" in why_block:
+    raise SystemExit("Why later-write CSS must not restyle the product URL as a twin")
+if "background:" in why_block or "var(--primary)" in why_block:
+    raise SystemExit("do not recolor the later Why write")
+if "take-after-list-seven" in why_block or "data-empty-claim-after" in why_block:
+    raise SystemExit("do not stamp another named hop on the later Why write")
 if ".desk[data-two-prizes]" not in css:
     raise SystemExit("two-prize CSS must compose cover vs strip")
 if ".last24h-row[data-last24h-prize] .last24h-host" not in css:
     raise SystemExit("strip prize host must stay quieter than the cover name")
 import re
+url_w = re.search(r"max-width:\s*([0-9.]+)rem", later_block)
+why_w = re.search(r"max-width:\s*([0-9.]+)rem", why_block)
+url_h = re.search(r"height:\s*([0-9.]+)rem", later_block)
+why_h = re.search(r"height:\s*([0-9.]+)rem", why_block)
+if not url_w or not why_w or not url_h or not why_h:
+    raise SystemExit("Why later-write CSS must recede vs the product URL")
+if float(why_w.group(1)) >= float(url_w.group(1)):
+    raise SystemExit("Why later write must stay narrower than the product URL")
+if float(why_h.group(1)) >= float(url_h.group(1)):
+    raise SystemExit("Why later write must stay shorter than the product URL")
 cover_m = re.search(
     r"\.desk\[data-two-prizes\] \.row-cover\[data-morning-slot\] \.host\[data-cover-name\]\s*\{[^}]*font-size:\s*([0-9.]+)rem",
     css,
@@ -855,7 +899,7 @@ if not cover_m or not strip_m:
 if float(cover_m.group(1)) <= float(strip_m.group(1)):
     raise SystemExit("cover product name must stay larger than strip #1 host")
 two = css.split(".desk[data-two-prizes]", 1)[-1].split("#claim {", 1)[0]
-if "empty-claim-first" in two or "data-later-write" in two:
+if "empty-claim-first" in two or "data-later-write" in two or "data-why-later" in two:
     raise SystemExit("two-prize CSS must not swallow empty later-write composition")
 if "var(--primary)" in two:
     raise SystemExit("do not recolor the two prizes")
