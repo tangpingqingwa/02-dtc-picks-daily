@@ -172,9 +172,12 @@ The auction is **today’s cover**, not a forever directory.
 | Day key | Calendar date in `BOARD_TZ` (`YYYY-MM-DD`). |
 | Reset | At `00:00` in `BOARD_TZ`, a new empty board starts. Yesterday’s listings leave the cover. |
 | Cover | Rank #1 **right now** for today’s `day` is the cover slot of this morning’s brief. |
-| History | Keep paid rows for audit. The public `/` board shows **today only**. |
+| Last 24h | A strip on `/` ranks paid rows whose `createdAt` falls in the **rolling last 24 hours**. Not civil midnight. Empty strip is valid. Not a second cover. |
+| History | Keep paid rows for audit. The public cover shows **today’s** `day` only. The last-24h strip can still show last night’s paid rows. |
 
 Do not carry bids across the reset. Raising yesterday’s URL today is a **new** listing on the new day and pays a full bid ≥ $5.
+
+A newcomer can appear on the last-24h strip without beating today’s cover #1. The window is fair across timezones because it rolls; it does not reset at `00:00` UTC.
 
 ---
 

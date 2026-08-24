@@ -38,6 +38,8 @@ export function renderAboutBody(model: AboutViewModel): string {
     <code>BOARD_TZ</code> (default <strong>UTC</strong>). Right now this board uses
     <strong>${tz}</strong>. Yesterday’s listings leave the cover. Raising yesterday’s
     URL today is a new listing and pays a full bid of at least $5.
+    A last-24-hours strip on the desk is a <strong>rolling</strong> window, not that
+    midnight reset. An empty strip is honest. It is not a second cover.
   </p>
   <p>
     Anyone can read the board without an account. Payment is the only write path.

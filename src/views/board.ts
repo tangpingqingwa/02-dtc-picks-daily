@@ -19,12 +19,50 @@ export type BoardViewModel = {
   day: string;
   tz: string;
   listings: RankedListing[];
+  last24h?: RankedListing[];
   defaultBidUsd: number;
   now?: Date;
 };
 
 export function claimRankUsd(listing: RankedListing): number {
   return claimPriceUsd(listing.bidUsd);
+}
+
+export function renderLast24hRow(listing: RankedListing, now?: Date): string {
+  const host = escapeHtml(displayHostPath(listing.productUrl));
+  const blurb = escapeHtml(listing.whyTestThisToday);
+  const when = escapeHtml(relativeTime(listing.createdAt, now));
+  const bid = escapeHtml(formatUsd(listing.bidUsd));
+  return html`<li class="last24h-row" data-last24h-row="" data-last24h-id="${escapeHtml(listing.id)}">
+  <div class="last24h-link">
+    <span class="last24h-rank">#${listing.rank}</span>
+    <span class="last24h-body">
+      <span class="last24h-host">${host}</span>
+      <span class="last24h-why">${blurb}</span>
+    </span>
+    <span class="last24h-meta">
+      <span class="last24h-when"><time datetime="${escapeHtml(listing.createdAt)}">${when}</time></span>
+      <span class="last24h-clicks">${listing.clicks} clicks</span>
+      <span class="last24h-bid">${bid}</span>
+    </span>
+  </div>
+</li>`;
+}
+
+export function renderLast24hStrip(listings: RankedListing[], now?: Date): string {
+  const occupied = listings.length > 0;
+  const rows = occupied
+    ? html`<ol class="last24h-list">
+        ${listings.map((listing) => renderLast24hRow(listing, now)).join("")}
+      </ol>`
+    : html`<p class="last24h-empty" data-last24h-empty="">
+        No paid listings in the last 24 hours. The strip stays empty — not a second cover.
+      </p>`;
+  return html`<aside class="last24h" data-last24h="" data-last24h-window="rolling-24h"${occupied ? "" : ' data-last24h-empty-strip=""'}>
+  <p class="last24h-kicker">Last 24 hours</p>
+  <p class="last24h-dek">Spend in the rolling last 24 hours. Not a midnight UTC reset. Not a second all-time board.</p>
+  ${rows}
+</aside>`;
 }
 
 export function renderListingRow(listing: RankedListing, now?: Date): string {
@@ -133,6 +171,7 @@ export function renderBoardBody(model: BoardViewModel): string {
 <section id="leaderboard" aria-label="Today’s cover">
   ${rows}
 </section>
+${renderLast24hStrip(model.last24h ?? [], model.now)}
 <section id="claim">
   <p class="claim-kicker">List a product</p>
   <h2 class="claim-title">

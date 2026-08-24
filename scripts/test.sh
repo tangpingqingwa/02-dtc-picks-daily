@@ -225,6 +225,10 @@ if [[ -f package.json ]]; then
     || fail "shopper take-after-list-six test did not run"
   grep -q 'why-line read first and larger than $bid' "$test_log" \
     || fail "prize-before-price shopper test did not run"
+  grep -q 'honest last-24h strip' "$test_log" \
+    || fail "rolling last-24h strip test did not run"
+  grep -q 'rolling 24h window, not civil midnight' "$test_log" \
+    || fail "listLast24h window test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -239,6 +243,9 @@ src = Path("src/views/board.ts").read_text()
 board = src.find('id="leaderboard"')
 claim = src.find('id="claim"')
 if board < 0 or claim < 0 or board > claim:
+    raise SystemExit(1)
+strip = src.find("renderLast24hStrip", board)
+if strip < 0 or strip > claim:
     raise SystemExit(1)
 list_hop = src.find("data-list-under-cover")
 if list_hop < 0 or list_hop > board:
@@ -544,6 +551,42 @@ if float(later_blurb.group(1)) >= float(prize.group(1)):
     raise SystemExit("later blurbs must stay quieter than the cover prize")
 if "var(--primary)" in prize.group(0):
     raise SystemExit("do not recolor")
+PY
+  grep -q 'data-last24h' src/views/board.ts \
+    || fail "board missing last-24h strip"
+  grep -q 'data-last24h-empty' src/views/board.ts \
+    || fail "last-24h strip missing honest empty"
+  grep -q 'rolling last 24 hours' src/views/board.ts \
+    || fail "last-24h strip must name the rolling window"
+  grep -q 'listLast24h' src/core/board.ts \
+    || fail "board core missing listLast24h"
+  grep -q 'ROLLING_WINDOW_MS' src/core/board.ts \
+    || fail "last-24h window is not a rolling 24 hours"
+  if grep -q 'href="/today"' src/views/board.ts src/http/pages/board.ts; then
+    fail "do not clone /today chrome onto a second board"
+  fi
+  if grep -Eq 'outbid\.lol/today|Today Board|Daily Board' src/views/board.ts src/http/pages/board.ts; then
+    fail "do not paste /today copy onto the merch desk"
+  fi
+  python3 - <<'PY' || fail "last-24h strip must stay one strip under the one cover, not a second hop"
+from pathlib import Path
+board = Path("src/views/board.ts").read_text()
+css = Path("src/views/styles.ts").read_text()
+if board.count("data-last24h=") != 1:
+    raise SystemExit("one last-24h strip")
+if "data-take-after-list-seven" in board or "data-list-after-take-seven" in board:
+    raise SystemExit("do not add another named hop")
+if "take-after-list-seven" in css or "list-after-take-seven" in css:
+    raise SystemExit("do not stamp take-after-list-N / list-after-take-N")
+if 'id="today"' in board or "aria-label=\"Today\"" in board:
+    raise SystemExit("do not clone /today chrome")
+cover = board.find('id="leaderboard"')
+claim = board.find('id="claim"')
+strip = board.find("renderLast24hStrip", cover)
+if cover < 0 or strip < 0 or claim < 0 or not (cover < strip < claim):
+    raise SystemExit("strip must sit under the one cover, before claim")
+if "No paid listings in the last 24 hours" not in board:
+    raise SystemExit("empty strip must stay honest")
 PY
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"

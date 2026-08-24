@@ -177,6 +177,37 @@ export function listToday(db: AppDb, day: string): RankedListing[] {
   return withRanks(rows.map(listingFromRow));
 }
 
+export const ROLLING_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** Inclusive start of the rolling last-24-hours window. Not civil midnight. */
+export function rollingWindowStart(now: Date = new Date()): Date {
+  return new Date(now.getTime() - ROLLING_WINDOW_MS);
+}
+
+function listingInRollingWindow(listing: Listing, now: Date): boolean {
+  const created = Date.parse(listing.createdAt);
+  if (Number.isNaN(created)) {
+    return false;
+  }
+  return created >= now.getTime() - ROLLING_WINDOW_MS && created <= now.getTime();
+}
+
+/**
+ * Paid rows whose createdAt falls in the last 24 hours, ranked by bid then older.
+ * A raise keeps createdAt, so the original paid time is the window key.
+ */
+export function listLast24h(db: AppDb, now: Date = new Date()): RankedListing[] {
+  const since = rollingWindowStart(now).toISOString();
+  const until = now.toISOString();
+  const rows = db
+    .prepare<[string, string], ListingRow>(
+      `SELECT ${LISTING_COLUMNS} FROM listings
+       WHERE created_at >= ? AND created_at <= ?`,
+    )
+    .all(since, until);
+  return withRanks(rows.map(listingFromRow).filter((row) => listingInRollingWindow(row, now)));
+}
+
 export function placeBid(db: AppDb, input: PlaceBidInput): Listing {
   if (!Number.isInteger(input.bidUsd) || input.bidUsd < MIN_BID_USD) {
     throw new Error(`bid must be a whole dollar >= ${MIN_BID_USD}`);
