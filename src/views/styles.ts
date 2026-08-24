@@ -350,6 +350,49 @@ nav[aria-label="Main"] a:hover {
   padding-top: 1.5rem;
   border-top: 1px solid var(--border);
 }
+/* Empty morning: Product URL is a later write after Claim #1 / Outbid. */
+#claim.empty-claim-first[data-empty-claim-first] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#claim.empty-claim-first[data-empty-claim-first] .bid-form {
+  width: 100%;
+  align-items: center;
+}
+#claim.empty-claim-first[data-empty-claim-first] .outbid {
+  width: auto;
+  min-width: 9rem;
+  margin: 0 auto;
+}
+#claim.empty-claim-first[data-empty-claim-first] .listing-identity[data-later-write] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+  max-width: 28rem;
+  margin: 0.85rem auto 0;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--border);
+}
+#claim.empty-claim-first[data-empty-claim-first] .later-write-label {
+  margin: 0;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+#claim.empty-claim-first[data-empty-claim-first] .listing-identity[data-later-write] .field-label {
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+#claim.empty-claim-first[data-empty-claim-first] .listing-identity[data-later-write] .field input {
+  height: 2.2rem;
+  font-size: 0.88rem;
+  color: var(--muted-foreground);
+}
 .claim-kicker {
   margin: 0 0 0.45rem;
   text-align: center;
