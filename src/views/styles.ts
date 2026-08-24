@@ -581,6 +581,12 @@ a.row-link:hover { color: var(--primary); }
   font-size: 1.05rem;
   letter-spacing: 0.12em;
 }
+.list-after-take-four {
+  min-height: 3.75rem;
+  padding: 0 1.65rem;
+  font-size: 1.15rem;
+  letter-spacing: 0.14em;
+}
 .list-after-take:hover {
   color: var(--foreground);
 }
