@@ -96,7 +96,6 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
   const blurb = escapeHtml(listing.whyTestThisToday);
   const when = escapeHtml(relativeTime(listing.createdAt, now));
   const bid = escapeHtml(formatUsd(listing.bidUsd));
-  const claim = escapeHtml(formatUsd(claimRankUsd(listing)));
   const href = escapeHtml(`/r/${listing.id}`);
   const coverWhy = isCover
     ? html`<div class="cover-why" data-cover-why="">
@@ -138,9 +137,9 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
     </div>`;
     return html`<article class="row${topClass}" data-rank="${rank}" data-listing-id="${escapeHtml(listing.id)}" data-morning-slot="" data-paid-name="">
   <div class="row-link">${inner}</div>
-  <button type="button" class="claim-rank" data-claim-bid="${claimRankUsd(listing)}">claim this rank for ${claim}</button>
 </article>`;
   }
+  const claim = escapeHtml(formatUsd(claimRankUsd(listing)));
   const inner = html`<div class="row-meta">
       <span class="rank">#${rank}</span>
     </div>
@@ -247,6 +246,12 @@ export function renderBoardBody(model: BoardViewModel): string {
     ${formHint}
   </form>`;
 
+  // Occupied morning: Take is the first click. Claim #1 is a later write after the cover.
+  const claimAfterOpen = occupied
+    ? html`<div class="claim-after-cover" data-claim-after-cover="">`
+    : "";
+  const claimAfterClose = occupied ? html`</div>` : "";
+
   return html`<div class="desk"${deskAttrs}>
 <header class="masthead">
   <p class="masthead-kicker">Morning merch desk</p>
@@ -264,6 +269,7 @@ export function renderBoardBody(model: BoardViewModel): string {
   ${rows}
 </section>
 ${renderLast24hStrip(last24h, model.now)}
+${claimAfterOpen}
 <section id="claim"${claimAttrs}>
   ${claimKicker}
   <h2 class="claim-title"${claimTitleAttrs}>
@@ -292,6 +298,7 @@ ${renderLast24hStrip(last24h, model.now)}
   </p>
   ${bidForm}
 </section>
+${claimAfterClose}
 </div>
 <script>
   (function () {

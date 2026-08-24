@@ -228,7 +228,8 @@ nav[aria-label="Main"] a:hover {
 .desk:has(.empty) .later-stack,
 .desk:has(.empty) .later-listing,
 .desk:has(.empty) [data-paid-name],
-.desk:has(.empty) .claim-kicker {
+.desk:has(.empty) .claim-kicker,
+.desk:has(.empty) .claim-after-cover {
   display: none;
 }
 .desk:has(.empty) #claim .claim-title {
@@ -358,6 +359,41 @@ nav[aria-label="Main"] a:hover {
   margin-top: 2.25rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border);
+}
+/* Occupied morning: Take is the only first click. Claim #1 is a later write after the cover. */
+.desk[data-occupied="true"] .claim-after-cover[data-claim-after-cover] {
+  margin-top: 1.6rem;
+}
+.desk[data-occupied="true"] .claim-after-cover[data-claim-after-cover] #claim {
+  margin-top: 0;
+  padding-top: 1.1rem;
+  border-top: 1px dashed var(--border);
+}
+.desk[data-occupied="true"] .claim-after-cover[data-claim-after-cover] #claim .claim-kicker {
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--muted-foreground);
+}
+.desk[data-occupied="true"] .claim-after-cover[data-claim-after-cover] #claim .claim-title {
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+@media (min-width: 768px) {
+  .desk[data-occupied="true"] .claim-after-cover[data-claim-after-cover] #claim .claim-title {
+    font-size: 1.25rem;
+  }
+}
+.desk[data-occupied="true"] .claim-after-cover[data-claim-after-cover] #claim .outbid {
+  height: 2.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.desk[data-occupied="true"] .claim-after-cover[data-claim-after-cover] #claim .bid-field {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
 }
 /* Empty morning: Product URL is a later write after Claim #1 / Outbid. */
 #claim.empty-claim-first[data-empty-claim-first] {
@@ -526,7 +562,8 @@ nav[aria-label="Main"] a:hover {
 .desk[data-unpaid-off] .list-after-why,
 .desk[data-unpaid-off] .list-after-take,
 .desk[data-unpaid-off] .later-listing,
-.desk[data-unpaid-off] .claim-kicker {
+.desk[data-unpaid-off] .claim-kicker,
+.desk[data-unpaid-off] .claim-after-cover {
   display: none;
 }
 .claim-note[data-unpaid-off] {
@@ -1177,10 +1214,6 @@ a.row-link:hover { color: var(--primary); }
   background: var(--muted-foreground);
 }
 .row-cover .row-link { padding-bottom: 0.35rem; }
-.row-cover .claim-rank {
-  top: 0;
-  transform: translate(-50%, -50%);
-}
 .row-stack { padding-left: 0.25rem; }
 @media (min-width: 768px) {
   .row-cover { padding: 1.1rem 1.15rem 0.85rem; }
