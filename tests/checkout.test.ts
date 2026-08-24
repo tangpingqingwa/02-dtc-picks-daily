@@ -148,7 +148,13 @@ test("abandoned fixture session does not insert a listing", async () => {
 
   const board = await app.inject({ method: "GET", url: "/" });
   assert.match(board.body, /data-empty-board/);
+  assert.match(board.body, /data-empty-cover=""/);
+  assert.match(board.body, /data-first-click="claim"/);
+  assert.match(board.body, /data-later-write=""/);
   assert.doesNotMatch(board.body, /ghost\.example/);
+  assert.doesNotMatch(board.body, /data-paid-name=/);
+  assert.doesNotMatch(board.body, /This morning’s cover/);
+  assert.doesNotMatch(board.body, /data-cover-hop/);
 });
 
 test("open fixture session lists only after complete", async () => {

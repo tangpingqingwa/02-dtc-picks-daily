@@ -2,7 +2,7 @@ import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import type { CheckoutDraft, PaidEvent } from "../billing/port.js";
 import {
   applyPaidBid,
-  findListingByDayAndUrl,
+  findPaidListingByDayAndUrl,
   MIN_BID_USD,
   quotePaidBid,
 } from "../core/board.js";
@@ -84,7 +84,7 @@ export const checkoutRoutes: FastifyPluginAsync = async (app) => {
     let draft: CheckoutDraft;
     try {
       draft = parseCheckoutForm(request.body, day);
-      const existing = findListingByDayAndUrl(app.db, day, draft.productUrl);
+      const existing = findPaidListingByDayAndUrl(app.db, day, draft.productUrl);
       draft = { ...draft, chargeUsd: quotePaidBid(existing, draft.bidUsd).chargeUsd };
     } catch (error) {
       return formError(reply, error);

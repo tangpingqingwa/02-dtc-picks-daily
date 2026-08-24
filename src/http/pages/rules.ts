@@ -109,7 +109,8 @@ export function renderRulesBody(model: RulesViewModel): string {
   </p>
   <p>
     No ads. No API-key product. No revenue share cut to the listed URL.
-    Failed or abandoned checkout: 0 listing change, 0 rank change.
+    Unpaid Polar checkout stays off this desk until Polar reports paid.
+    Failed or abandoned checkout: 0 listing change, 0 rank change. An abandoned listing is not cover #1.
   </p>
 </article>`;
 }

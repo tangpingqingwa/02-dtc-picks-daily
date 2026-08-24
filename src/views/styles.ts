@@ -515,6 +515,44 @@ nav[aria-label="Main"] a:hover {
   text-wrap: pretty;
 }
 .claim-note .accent { color: color-mix(in oklab, var(--primary) 70%, transparent); }
+/* Unpaid Polar checkout stays off the merch desk until Polar reports paid. */
+.desk[data-unpaid-off] .row-cover,
+.desk[data-unpaid-off] .later-stack,
+.desk[data-unpaid-off] .cover-hop,
+.desk[data-unpaid-off] .cover-hop-wrap,
+.desk[data-unpaid-off] .cover-later,
+.desk[data-unpaid-off] .cover-why,
+.desk[data-unpaid-off] .list-under-cover,
+.desk[data-unpaid-off] .list-after-why,
+.desk[data-unpaid-off] .list-after-take,
+.desk[data-unpaid-off] .later-listing,
+.desk[data-unpaid-off] .claim-kicker {
+  display: none;
+}
+.claim-note[data-unpaid-off] {
+  max-width: 32rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.claim-note[data-unpaid-off] .unpaid-off-line {
+  display: block;
+  margin: 0 0 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+#claim.empty-claim-first[data-empty-claim-first] .claim-note[data-unpaid-off] {
+  max-width: 26rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+#claim.empty-claim-first[data-empty-claim-first] .claim-note[data-unpaid-off] .unpaid-off-line {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
 .bid-form {
   margin-top: 1rem;
   display: flex;
@@ -1099,6 +1137,12 @@ a.row-link:hover { color: var(--primary); }
   line-height: 1.15;
 }
 .row-cover[data-paid-name] .host[data-cover-name] {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+.desk[data-occupied="true"] .row-cover[data-paid-name] .host[data-cover-name] {
   font-size: 1.85rem;
   font-weight: 700;
   letter-spacing: -0.03em;

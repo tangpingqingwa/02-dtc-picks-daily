@@ -66,8 +66,20 @@ const LISTING_COLUMNS = `
   clicks, created_at, updated_at
 `;
 
+/** Polar (or the fixture) has reported paid. Unpaid drafts never rank. */
+export function isPaidListing(listing: Pick<Listing, "paidUsd">): boolean {
+  return Number.isInteger(listing.paidUsd) && listing.paidUsd >= 1;
+}
+
+/** Paid rows only. Unpaid or abandoned checkouts never take a rank. */
+export function paidListings<T extends Pick<Listing, "paidUsd">>(
+  listings: readonly T[],
+): T[] {
+  return listings.filter(isPaidListing);
+}
+
 export function rankListings(rows: Listing[]): Listing[] {
-  return [...rows].sort((a, b) => {
+  return [...paidListings(rows)].sort((a, b) => {
     if (b.bidUsd !== a.bidUsd) return b.bidUsd - a.bidUsd;
     return a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0;
   });
@@ -79,7 +91,7 @@ export function withRanks(rows: Listing[]): RankedListing[] {
 
 /** Rank a new whole-dollar bid would take among today's paid rows. */
 export function rankForBid(rows: readonly Listing[], bidUsd: number): number {
-  return rows.filter((row) => row.bidUsd >= bidUsd).length + 1;
+  return paidListings(rows).filter((row) => row.bidUsd >= bidUsd).length + 1;
 }
 
 export function claimPriceUsd(currentBidUsd: number): number {
@@ -87,10 +99,11 @@ export function claimPriceUsd(currentBidUsd: number): number {
 }
 
 export function defaultClaimBidUsd(rows: readonly Listing[]): number {
-  if (rows.length === 0) {
+  const paid = rankListings([...rows] as Listing[]);
+  if (paid.length === 0) {
     return MIN_BID_USD;
   }
-  return claimPriceUsd(rows[0]!.bidUsd);
+  return claimPriceUsd(paid[0]!.bidUsd);
 }
 
 export function listingFromRow(row: ListingRow): Listing {
@@ -121,6 +134,15 @@ export function findListingByDayAndUrl(
   return row ? listingFromRow(row) : undefined;
 }
 
+export function findPaidListingByDayAndUrl(
+  db: AppDb,
+  day: string,
+  productUrl: string,
+): Listing | undefined {
+  const listing = findListingByDayAndUrl(db, day, productUrl);
+  return listing && isPaidListing(listing) ? listing : undefined;
+}
+
 /** Charge the full bid on first list; only `newBid - currentBid` on a same-day raise. */
 export function quotePaidBid(
   existing: Pick<Listing, "bidUsd"> | undefined,
@@ -136,6 +158,35 @@ export function quotePaidBid(
     throw new Error("new bid must be a whole dollar strictly greater than the current bid");
   }
   return { raise: true, chargeUsd: newBidUsd - existing.bidUsd };
+}
+
+/** Polar paid lands on a leftover unpaid same-URL row. Occupancy starts at this paid instant. */
+function occupyUnpaidListing(
+  db: AppDb,
+  leftover: Listing,
+  input: { whyTestThisToday: string; bidUsd: number; paidUsd: number; paidAt: string },
+): Listing {
+  const occupied: Listing = {
+    ...leftover,
+    whyTestThisToday: input.whyTestThisToday,
+    bidUsd: input.bidUsd,
+    paidUsd: input.paidUsd,
+    createdAt: input.paidAt,
+    updatedAt: input.paidAt,
+  };
+  db.prepare(
+    `UPDATE listings
+     SET why_test_this_today = ?, bid_usd = ?, paid_usd = ?, created_at = ?, updated_at = ?
+     WHERE id = ?`,
+  ).run(
+    occupied.whyTestThisToday,
+    occupied.bidUsd,
+    occupied.paidUsd,
+    occupied.createdAt,
+    occupied.updatedAt,
+    occupied.id,
+  );
+  return occupied;
 }
 
 export function raiseBid(
@@ -171,10 +222,31 @@ export function raiseBid(
 export function listToday(db: AppDb, day: string): RankedListing[] {
   const rows = db
     .prepare<[string], ListingRow>(
-      `SELECT ${LISTING_COLUMNS} FROM listings WHERE day = ?`,
+      `SELECT ${LISTING_COLUMNS} FROM listings WHERE day = ? AND paid_usd >= 1`,
     )
     .all(day);
   return withRanks(rows.map(listingFromRow));
+}
+
+/** True when a leftover unpaid Polar row exists for today or the rolling 24h. */
+export function hasLeftoverUnpaid(db: AppDb, day: string, now: Date = new Date()): boolean {
+  const today = db
+    .prepare<[string], { n: number }>(
+      `SELECT COUNT(*) AS n FROM listings WHERE day = ? AND paid_usd < 1`,
+    )
+    .get(day);
+  if ((today?.n ?? 0) > 0) {
+    return true;
+  }
+  const since = rollingWindowStart(now).toISOString();
+  const until = now.toISOString();
+  const windowed = db
+    .prepare<[string, string], { n: number }>(
+      `SELECT COUNT(*) AS n FROM listings
+       WHERE created_at >= ? AND created_at <= ? AND paid_usd < 1`,
+    )
+    .get(since, until);
+  return (windowed?.n ?? 0) > 0;
 }
 
 export const ROLLING_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -202,10 +274,12 @@ export function listLast24h(db: AppDb, now: Date = new Date()): RankedListing[] 
   const rows = db
     .prepare<[string, string], ListingRow>(
       `SELECT ${LISTING_COLUMNS} FROM listings
-       WHERE created_at >= ? AND created_at <= ?`,
+       WHERE created_at >= ? AND created_at <= ? AND paid_usd >= 1`,
     )
     .all(since, until);
-  return withRanks(rows.map(listingFromRow).filter((row) => listingInRollingWindow(row, now)));
+  return withRanks(
+    rows.map(listingFromRow).filter((row) => listingInRollingWindow(row, now) && isPaidListing(row)),
+  );
 }
 
 export function placeBid(db: AppDb, input: PlaceBidInput): Listing {
@@ -250,6 +324,12 @@ export function getListing(db: AppDb, id: string): Listing | undefined {
   return row ? listingFromRow(row) : undefined;
 }
 
+/** Public hops only for Polar-paid rows. Unpaid cover never earns a click. */
+export function getPaidListing(db: AppDb, id: string): Listing | undefined {
+  const listing = getListing(db, id);
+  return listing && isPaidListing(listing) ? listing : undefined;
+}
+
 /** Insert or raise a listing only after Polar or the fixture reports a completed payment. */
 export function applyPaidBid(db: AppDb, paid: PaidBid): Listing {
   if (!Number.isInteger(paid.bidUsd) || paid.bidUsd < MIN_BID_USD) {
@@ -268,7 +348,8 @@ export function applyPaidBid(db: AppDb, paid: PaidBid): Listing {
       }
       return listing;
     }
-    const existing = findListingByDayAndUrl(db, paid.day, productUrl);
+    const existing = findPaidListingByDayAndUrl(db, paid.day, productUrl);
+    const leftover = existing ? undefined : findListingByDayAndUrl(db, paid.day, productUrl);
     const quote = quotePaidBid(existing, paid.bidUsd);
     const charged = paid.paidUsd ?? quote.chargeUsd;
     if (charged !== quote.chargeUsd) {
@@ -285,15 +366,22 @@ export function applyPaidBid(db: AppDb, paid: PaidBid): Listing {
           paidUsd: charged,
           updatedAt: paid.paidAt,
         })
-      : placeBid(db, {
-          productUrl,
-          whyTestThisToday,
-          bidUsd: paid.bidUsd,
-          day: paid.day,
-          paidUsd: charged,
-          createdAt: paid.paidAt,
-          updatedAt: paid.paidAt,
-        });
+      : leftover
+        ? occupyUnpaidListing(db, leftover, {
+            whyTestThisToday,
+            bidUsd: paid.bidUsd,
+            paidUsd: charged,
+            paidAt: paid.paidAt,
+          })
+        : placeBid(db, {
+            productUrl,
+            whyTestThisToday,
+            bidUsd: paid.bidUsd,
+            day: paid.day,
+            paidUsd: charged,
+            createdAt: paid.paidAt,
+            updatedAt: paid.paidAt,
+          });
     db.prepare(
       "INSERT INTO checkout_events (id, listing_id, amount_usd, paid_at) VALUES (?, ?, ?, ?)",
     ).run(paid.sessionId, listing.id, charged, paid.paidAt);

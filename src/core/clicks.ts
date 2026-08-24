@@ -1,5 +1,5 @@
 import type { AppDb } from "../db.js";
-import { getListing, type Listing } from "./board.js";
+import { getPaidListing, type Listing } from "./board.js";
 
 export class ClickError extends Error {
   readonly code: string;
@@ -15,12 +15,12 @@ export class ClickError extends Error {
 
 /** Increment once per outbound hop. Never seed or invent a count. */
 export function incrementClick(db: AppDb, listingId: string): Listing {
-  const listing = getListing(db, listingId);
+  const listing = getPaidListing(db, listingId);
   if (!listing) {
     throw new ClickError("listing_not_found", "listing not found", 404);
   }
   db.prepare("UPDATE listings SET clicks = clicks + 1 WHERE id = ?").run(listingId);
-  const updated = getListing(db, listingId);
+  const updated = getPaidListing(db, listingId);
   if (!updated) {
     throw new ClickError("listing_not_found", "listing not found", 404);
   }

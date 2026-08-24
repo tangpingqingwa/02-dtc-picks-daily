@@ -2,12 +2,15 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   MIN_BID_USD,
+  isPaidListing,
   listLast24h,
   listToday,
+  paidListings,
   placeBid,
   rankForBid,
   rankListings,
   rollingWindowStart,
+  withRanks,
   type Listing,
 } from "../src/core/board.js";
 import { dayKey } from "../src/core/day.js";
@@ -70,6 +73,74 @@ test("SPEC acceptance 4: equal bids keep the older listing above", () => {
   const ranked = rankListings([newer, older]);
   assert.equal(ranked[0]?.id, "older");
   assert.equal(ranked[1]?.id, "newer");
+});
+
+test("unpaid Polar checkout stays off the live board until paid", () => {
+  const unpaid = listing({
+    id: "lst-ghost",
+    bidUsd: 99,
+    paidUsd: 0,
+    createdAt: "2026-08-22T08:00:00.000Z",
+  });
+  const abandoned = listing({
+    id: "lst-abandoned",
+    bidUsd: 40,
+    paidUsd: 0,
+    createdAt: "2026-08-22T08:30:00.000Z",
+  });
+  const paid = listing({
+    id: "lst-paid",
+    bidUsd: 5,
+    paidUsd: 5,
+    createdAt: "2026-08-22T09:00:00.000Z",
+  });
+  assert.equal(isPaidListing(unpaid), false);
+  assert.equal(isPaidListing(abandoned), false);
+  assert.equal(isPaidListing(paid), true);
+  assert.deepEqual(rankListings([unpaid, abandoned]), []);
+  assert.deepEqual(
+    paidListings([unpaid, abandoned, paid]).map((row) => row.id),
+    ["lst-paid"],
+  );
+  const ranked = withRanks([unpaid, abandoned, paid]);
+  assert.equal(ranked.length, 1);
+  assert.equal(ranked[0]?.id, "lst-paid");
+  assert.equal(ranked[0]?.rank, 1);
+  assert.doesNotMatch(ranked.map((row) => row.id).join(","), /lst-ghost|lst-abandoned/);
+  assert.equal(rankForBid([unpaid, abandoned], 5), 1);
+  assert.equal(rankForBid([unpaid, paid], 5), 2);
+
+  const db = openDatabase(":memory:");
+  try {
+    placeBid(db, {
+      id: "lst-ghost",
+      day: "2026-08-22",
+      productUrl: "https://ghost.example/sku",
+      whyTestThisToday: "Unpaid Polar checkout must not take this morning’s cover",
+      bidUsd: 99,
+      paidUsd: 0,
+      createdAt: "2026-08-22T08:00:00.000Z",
+    });
+    placeBid(db, {
+      id: "lst-paid",
+      day: "2026-08-22",
+      productUrl: "https://store.example/sku",
+      whyTestThisToday: "Fixture pay $5 lists at #1 after Polar reports paid",
+      bidUsd: 5,
+      paidUsd: 5,
+      createdAt: "2026-08-22T09:00:00.000Z",
+    });
+    const today = listToday(db, "2026-08-22");
+    assert.equal(today.length, 1);
+    assert.equal(today[0]?.id, "lst-paid");
+    assert.equal(today[0]?.rank, 1);
+    assert.doesNotMatch(today.map((row) => row.id).join(","), /lst-ghost/);
+    const strip = listLast24h(db, new Date("2026-08-22T13:00:00.000Z"));
+    assert.equal(strip.length, 1);
+    assert.equal(strip[0]?.id, "lst-paid");
+  } finally {
+    db.close();
+  }
 });
 
 test("rankForBid reports the slot an unpaid bid would take", () => {

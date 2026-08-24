@@ -46,7 +46,7 @@ export function renderAboutBody(model: AboutViewModel): string {
   <p>
     Anyone can read the board without an account. Payment is the only write path.
     Live money is Polar Checkout. Tests and CI use a fixture so they never call live Polar.
-    Failed or abandoned checkout changes nothing.
+    An unpaid Polar session does not appear. Failed or abandoned checkout changes nothing.
   </p>
   <p>
     We strip tracking and affiliate query strings before we store a URL or send a click.

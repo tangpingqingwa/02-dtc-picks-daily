@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import { buildApp } from "../src/app.js";
-import { placeBid } from "../src/core/board.js";
+import { applyPaidBid, placeBid } from "../src/core/board.js";
 import { dayKey, formatIssueDate } from "../src/core/day.js";
 import { openDatabase } from "../src/db.js";
 import { renderAboutPage } from "../src/http/pages/about.js";
@@ -143,11 +143,14 @@ test("GET / is a public empty board with bid form", async () => {
   assert.doesNotMatch(body, /One-line listing/);
   assert.doesNotMatch(body, /data-later-fact=""/);
   assert.doesNotMatch(body, /class="bid later-fact"/);
-  assert.doesNotMatch(body, /data-occupied="true"/);
+  assert.doesNotMatch(desk, /data-occupied="true"/);
   assert.doesNotMatch(desk, /data-two-prizes=/);
   assert.doesNotMatch(desk, /data-morning-slot=/);
   assert.doesNotMatch(desk, /data-last24h-prize=/);
   assert.doesNotMatch(desk, /data-last24h-occupied=/);
+  assert.doesNotMatch(body, /data-unpaid-off=/);
+  assert.doesNotMatch(body, /Unpaid Polar checkout stays off this desk/);
+  assert.doesNotMatch(body, /An abandoned listing is not cover #1/);
   const emptyAt = body.indexOf("data-empty-board");
   const stripAt = body.indexOf('data-last24h=""');
   const claimAt = body.indexOf('id="claim"');
@@ -4632,6 +4635,238 @@ test("GET / keeps occupied cover #1 as the paid product — later ranks cannot w
   assert.doesNotMatch(emptyCoverHtml, /data-two-prizes=/);
 });
 
+test("GET / keeps unpaid off the merch desk — No cover #1 until Polar reports paid", async () => {
+  const css = BOARD_CSS;
+  assert.match(css, /\.desk\[data-unpaid-off\] \.row-cover/);
+  assert.match(css, /\.desk\[data-unpaid-off\] \.later-stack/);
+  assert.match(css, /\.desk\[data-unpaid-off\] \.cover-hop/);
+  assert.match(css, /\.desk\[data-unpaid-off\] \.later-listing/);
+  assert.match(css, /\.claim-note\[data-unpaid-off\]/);
+  assert.match(css, /\.desk\[data-occupied="true"\] \.row-cover\[data-paid-name\] \.host\[data-cover-name\]/);
+  const unpaidHide = (css.split("Unpaid Polar checkout stays off the merch desk until Polar reports paid.", 2)[1] ?? "")
+    .split(".claim-note[data-unpaid-off]", 1)[0] ?? "";
+  assert.match(unpaidHide, /display:\s*none/);
+  assert.doesNotMatch(unpaidHide, /background:/);
+  assert.doesNotMatch(unpaidHide, /var\(--primary\)/);
+  assert.doesNotMatch(css, /data-unpaid-off-quiet|data-unpaid-off-board|take-after-list-seven|list-after-take-seven|data-empty-claim-after/);
+
+  const db = openDatabase(":memory:");
+  const now = new Date("2026-08-22T13:00:00.000Z");
+  const day = dayKey(now);
+  placeBid(db, {
+    id: "lst-ghost",
+    day,
+    productUrl: "https://ghost.example/sku",
+    whyTestThisToday: "Abandoned Polar session must not print as this morning’s cover",
+    bidUsd: 99,
+    paidUsd: 0,
+    clicks: 12,
+    createdAt: "2026-08-22T08:00:00.000Z",
+  });
+  placeBid(db, {
+    id: "lst-vapor",
+    day,
+    productUrl: "https://vapor.example/sku",
+    whyTestThisToday: "Unpaid Polar checkout stays off the last-24h strip too",
+    bidUsd: 40,
+    paidUsd: 0,
+    clicks: 3,
+    createdAt: "2026-08-22T08:30:00.000Z",
+  });
+
+  const unpaidApp = await buildApp({ db, now });
+  after(async () => {
+    await unpaidApp.close();
+    db.close();
+  });
+  const leftoverRes = await unpaidApp.inject({ method: "GET", url: "/" });
+  assert.equal(leftoverRes.statusCode, 200);
+  const leftover = pageBody(leftoverRes.body);
+  const leftoverEmpty = leftover.indexOf("data-empty-cover");
+  const leftoverClaim = leftover.indexOf('id="claim"');
+  const leftoverFirst = leftover.indexOf('data-first-click="claim"');
+  const leftoverOutbid = leftover.indexOf(">Outbid<");
+  const leftoverUrl = leftover.indexOf('data-later-write=""');
+  const leftoverWhy = leftover.indexOf('data-why-later=""');
+  const leftoverNote = leftover.indexOf("Unpaid Polar checkout stays off this desk");
+  assert.ok(leftoverEmpty > -1 && leftoverClaim > leftoverEmpty, "unpaid leftover stays a quiet morning, then Claim #1");
+  assert.ok(leftoverFirst > leftoverClaim && leftoverOutbid > leftoverFirst, "empty Claim #1 stays the first click");
+  assert.ok(leftoverUrl > leftoverOutbid && leftoverWhy > leftoverUrl, "empty later-write Product URL then Why stay after Outbid");
+  assert.ok(leftoverNote > leftoverClaim, "unpaid-off copy sits on the claim rail, not as a cover");
+  assert.match(leftover, /data-empty-board=""/);
+  assert.match(leftover, /data-empty-cover=""/);
+  assert.match(leftover, /Quiet morning/);
+  assert.match(leftover, /not an invented cover/);
+  assert.match(leftover, /data-occupied="false"/);
+  assert.match(leftover, /data-empty-claim-first=""/);
+  assert.match(leftover, /data-first-click="claim"/);
+  assert.match(leftover, /data-later-write=""/);
+  assert.match(leftover, /Then the product URL/);
+  assert.match(leftover, /data-why-later=""/);
+  assert.match(leftover, /Then why test this today/);
+  assert.match(leftover, /What a seller should try this morning/);
+  assert.match(leftover, /data-unpaid-off=""/);
+  assert.match(leftover, /Unpaid Polar checkout stays off this desk until Polar reports paid/);
+  assert.match(leftover, /An abandoned listing is not cover #1/);
+  assert.match(leftover, /data-last24h-empty=""/);
+  assert.match(leftover, /No paid listings in the last 24 hours/);
+  assert.doesNotMatch(leftover, /ghost\.example/);
+  assert.doesNotMatch(leftover, /vapor\.example/);
+  assert.doesNotMatch(leftover, /Abandoned Polar session/);
+  assert.doesNotMatch(leftover, /\$99/);
+  assert.doesNotMatch(leftover, /This morning’s cover/);
+  assert.doesNotMatch(leftover, /data-paid-name=/);
+  assert.doesNotMatch(leftover, /data-cover-name=/);
+  assert.doesNotMatch(leftover, /data-cover-hop/);
+  assert.doesNotMatch(leftover, /data-first-click="take"/);
+  assert.doesNotMatch(leftover, /Test this today/);
+  assert.doesNotMatch(leftover, /data-later-stack=/);
+  assert.doesNotMatch(leftover, /data-later-rank=/);
+  assert.doesNotMatch(leftover, /data-later-listing=/);
+  assert.doesNotMatch(leftover, /One-line listing/);
+  assert.doesNotMatch(leftover, /data-two-prizes=/);
+  assert.doesNotMatch(leftover, /data-last24h-prize=/);
+  assert.doesNotMatch(leftover, /data-morning-slot=/);
+  assert.doesNotMatch(leftover, /take-after-list-seven|list-after-take-seven|data-empty-claim-after/);
+  assert.equal((leftover.match(/data-first-click="claim"/g) ?? []).length, 1);
+
+  const ghostHop = await unpaidApp.inject({ method: "GET", url: "/r/lst-ghost" });
+  assert.equal(ghostHop.statusCode, 404);
+  assert.doesNotMatch(ghostHop.body, /ghost\.example/);
+
+  applyPaidBid(db, {
+    sessionId: "chk_paid_cover",
+    productUrl: "https://cover.example/apps/pick",
+    whyTestThisToday: "Cover app sellers should install this morning",
+    bidUsd: 20,
+    day,
+    paidUsd: 20,
+    paidAt: "2026-08-22T09:00:00.000Z",
+  });
+  applyPaidBid(db, {
+    sessionId: "chk_paid_under",
+    productUrl: "https://under.example/sku",
+    whyTestThisToday: "Cheaper SKU still belongs on the brief",
+    bidUsd: 8,
+    day,
+    paidUsd: 8,
+    paidAt: "2026-08-22T12:00:00.000Z",
+  });
+
+  const occupiedRes = await unpaidApp.inject({ method: "GET", url: "/" });
+  assert.equal(occupiedRes.statusCode, 200);
+  const occupied = pageBody(occupiedRes.body);
+  const coverStart = occupied.indexOf("cover.example/apps/pick");
+  const coverHop = occupied.indexOf('data-first-click="take"');
+  const paidName = occupied.indexOf('data-paid-name=""');
+  const coverName = occupied.indexOf('data-cover-name=""');
+  const occupiedClaim = occupied.indexOf('id="claim"');
+  const occupiedNote = occupied.indexOf("Unpaid Polar checkout stays off this desk");
+  const laterStack = occupied.indexOf('data-later-stack=""');
+  assert.ok(coverHop > -1 && coverHop < coverName, "occupied cover hop stays the first occupied click");
+  assert.ok(paidName > -1 && paidName < coverName, "occupied cover #1 stays the paid name");
+  assert.ok(laterStack > coverStart && occupiedClaim > laterStack, "later ranks stay under the paid cover");
+  assert.ok(occupiedNote > occupiedClaim, "unpaid-off copy sits on the occupied claim rail");
+  assert.match(occupied, /data-occupied="true"/);
+  assert.match(occupied, /This morning’s cover/);
+  assert.match(occupied, /data-paid-name=""/);
+  assert.match(occupied, /data-cover-name=""/);
+  assert.match(occupied, /data-morning-slot=""/);
+  assert.match(occupied, /data-first-click="take"/);
+  assert.match(occupied, />Test this today</);
+  assert.match(occupied, /data-later-stack=""/);
+  assert.match(occupied, /data-later-rank=""/);
+  assert.match(occupied, /These product names are not this morning’s cover/);
+  assert.match(occupied, /data-later-listing=""/);
+  assert.match(occupied, /One-line listing/);
+  assert.match(occupied, /data-two-prizes=""/);
+  assert.match(occupied, /data-last24h-prize=""/);
+  assert.match(occupied, /class="claim-note" data-unpaid-off=""/);
+  assert.match(occupied, /Unpaid Polar checkout stays off this desk until Polar reports paid/);
+  assert.match(occupied, /An abandoned listing is not cover #1/);
+  assert.doesNotMatch(occupied, /ghost\.example/);
+  assert.doesNotMatch(occupied, /vapor\.example/);
+  assert.doesNotMatch(occupied, /data-empty-cover=/);
+  assert.doesNotMatch(occupied, /data-empty-claim-first/);
+  assert.doesNotMatch(occupied, /data-first-click="claim"/);
+  assert.doesNotMatch(occupied, /Then the product URL/);
+  assert.doesNotMatch(occupied, /data-why-later=/);
+  assert.doesNotMatch(occupied, /take-after-list-seven|list-after-take-seven/);
+  assert.equal((occupied.match(/data-paid-name=""/g) ?? []).length, 1);
+  assert.equal((occupied.match(/data-cover-name=""/g) ?? []).length, 1);
+  assert.equal((occupied.match(/data-first-click="take"/g) ?? []).length, 1);
+
+  const mixed = pageBody(renderBoardPage({
+    day,
+    tz: "UTC",
+    listings: [
+      {
+        id: "lst-ghost",
+        day,
+        productUrl: "https://ghost.example/sku",
+        whyTestThisToday: "Abandoned Polar session must not print as this morning’s cover",
+        bidUsd: 99,
+        paidUsd: 0,
+        clicks: 12,
+        createdAt: "2026-08-22T08:00:00.000Z",
+        updatedAt: "2026-08-22T08:00:00.000Z",
+        rank: 1,
+      },
+      {
+        id: "lst-cover",
+        day,
+        productUrl: "https://cover.example/apps/pick",
+        whyTestThisToday: "Cover app sellers should install this morning",
+        bidUsd: 20,
+        paidUsd: 20,
+        clicks: 3,
+        createdAt: "2026-08-22T09:00:00.000Z",
+        updatedAt: "2026-08-22T09:00:00.000Z",
+        rank: 2,
+      },
+    ],
+    last24h: [
+      {
+        id: "lst-ghost",
+        day,
+        productUrl: "https://ghost.example/sku",
+        whyTestThisToday: "Abandoned Polar session must not print as this morning’s cover",
+        bidUsd: 99,
+        paidUsd: 0,
+        clicks: 12,
+        createdAt: "2026-08-22T08:00:00.000Z",
+        updatedAt: "2026-08-22T08:00:00.000Z",
+        rank: 1,
+      },
+    ],
+    defaultBidUsd: 21,
+    now,
+  }));
+  assert.match(mixed, /data-occupied="true"/);
+  assert.match(mixed, /data-paid-name=""/);
+  assert.match(mixed, /cover\.example\/apps\/pick/);
+  assert.match(mixed, /data-first-click="take"/);
+  assert.match(mixed, /data-last24h-empty=""/);
+  assert.doesNotMatch(mixed, /ghost\.example/);
+  assert.doesNotMatch(mixed, /data-empty-cover=/);
+  assert.doesNotMatch(mixed, /data-last24h-prize=/);
+  assert.equal((mixed.match(/data-paid-name=""/g) ?? []).length, 1);
+
+  const emptyApp = await buildApp({ databasePath: ":memory:" });
+  after(() => emptyApp.close());
+  const empty = pageBody((await emptyApp.inject({ method: "GET", url: "/" })).body);
+  assert.match(empty, /data-empty-cover=""/);
+  assert.match(empty, /data-first-click="claim"/);
+  assert.match(empty, /data-later-write=""/);
+  assert.match(empty, /data-why-later=""/);
+  assert.match(empty, /data-last24h-empty=""/);
+  assert.doesNotMatch(empty, /data-unpaid-off=/);
+  assert.doesNotMatch(empty, /Unpaid Polar checkout stays off this desk/);
+  assert.doesNotMatch(empty, /An abandoned listing is not cover #1/);
+  assert.doesNotMatch(empty, /data-paid-name=/);
+  assert.doesNotMatch(empty, /This morning’s cover/);
+});
+
 test("SPEC acceptance 10: GET /about and GET /rules are 200", async () => {
   const app = await buildApp({ databasePath: ":memory:" });
   after(() => app.close());
@@ -4679,6 +4914,7 @@ test("GET /about states no ads, no API keys, no revenue share, $5 floor, daily U
   assert.match(body, /NSFW/);
   assert.match(body, /tracking/);
   assert.match(body, /difference/);
+  assert.match(body, /unpaid Polar session does not appear/);
   assert.doesNotMatch(body, /POLAR_LIVE=1/);
   assert.doesNotMatch(body, /api\.polar\.sh/);
 });
@@ -4719,6 +4955,8 @@ test("GET /rules states ranking, raise difference, bans, reset, clicks, Polar", 
   assert.match(body, /Clicking does not change rank/);
   assert.match(body, /Polar Checkout/);
   assert.match(body, /abandoned checkout/);
+  assert.match(body, /Unpaid Polar checkout stays off this desk until Polar reports paid/);
+  assert.match(body, /An abandoned listing is not cover #1/);
   assert.match(body, /D is on the board even though D did not take #1/);
   assert.match(body, /no extra[\s\S]*ranking factors/i);
   assert.match(body, /no recency boost/i);

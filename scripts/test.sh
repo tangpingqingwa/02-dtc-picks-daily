@@ -263,6 +263,12 @@ if [[ -f package.json ]]; then
     || fail "paid-name leftover test did not run"
   grep -q 'later ranks cannot wear it' "$test_log" \
     || fail "paid-name later-rank leftover test did not run"
+  grep -q 'unpaid off the merch desk' "$test_log" \
+    || fail "unpaid-off leftover test did not run"
+  grep -q 'No cover #1 until Polar reports paid' "$test_log" \
+    || fail "unpaid-off Polar leftover test did not run"
+  grep -q 'unpaid Polar checkout stays off the live board until paid' "$test_log" \
+    || fail "unpaid Polar filter leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -323,10 +329,44 @@ if [[ -f package.json ]]; then
     || fail "paid-name CSS missing occupied cover identity"
   grep -q 'later-listing\[data-later-listing\]' src/views/styles.ts \
     || fail "occupied claim CSS missing later-listing composition"
-  if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven|data-later-rank-quiet|data-later-quiet|data-why-later-quiet|data-paid-name-quiet' \
+  if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven|data-later-rank-quiet|data-later-quiet|data-why-later-quiet|data-paid-name-quiet|data-unpaid-off-quiet|data-unpaid-off-board' \
     src/views/board.ts src/views/styles.ts >/dev/null; then
     fail "do not stamp another named hop; compose empty vs occupied"
   fi
+  grep -q 'export function isPaidListing' src/core/board.ts \
+    || fail "board core missing isPaidListing so unpaid never ranks"
+  grep -q 'export function paidListings' src/core/board.ts \
+    || fail "board core missing paidListings filter"
+  grep -q 'paidListings(rows)' src/core/board.ts \
+    || fail "rankListings must rank Polar-paid rows only"
+  grep -q 'paid_usd >= 1' src/core/board.ts \
+    || fail "listToday / listLast24h must drop unpaid occupancy"
+  grep -q 'getPaidListing' src/core/board.ts \
+    || fail "board core missing getPaidListing for public hops"
+  grep -q 'getPaidListing' src/core/clicks.ts \
+    || fail "outbound hops must refuse unpaid cover"
+  grep -q 'paidListings(listToday' src/http/pages/board.ts \
+    || fail "board HTTP must compose Polar-paid occupancy only"
+  grep -q 'hasLeftoverUnpaid' src/http/pages/board.ts \
+    || fail "board HTTP must surface leftover unpaid Polar occupancy"
+  grep -q 'leftoverUnpaid' src/views/board.ts \
+    || fail "merch desk must compose leftover unpaid Polar occupancy"
+  grep -q 'withRanks(paidListings(model.listings))' src/views/board.ts \
+    || fail "merch desk occupancy must compose Polar-paid rows only"
+  grep -q 'if (!isPaidListing(listing))' src/views/board.ts \
+    || fail "listing row must not print unpaid cover #1"
+  grep -q 'data-unpaid-off' src/views/board.ts \
+    || fail "unpaid leftover missing unpaid-off composition stamp"
+  grep -q 'Unpaid Polar checkout stays off this desk until Polar reports paid' src/views/board.ts \
+    || fail "claim rail must say unpaid Polar stays off the desk"
+  grep -q 'An abandoned listing is not cover #1' src/views/board.ts \
+    || fail "claim rail must say an abandoned listing is not cover #1"
+  grep -q 'desk\[data-unpaid-off\]' src/views/styles.ts \
+    || fail "unpaid-off CSS missing merch-desk composition"
+  grep -q 'claim-note\[data-unpaid-off\]' src/views/styles.ts \
+    || fail "unpaid-off CSS missing claim-note composition"
+  grep -q 'desk\[data-occupied="true"\] \.row-cover\[data-paid-name\]' src/views/styles.ts \
+    || fail "occupied paid-name CSS must stay paid-only"
   python3 - <<'PY' || fail "today’s cover or quiet morning must precede claim chrome"
 from pathlib import Path
 src = Path("src/views/board.ts").read_text()
@@ -1015,6 +1055,42 @@ if "${occupiedListingField}" not in occupied_form:
     raise SystemExit("occupied claim must use One-line listing")
 if "What a seller should try this morning" in occupied_form:
     raise SystemExit("occupied claim must drop the cover why placeholder")
+if "isPaidListing" not in board or "paidListings" not in board:
+    raise SystemExit("board view must drop unpaid occupancy before cover")
+if 'data-unpaid-off=""' not in board:
+    raise SystemExit("unpaid leftover must stamp data-unpaid-off")
+if "Unpaid Polar checkout stays off this desk until Polar reports paid" not in board:
+    raise SystemExit("claim rail must name unpaid Polar off the desk")
+if "An abandoned listing is not cover #1" not in board:
+    raise SystemExit("claim rail must refuse abandoned cover #1")
+if "data-unpaid-off-quiet" in board or "data-unpaid-off-board" in board:
+    raise SystemExit("stamp-only unpaid-off is REJECT")
+unpaid_rule = css.split("Unpaid Polar checkout stays off the merch desk until Polar reports paid.", 1)
+if len(unpaid_rule) < 2:
+    raise SystemExit("unpaid-off CSS must name Polar-paid occupancy")
+unpaid_block = unpaid_rule[1].split(".claim-note[data-unpaid-off]", 1)[0]
+if ".desk[data-unpaid-off] .row-cover" not in unpaid_block:
+    raise SystemExit("unpaid-off CSS must keep unpaid cover off the desk")
+if ".desk[data-unpaid-off] .later-stack" not in unpaid_block:
+    raise SystemExit("unpaid-off CSS must keep later-stack off unpaid leftover")
+if ".desk[data-unpaid-off] .cover-hop" not in unpaid_block:
+    raise SystemExit("unpaid-off CSS must keep occupied cover hops off leftover")
+if ".desk[data-unpaid-off] .later-listing" not in unpaid_block:
+    raise SystemExit("unpaid-off CSS must keep later-listing off leftover")
+if "display: none" not in unpaid_block:
+    raise SystemExit("unpaid leftover cover must stay off, not restyled")
+if "background:" in unpaid_block or "var(--primary)" in unpaid_block:
+    raise SystemExit("do not recolor unpaid leftover; hide unpaid cover")
+if "take-after-list-seven" in unpaid_block or "data-empty-claim-after" in unpaid_block:
+    raise SystemExit("do not stamp another named hop on unpaid-off")
+note_css = css.split(".claim-note[data-unpaid-off]", 1)
+if len(note_css) < 2:
+    raise SystemExit("claim-note unpaid-off CSS missing")
+note_block = note_css[1].split("}", 1)[0]
+if "background:" in note_block or "var(--primary)" in note_block:
+    raise SystemExit("do not recolor the unpaid-off claim note")
+if ".desk[data-occupied=\"true\"] .row-cover[data-paid-name] .host[data-cover-name]" not in css:
+    raise SystemExit("occupied paid-name prize CSS must stay paid-only")
 PY
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
