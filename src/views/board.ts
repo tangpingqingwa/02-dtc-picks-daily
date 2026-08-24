@@ -104,6 +104,19 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
       </p>`
     : "";
   const stackBlurb = isCover ? "" : html`<p class="blurb">${blurb}</p>`;
+  const coverName = isCover ? ' data-cover-name=""' : "";
+  const coverLater = isCover
+    ? html`<p class="cover-later" data-later-fact="">
+        <span class="bid later-fact" data-later-fact="">${bid}</span>
+        <span class="clicks later-fact" data-later-fact=""><span class="live-dot" aria-hidden="true"></span>${listing.clicks} clicks</span>
+      </p>`
+    : "";
+  const stackMoney = isCover
+    ? ""
+    : html`<p class="bid">${bid}</p>`;
+  const stackClicks = isCover
+    ? ""
+    : html`<span class="clicks"><span class="live-dot" aria-hidden="true"></span>${listing.clicks} clicks</span>`;
   const inner = html`<div class="row-meta">
       <span class="rank">#${rank}</span>
     </div>
@@ -113,13 +126,14 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
       ${coverHop}
       ${listAfterTake}
       <div class="row-top">
-        <p class="host">${host}</p>
-        <p class="bid">${bid}</p>
+        <p class="host"${coverName}>${host}</p>
+        ${stackMoney}
       </div>
+      ${coverLater}
       ${stackBlurb}
       <p class="row-foot">
         <span class="when"><time datetime="${escapeHtml(listing.createdAt)}">${when}</time></span>
-        <span class="clicks"><span class="live-dot" aria-hidden="true"></span>${listing.clicks} clicks</span>
+        ${stackClicks}
       </p>
     </div>`;
   const wrap = isCover
