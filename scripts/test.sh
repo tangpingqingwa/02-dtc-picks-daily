@@ -259,6 +259,10 @@ if [[ -f package.json ]]; then
     || fail "later-rank quiet leftover test did not run"
   grep -q 'prize stays first' "$test_log" \
     || fail "later-rank prize-stays-first leftover test did not run"
+  grep -q 'occupied morning one first click' "$test_log" \
+    || fail "occupied take-one-first leftover test did not run"
+  grep -q 'Claim stays after the cover' "$test_log" \
+    || fail "occupied later-claim leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -305,7 +309,13 @@ if [[ -f package.json ]]; then
     || fail "later-rank CSS missing later-stack grouping"
   grep -q 'host.stack-host' src/views/styles.ts \
     || fail "later-rank CSS missing quieter stack-host anatomy"
-  if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven|data-later-rank-quiet|data-later-quiet|data-why-later-quiet' \
+  grep -q 'data-later-claim' src/views/board.ts \
+    || fail "occupied morning missing later-claim stamp on Claim #1"
+  grep -q 'later-claim' src/views/board.ts \
+    || fail "occupied claim must use the later-claim class"
+  grep -q 'later-claim\[data-later-claim\]' src/views/styles.ts \
+    || fail "occupied morning CSS missing later-claim composition"
+  if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven|data-later-rank-quiet|data-later-quiet|data-why-later-quiet|data-later-claim-quiet' \
     src/views/board.ts src/views/styles.ts >/dev/null; then
     fail "do not stamp another named hop; compose empty vs occupied"
   fi
@@ -797,6 +807,10 @@ if "empty-claim-first" not in board:
     raise SystemExit("empty claim must use the empty-claim-first class")
 if 'data-occupied="false"' not in board or 'data-occupied="true"' not in board:
     raise SystemExit("desk must compose empty vs occupied")
+if 'data-later-claim=""' not in board:
+    raise SystemExit("occupied Claim #1 must stamp data-later-claim")
+if "later-claim" not in board:
+    raise SystemExit("occupied claim must use the later-claim class")
 if 'data-later-write=""' not in board:
     raise SystemExit("empty morning must stamp product URL as a later write")
 if 'data-listing-identity=""' not in board:
@@ -898,7 +912,7 @@ if not cover_m or not strip_m:
     raise SystemExit("two-prize CSS missing cover vs strip sizes")
 if float(cover_m.group(1)) <= float(strip_m.group(1)):
     raise SystemExit("cover product name must stay larger than strip #1 host")
-two = css.split(".desk[data-two-prizes]", 1)[-1].split("#claim {", 1)[0]
+two = css.split(".desk[data-two-prizes]", 1)[-1].split("Occupied morning: Take is the only first click", 1)[0]
 if "empty-claim-first" in two or "data-later-write" in two or "data-why-later" in two:
     raise SystemExit("two-prize CSS must not swallow empty later-write composition")
 if "var(--primary)" in two:
@@ -945,6 +959,38 @@ if "0.78rem" in later_host_block and "--muted" in later_host_block:
     raise SystemExit("do not stamp 0.78rem --muted on the same name node")
 if ".desk:has(.empty) .later-stack" not in css:
     raise SystemExit("empty CSS must keep later-stack off empty")
+occupied_claim = css.split("Occupied morning: Take is the only first click", 1)
+if len(occupied_claim) < 2:
+    raise SystemExit("occupied CSS must name Take as the only first click")
+later_claim_css = occupied_claim[1].split("Empty morning: Product URL is a later write after Claim #1 / Outbid", 1)[0]
+if "#claim.later-claim[data-later-claim]" not in later_claim_css:
+    raise SystemExit("later-claim CSS must recede occupied Claim after the cover")
+if "background:" in later_claim_css or "var(--primary)" in later_claim_css:
+    raise SystemExit("do not recolor occupied later Claim")
+if "take-after-list-seven" in later_claim_css or "data-empty-claim-after" in later_claim_css:
+    raise SystemExit("do not stamp another named hop on later Claim")
+if "empty-claim-first" in later_claim_css or "data-why-later" in later_claim_css:
+    raise SystemExit("occupied later-claim CSS must not swallow empty later-write")
+claim_title = re.search(
+    r"#claim\.later-claim\[data-later-claim\] \.claim-title\s*\{[^}]*font-size:\s*([0-9.]+)rem",
+    later_claim_css,
+)
+empty_title = re.search(
+    r"\.desk:has\(\.empty\) #claim \.claim-title\s*\{[^}]*font-size:\s*clamp\(([0-9.]+)rem",
+    css,
+)
+take_h = re.search(r"\.take-after-list-six\s*\{[^}]*min-height:\s*([0-9.]+)rem", css)
+if not claim_title or not empty_title or not take_h:
+    raise SystemExit("occupied later Claim, empty Claim, and Take must all have sizes")
+if float(claim_title.group(1)) >= float(empty_title.group(1)):
+    raise SystemExit("occupied later Claim must stay quieter than empty Claim #1")
+if float(claim_title.group(1)) >= float(take_h.group(1)):
+    raise SystemExit("occupied later Claim must stay quieter than Test this today")
+if 'class="later-claim"' not in board or 'data-later-claim=""' not in board:
+    raise SystemExit("occupied claim markup must stamp later-claim")
+empty_claim_attrs = board.split("const claimAttrs = occupied", 1)[-1]
+if 'data-later-claim' in empty_claim_attrs.split(": '", 1)[-1].split(";", 1)[0]:
+    raise SystemExit("empty Claim must not stamp later-claim")
 PY
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"

@@ -189,7 +189,7 @@ export function renderBoardBody(model: BoardViewModel): string {
     ? ` data-occupied="true"${stripOccupied ? ' data-two-prizes=""' : ""}`
     : ' data-occupied="false" data-empty-claim-first=""';
   const claimAttrs = occupied
-    ? ""
+    ? ' class="later-claim" data-later-claim=""'
     : ' class="empty-claim-first" data-empty-claim-first="" aria-label="Claim #1"';
   const claimTitleAttrs = occupied ? "" : ' data-empty-claim="" data-first-click="claim"';
   const claimKicker = occupied ? html`<p class="claim-kicker">List a product</p>` : "";

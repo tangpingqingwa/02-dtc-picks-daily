@@ -351,6 +351,38 @@ nav[aria-label="Main"] a:hover {
   padding-top: 1.5rem;
   border-top: 1px solid var(--border);
 }
+/* Occupied morning: Take is the only first click. Claim #1 is a later write after the cover. */
+#claim.later-claim[data-later-claim] {
+  margin-top: 2.75rem;
+  padding-top: 1.1rem;
+  border-top: 1px dashed var(--border);
+}
+#claim.later-claim[data-later-claim] .claim-kicker {
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--muted-foreground);
+}
+#claim.later-claim[data-later-claim] .claim-title {
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+@media (min-width: 768px) {
+  #claim.later-claim[data-later-claim] .claim-title {
+    font-size: 1.25rem;
+  }
+}
+#claim.later-claim[data-later-claim] .outbid {
+  height: 2.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+#claim.later-claim[data-later-claim] .bid-field {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
 /* Empty morning: Product URL is a later write after Claim #1 / Outbid. */
 #claim.empty-claim-first[data-empty-claim-first] {
   display: flex;
