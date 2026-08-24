@@ -216,6 +216,9 @@ export function renderBoardBody(model: BoardViewModel): string {
     <div class="listing-identity" data-listing-identity="" data-later-write="">
       <p class="later-write-label">Then the product URL</p>
       ${productUrlField}
+    </div>
+    <div class="why-later" data-why-later="">
+      <p class="why-later-label">Then why test this today</p>
       ${whyField}
     </div>
     ${formHint}
