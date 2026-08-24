@@ -14,6 +14,7 @@ declare module "fastify" {
   interface FastifyInstance {
     db: AppDb;
     checkout: CheckoutPort;
+    now: () => Date;
   }
 }
 
@@ -22,6 +23,7 @@ export type BuildAppOptions = {
   db?: AppDb;
   databasePath?: string;
   checkout?: CheckoutPort;
+  now?: Date;
 };
 
 export async function buildApp(
@@ -33,8 +35,10 @@ export async function buildApp(
     options.db ??
     openDatabase(options.databasePath ?? process.env.DATABASE_PATH ?? ":memory:");
   const checkout = options.checkout ?? new FixtureCheckout();
+  const clock = options.now;
   app.decorate("db", db);
   app.decorate("checkout", checkout);
+  app.decorate("now", () => clock ?? new Date());
   if (ownsDb) {
     app.addHook("onClose", async () => {
       db.close();

@@ -38,6 +38,12 @@ test("GET / is a public empty board with bid form", async () => {
   assert.match(body, /data-issue-date="/);
   assert.match(body, /One cover/);
   assert.match(body, /List a product/);
+  assert.match(body, /data-last24h=""/);
+  assert.match(body, /data-last24h-window="rolling-24h"/);
+  assert.match(body, /data-last24h-empty=""/);
+  assert.match(body, /No paid listings in the last 24 hours/);
+  assert.match(body, /rolling last 24 hours/);
+  assert.doesNotMatch(body, /data-last24h-row/);
   assert.doesNotMatch(body, /data-cover-hop/);
   assert.doesNotMatch(body, /Test this today/);
   assert.doesNotMatch(body, /data-list-under-cover/);
@@ -59,8 +65,10 @@ test("GET / is a public empty board with bid form", async () => {
   assert.doesNotMatch(body, /data-take-after-list-six/);
   assert.doesNotMatch(body, /data-cover-why/);
   const emptyAt = body.indexOf("data-empty-board");
+  const stripAt = body.indexOf('data-last24h=""');
   const claimAt = body.indexOf('id="claim"');
   assert.ok(emptyAt > -1 && claimAt > emptyAt, "quiet morning must precede claim chrome");
+  assert.ok(stripAt > emptyAt && stripAt < claimAt, "last-24h strip sits under the one cover, before claim chrome");
   assert.doesNotMatch(body, /category zoo|Fulfillment tools|Browse categories/);
   assert.doesNotMatch(body, /POLAR_LIVE/);
   assert.doesNotMatch(body, /api\.polar\.sh/);
@@ -220,6 +228,8 @@ test("masthead, folio, and data-issue-date name the same day in UTC+12", () => {
   assert.match(body, /data-issue-date="2026-08-23"/);
   assert.match(body, new RegExp(spoken.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(body, new RegExp(folio.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(body, /data-last24h=""/);
+  assert.match(body, /data-last24h-empty=""/);
   assert.doesNotMatch(body, /August 24, 2026/);
   assert.doesNotMatch(body, /Aug 24, 2026/);
 });
@@ -2903,6 +2913,148 @@ test("GET / lets the occupied cover why-line read first and larger than $bid", a
   assert.doesNotMatch(empty.body, /Test this today/);
 });
 
+test("GET / shows an honest last-24h strip so a newcomer can be seen today", async () => {
+  const db = openDatabase(":memory:");
+  const now = new Date("2026-08-23T00:30:00.000Z");
+  placeBid(db, {
+    id: "lst-cover",
+    day: "2026-08-23",
+    productUrl: "https://cover.example/apps/pick",
+    whyTestThisToday: "Cover app sellers should install this morning",
+    bidUsd: 20,
+    clicks: 3,
+    createdAt: "2026-08-23T00:10:00.000Z",
+  });
+  placeBid(db, {
+    id: "lst-newcomer",
+    day: "2026-08-22",
+    productUrl: "https://newcomer.example/sku",
+    whyTestThisToday: "Last night’s $6 still belongs on the last-24h strip",
+    bidUsd: 6,
+    createdAt: "2026-08-22T12:00:00.000Z",
+  });
+  placeBid(db, {
+    id: "lst-stale",
+    day: "2026-08-21",
+    productUrl: "https://stale.example/sku",
+    whyTestThisToday: "Older than 24 hours must leave the rolling strip",
+    bidUsd: 99,
+    createdAt: "2026-08-21T23:00:00.000Z",
+  });
+
+  const html = renderBoardPage({
+    day: "2026-08-23",
+    tz: "UTC",
+    listings: [
+      {
+        id: "lst-cover",
+        day: "2026-08-23",
+        productUrl: "https://cover.example/apps/pick",
+        whyTestThisToday: "Cover app sellers should install this morning",
+        bidUsd: 20,
+        paidUsd: 20,
+        clicks: 3,
+        createdAt: "2026-08-23T00:10:00.000Z",
+        updatedAt: "2026-08-23T00:10:00.000Z",
+        rank: 1,
+      },
+    ],
+    last24h: [
+      {
+        id: "lst-cover",
+        day: "2026-08-23",
+        productUrl: "https://cover.example/apps/pick",
+        whyTestThisToday: "Cover app sellers should install this morning",
+        bidUsd: 20,
+        paidUsd: 20,
+        clicks: 3,
+        createdAt: "2026-08-23T00:10:00.000Z",
+        updatedAt: "2026-08-23T00:10:00.000Z",
+        rank: 1,
+      },
+      {
+        id: "lst-newcomer",
+        day: "2026-08-22",
+        productUrl: "https://newcomer.example/sku",
+        whyTestThisToday: "Last night’s $6 still belongs on the last-24h strip",
+        bidUsd: 6,
+        paidUsd: 6,
+        clicks: 0,
+        createdAt: "2026-08-22T12:00:00.000Z",
+        updatedAt: "2026-08-22T12:00:00.000Z",
+        rank: 2,
+      },
+    ],
+    defaultBidUsd: 21,
+    now,
+  });
+
+  assert.match(html, /data-last24h=""/);
+  assert.match(html, /data-last24h-window="rolling-24h"/);
+  assert.match(html, /Last 24 hours/);
+  assert.match(html, /rolling last 24 hours/);
+  assert.match(html, /Not a midnight UTC reset/);
+  assert.match(html, /Not a second all-time board/);
+  assert.match(html, /data-last24h-id="lst-cover"/);
+  assert.match(html, /data-last24h-id="lst-newcomer"/);
+  assert.match(html, /newcomer\.example\/sku/);
+  assert.match(html, /Last night’s \$6 still belongs on the last-24h strip/);
+  assert.doesNotMatch(html, /stale\.example/);
+  assert.doesNotMatch(html, /\$99/);
+  assert.doesNotMatch(html, /href="\/today"/);
+  assert.doesNotMatch(html, /outbid\.lol\/today/);
+  assert.doesNotMatch(html, /data-last24h-empty=""/);
+  const coverAt = html.indexOf('data-listing-id="lst-cover"');
+  const stripAt = html.indexOf('data-last24h=""');
+  const newcomerAt = html.indexOf('data-last24h-id="lst-newcomer"');
+  const claimAt = html.indexOf('id="claim"');
+  assert.ok(coverAt > -1 && stripAt > coverAt, "one all-time cover stays above the last-24h strip");
+  assert.ok(newcomerAt > stripAt && newcomerAt < claimAt, "newcomer sits on the strip, not a second cover");
+  assert.equal((html.match(/data-cover-hop/g) ?? []).length, 1);
+  assert.equal((html.match(/This morning’s cover/g) ?? []).length, 1);
+  assert.doesNotMatch(html, /data-take-after-list-seven/);
+  assert.doesNotMatch(html, /data-list-after-take-seven/);
+
+  const app = await buildApp({ db, now });
+  after(async () => {
+    await app.close();
+    db.close();
+  });
+  const live = await app.inject({ method: "GET", url: "/" });
+  assert.equal(live.statusCode, 200);
+  assert.match(live.body, /data-last24h=""/);
+  assert.match(live.body, /data-last24h-window="rolling-24h"/);
+  assert.match(live.body, /data-last24h-id="lst-newcomer"/);
+  assert.match(live.body, /newcomer\.example\/sku/);
+  assert.match(live.body, /This morning’s cover/);
+  assert.doesNotMatch(live.body, /data-last24h-empty=""/);
+  assert.doesNotMatch(live.body, /stale\.example/);
+  assert.doesNotMatch(live.body, /\$99/);
+  const liveCoverAt = live.body.indexOf('data-listing-id="lst-cover"');
+  const liveStripAt = live.body.indexOf('data-last24h=""');
+  const liveNewcomerAt = live.body.indexOf('data-last24h-id="lst-newcomer"');
+  assert.ok(liveCoverAt > -1 && liveStripAt > liveCoverAt, "live cover stays one all-time #1");
+  assert.ok(liveNewcomerAt > liveStripAt, "live newcomer is seen on the last-24h strip");
+
+  const empty = renderBoardPage({
+    day: "2026-08-23",
+    tz: "UTC",
+    listings: [],
+    last24h: [],
+    defaultBidUsd: 5,
+    now,
+  });
+  assert.match(empty, /data-empty-board/);
+  assert.match(empty, /Quiet morning/);
+  assert.match(empty, /data-last24h=""/);
+  assert.match(empty, /data-last24h-empty=""/);
+  assert.match(empty, /No paid listings in the last 24 hours/);
+  assert.match(empty, /not a second cover/);
+  assert.doesNotMatch(empty, /data-last24h-row/);
+  assert.doesNotMatch(empty, /data-cover-hop/);
+  assert.doesNotMatch(empty, /This morning’s cover/);
+});
+
 test("SPEC acceptance 10: GET /about and GET /rules are 200", async () => {
   const app = await buildApp({ databasePath: ":memory:" });
   after(() => app.close());
@@ -2938,6 +3090,9 @@ test("GET /about states no ads, no API keys, no revenue share, $5 floor, daily U
   assert.match(body, /BOARD_TZ/);
   assert.match(body, /UTC/);
   assert.match(body, /00:00/);
+  assert.match(body, /rolling/);
+  assert.match(body, /last-24-hours strip/);
+  assert.match(body, /not a second cover/i);
   assert.match(body, /dtc-picks-daily/);
   assert.match(body, /outbid\.lol/);
   assert.match(body, /Chat and invite links/);
@@ -2968,6 +3123,9 @@ test("GET /rules states ranking, raise difference, bans, reset, clicks, Polar", 
   assert.match(body, /BOARD_TZ/);
   assert.match(body, /UTC/);
   assert.match(body, /00:00/);
+  assert.match(body, /rolling last 24 hours/);
+  assert.match(body, /Not civil midnight/);
+  assert.match(body, /Not a second cover/);
   assert.match(body, /Telegram/);
   assert.match(body, /WhatsApp/);
   assert.match(body, /Discord/);

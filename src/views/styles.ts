@@ -216,6 +216,83 @@ nav[aria-label="Main"] a:hover {
   color: var(--foreground);
 }
 #leaderboard { scroll-margin-top: 1.5rem; margin-top: 0; }
+.last24h {
+  margin-top: 1.75rem;
+  padding-top: 1.15rem;
+  border-top: 1px dashed var(--border);
+}
+.last24h-kicker {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.last24h-dek {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+  text-wrap: pretty;
+}
+.last24h-empty {
+  margin: 0.75rem 0 0;
+  padding: 0.85rem 0.9rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  border: 1px dashed var(--border);
+}
+.last24h-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+.last24h-row + .last24h-row { border-top: 1px solid var(--border); }
+.last24h-link {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  padding: 0.45rem 0;
+}
+.last24h-rank {
+  flex-shrink: 0;
+  min-width: 1.5rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.last24h-body {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.last24h-host {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+.last24h-why {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+.last24h-meta {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.45rem 0.65rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.last24h-bid {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
+}
 #claim {
   scroll-margin-top: 1.5rem;
   margin-top: 2.25rem;

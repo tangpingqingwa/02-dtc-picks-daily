@@ -2,11 +2,15 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   MIN_BID_USD,
+  listLast24h,
+  listToday,
   placeBid,
   rankForBid,
   rankListings,
+  rollingWindowStart,
   type Listing,
 } from "../src/core/board.js";
+import { dayKey } from "../src/core/day.js";
 import { openDatabase } from "../src/db.js";
 
 function listing(partial: Partial<Listing> & Pick<Listing, "id" | "bidUsd" | "createdAt">): Listing {
@@ -78,4 +82,67 @@ test("rankForBid reports the slot an unpaid bid would take", () => {
   assert.equal(rankForBid(rows, 12), 3);
   assert.equal(rankForBid(rows, 5), 3);
   assert.equal(rankForBid([], 5), 1);
+});
+
+test("listLast24h is a rolling 24h window, not civil midnight UTC", () => {
+  const db = openDatabase(":memory:");
+  const now = new Date("2026-08-23T00:30:00.000Z");
+  try {
+    placeBid(db, {
+      id: "lst-last-night",
+      day: "2026-08-22",
+      productUrl: "https://overnight.example/sku",
+      whyTestThisToday: "Paid after yesterday noon still sits in the last 24 hours",
+      bidUsd: 7,
+      createdAt: "2026-08-22T12:00:00.000Z",
+    });
+    placeBid(db, {
+      id: "lst-too-old",
+      day: "2026-08-21",
+      productUrl: "https://stale.example/sku",
+      whyTestThisToday: "Paid more than 24 hours ago leaves the rolling strip",
+      bidUsd: 40,
+      createdAt: "2026-08-21T23:00:00.000Z",
+    });
+    placeBid(db, {
+      id: "lst-morning",
+      day: "2026-08-23",
+      productUrl: "https://fresh.example/sku",
+      whyTestThisToday: "This morning’s spend is still in the window",
+      bidUsd: 9,
+      createdAt: "2026-08-23T00:10:00.000Z",
+    });
+
+    const window = listLast24h(db, now);
+    assert.deepEqual(
+      window.map((row) => row.id),
+      ["lst-morning", "lst-last-night"],
+    );
+    assert.equal(window[0]?.rank, 1);
+    assert.equal(window[1]?.rank, 2);
+    assert.ok(!window.some((row) => row.id === "lst-too-old"));
+    assert.equal(listToday(db, "2026-08-23").length, 1);
+    assert.equal(listToday(db, "2026-08-23")[0]?.id, "lst-morning");
+    assert.equal(rollingWindowStart(now).toISOString(), "2026-08-22T00:30:00.000Z");
+    assert.notEqual(dayKey(now, "UTC"), dayKey(new Date(now.getTime() - 24 * 60 * 60 * 1000), "UTC"));
+  } finally {
+    db.close();
+  }
+});
+
+test("listLast24h stays empty when nothing paid in the last 24 hours", () => {
+  const db = openDatabase(":memory:");
+  try {
+    placeBid(db, {
+      id: "lst-stale",
+      day: "2026-08-20",
+      productUrl: "https://old.example/sku",
+      whyTestThisToday: "Stale spend must not invent a last-24h #1",
+      bidUsd: 99,
+      createdAt: "2026-08-20T00:00:00.000Z",
+    });
+    assert.deepEqual(listLast24h(db, new Date("2026-08-23T00:30:00.000Z")), []);
+  } finally {
+    db.close();
+  }
 });
