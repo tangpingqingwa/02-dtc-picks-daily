@@ -530,6 +530,12 @@ a.row-link:hover { color: var(--primary); }
   color: var(--foreground);
   text-wrap: pretty;
 }
+.cover-why-line[data-prize-before-price] {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
 .list-after-why-wrap {
   margin: 0.5rem 0 0;
   font-size: 0.9rem;
@@ -777,8 +783,11 @@ a.row-link:hover { color: var(--primary); }
   font-size: 1.25rem;
   white-space: normal;
 }
-.row-cover .cover-why-line {
-  font-size: 1.35rem;
+.row-cover .bid {
+  font-size: 0.8rem;
+}
+.row-cover .clicks {
+  font-size: 0.7rem;
 }
 .row-cover .row-link { padding-bottom: 0.35rem; }
 .row-cover .claim-rank {

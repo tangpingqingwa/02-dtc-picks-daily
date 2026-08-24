@@ -223,6 +223,8 @@ if [[ -f package.json ]]; then
     || fail "seller list-after-take-six test did not run"
   grep -q 'concentrates Test this today after List a product is re-concentrated a sixth time' "$test_log" \
     || fail "shopper take-after-list-six test did not run"
+  grep -q 'why-line read first and larger than $bid' "$test_log" \
+    || fail "prize-before-price shopper test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -315,6 +317,10 @@ PY
     || fail "paid cover missing labeled why-line"
   grep -q 'cover-why-line' src/views/board.ts \
     || fail "cover reason is not a first-read why-line"
+  grep -q 'data-prize-before-price' src/views/board.ts \
+    || fail "occupied #1 missing prize-before-price mark"
+  grep -q 'cover-why-line\[data-prize-before-price\]' src/views/styles.ts \
+    || fail "cover why-line is not larger than \$bid + clicks"
   grep -q 'data-list-after-why' src/views/board.ts \
     || fail "paid cover missing list-after-why hop"
   grep -q 'under this reason' src/views/board.ts \
@@ -506,6 +512,38 @@ listed = min_height("list-after-take-six")
 prior = min_height("take-after-list-five")
 if take <= listed or take <= prior:
     raise SystemExit(1)
+PY
+  python3 - <<'PY' || fail "occupied #1 why-line must read larger than \$bid and clicks; later ranks stay quieter"
+import re
+from pathlib import Path
+
+board = Path("src/views/board.ts").read_text()
+css = Path("src/views/styles.ts").read_text()
+
+if board.count("data-prize-before-price") != 1:
+    raise SystemExit("prize mark must stamp only the occupied cover why-line")
+if "data-take-after-list-seven" in board or "data-list-after-take-seven" in board:
+    raise SystemExit("do not add another named hop")
+if "take-after-list-seven" in css or "list-after-take-seven" in css:
+    raise SystemExit("do not stamp take-after-list-N / list-after-take-N")
+
+prize = re.search(r"\.cover-why-line\[data-prize-before-price\]\s*\{[^}]*font-size:\s*([0-9.]+)rem", css)
+bid = re.search(r"\.row-cover \.bid\s*\{[^}]*font-size:\s*([0-9.]+)rem", css)
+clicks = re.search(r"\.row-cover \.clicks\s*\{[^}]*font-size:\s*([0-9.]+)rem", css)
+later_bid = re.search(r"\.bid \{\n(?:.*\n)*?\s*font-size:\s*([0-9.]+)rem", css)
+later_blurb = re.search(r"\.blurb \{\n(?:.*\n)*?\s*font-size:\s*([0-9.]+)rem", css)
+if not prize or not bid or not clicks or not later_bid or not later_blurb:
+    raise SystemExit(1)
+if float(prize.group(1)) <= float(bid.group(1)):
+    raise SystemExit("prize must be larger than \$bid")
+if float(prize.group(1)) <= float(clicks.group(1)):
+    raise SystemExit("prize must be larger than clicks")
+if float(later_bid.group(1)) >= float(prize.group(1)):
+    raise SystemExit("later ranks must stay quieter than the cover prize")
+if float(later_blurb.group(1)) >= float(prize.group(1)):
+    raise SystemExit("later blurbs must stay quieter than the cover prize")
+if "var(--primary)" in prize.group(0):
+    raise SystemExit("do not recolor")
 PY
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"

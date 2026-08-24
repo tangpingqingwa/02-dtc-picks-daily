@@ -437,7 +437,7 @@ test("GET / names why this is today’s cover before $bid and the hop", async ()
 
   assert.match(cover, /data-cover-why=""/);
   assert.match(cover, /<p class="cover-why-label">Why test this today<\/p>/);
-  assert.match(cover, /<p class="cover-why-line">Cover app sellers should install this morning<\/p>/);
+  assert.match(cover, /<p class="cover-why-line" data-prize-before-price="">Cover app sellers should install this morning<\/p>/);
   assert.match(cover, /data-list-after-why=""/);
   assert.doesNotMatch(cover, /class="blurb"/);
   const whyAt = cover.indexOf("data-cover-why");
@@ -2821,6 +2821,86 @@ test("GET / concentrates Test this today after List a product is re-concentrated
   assert.doesNotMatch(empty.body, /data-list-after-take-four/);
   assert.doesNotMatch(empty.body, /data-list-after-take-five/);
   assert.doesNotMatch(empty.body, /data-list-after-take-six/);
+});
+
+test("GET / lets the occupied cover why-line read first and larger than $bid", async () => {
+  const db = openDatabase(":memory:");
+  const day = dayKey();
+  placeBid(db, {
+    id: "lst-cover",
+    day,
+    productUrl: "https://cover.example/apps/pick",
+    whyTestThisToday: "Cover app sellers should install this morning",
+    bidUsd: 20,
+    clicks: 3,
+    createdAt: "2026-08-22T09:00:00.000Z",
+  });
+  placeBid(db, {
+    id: "lst-under",
+    day,
+    productUrl: "https://under.example/sku",
+    whyTestThisToday: "Cheaper SKU still belongs on the brief",
+    bidUsd: 8,
+    createdAt: "2026-08-22T12:00:00.000Z",
+  });
+
+  const app = await buildApp({ db });
+  after(async () => {
+    await app.close();
+    db.close();
+  });
+
+  const response = await app.inject({ method: "GET", url: "/" });
+  assert.equal(response.statusCode, 200);
+  const body = response.body;
+  const coverStart = body.indexOf('data-listing-id="lst-cover"');
+  const coverEnd = body.indexOf("</article>", coverStart);
+  const cover = body.slice(coverStart, coverEnd);
+  const underStart = body.indexOf('data-listing-id="lst-under"');
+  const underEnd = body.indexOf("</article>", underStart);
+  const under = body.slice(underStart, underEnd);
+
+  assert.match(cover, /data-cover-why=""/);
+  assert.match(cover, /data-prize-before-price=""/);
+  assert.match(cover, /<p class="cover-why-line" data-prize-before-price="">Cover app sellers should install this morning<\/p>/);
+  assert.match(body, /cover-why-line\[data-prize-before-price\]/);
+  assert.match(cover, /\$20/);
+  assert.match(cover, /3 clicks/);
+  const whyAt = cover.indexOf("data-prize-before-price");
+  const bidAt = cover.indexOf(">$20<");
+  const clicksAt = cover.indexOf("3 clicks");
+  const hopAt = cover.indexOf("data-cover-hop");
+  const hostAt = cover.indexOf('class="host"');
+  assert.ok(whyAt > -1 && whyAt < bidAt, "cover prize precedes $bid");
+  assert.ok(whyAt < clicksAt, "cover prize precedes clicks");
+  assert.ok(whyAt < hopAt, "cover prize still precedes Test this today");
+  assert.ok(whyAt < hostAt, "cover prize precedes the host line");
+  assert.ok((cover.match(/data-prize-before-price=""/g) ?? []).length === 1, "one prize mark on occupied #1");
+  assert.ok((cover.match(/data-cover-why=""/g) ?? []).length === 1, "one labeled why-line");
+  assert.ok((cover.match(/data-cover-hop/g) ?? []).length === 1, "no extra named hop");
+
+  assert.match(under, /class="blurb"/);
+  assert.match(under, /\$8/);
+  assert.doesNotMatch(under, /data-prize-before-price/);
+  assert.doesNotMatch(under, /data-cover-why/);
+  assert.doesNotMatch(under, /cover-why-line/);
+  assert.equal((body.match(/data-prize-before-price=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-cover-why=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-cover-hop/g) ?? []).length, 1);
+  assert.match(body, /data-issue-date="/);
+  assert.match(body, /One cover/);
+  assert.match(body, /Claim #1 for/);
+  assert.match(body, /Outbid/);
+
+  const emptyApp = await buildApp({ databasePath: ":memory:" });
+  after(() => emptyApp.close());
+  const empty = await emptyApp.inject({ method: "GET", url: "/" });
+  assert.match(empty.body, /data-empty-board/);
+  assert.match(empty.body, /Quiet morning/);
+  assert.match(empty.body, /No listings yet today/);
+  assert.doesNotMatch(empty.body, /data-prize-before-price=""/);
+  assert.doesNotMatch(empty.body, /data-cover-why=""/);
+  assert.doesNotMatch(empty.body, /Test this today/);
 });
 
 test("SPEC acceptance 10: GET /about and GET /rules are 200", async () => {
