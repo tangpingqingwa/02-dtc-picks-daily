@@ -35,7 +35,7 @@ export function renderLast24hRow(listing: RankedListing, now?: Date): string {
   const bid = escapeHtml(formatUsd(listing.bidUsd));
   return html`<li class="last24h-row" data-last24h-row="" data-last24h-id="${escapeHtml(listing.id)}">
   <div class="last24h-link">
-    <span class="last24h-rank">#${listing.rank}</span>
+    <span class="last24h-rank" data-last24h-rank="${listing.rank}">${listing.rank}</span>
     <span class="last24h-body">
       <span class="last24h-host">${host}</span>
       <span class="last24h-why">${blurb}</span>
@@ -56,11 +56,11 @@ export function renderLast24hStrip(listings: RankedListing[], now?: Date): strin
         ${listings.map((listing) => renderLast24hRow(listing, now)).join("")}
       </ol>`
     : html`<p class="last24h-empty" data-last24h-empty="">
-        No paid listings in the last 24 hours. The strip stays empty — not a second cover.
+        No paid listings in the last 24 hours. The strip stays empty — not a second cover. No invented #1.
       </p>`;
   return html`<aside class="last24h" data-last24h="" data-last24h-window="rolling-24h"${occupied ? "" : ' data-last24h-empty-strip=""'}>
   <p class="last24h-kicker">Last 24 hours</p>
-  <p class="last24h-dek">Spend in the rolling last 24 hours. Not a midnight UTC reset. Not a second all-time board.</p>
+  <p class="last24h-dek">Spend in the rolling last 24 hours. Not a midnight UTC reset. Not a second all-time board. A strip rank is not today’s cover.</p>
   ${rows}
 </aside>`;
 }
@@ -144,10 +144,10 @@ export function renderBoardBody(model: BoardViewModel): string {
   const occupied = model.listings.length > 0;
   const rows = occupied
     ? model.listings.map((listing) => renderListingRow(listing, model.now)).join("")
-    : html`<div class="empty" data-empty-board>
+    : html`<div class="empty" data-empty-board="" data-empty-cover="">
           <p class="empty-kicker">Quiet morning</p>
           <p><strong>No listings yet today.</strong></p>
-          <p>The desk is open. An empty morning is valid — not a broken site. Bid ${escapeHtml(formatUsd(MIN_BID_USD))} to take the cover.</p>
+          <p>The desk is open. An empty morning is valid — not a broken site, not an invented cover. Bid ${escapeHtml(formatUsd(MIN_BID_USD))} to take the cover.</p>
         </div>`;
   const listHop = occupied
     ? html`<p class="masthead-list">

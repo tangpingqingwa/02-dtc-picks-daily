@@ -32,8 +32,10 @@ test("GET / is a public empty board with bid form", async () => {
   assert.match(body, /whatever place that bid can take/);
   assert.match(body, /You pay only the difference/);
   assert.match(body, /data-empty-board/);
+  assert.match(body, /data-empty-cover=""/);
   assert.match(body, /No listings yet today/);
   assert.match(body, /Quiet morning/);
+  assert.match(body, /not an invented cover/);
   assert.match(body, /Morning merch desk/);
   assert.match(body, /data-issue-date="/);
   assert.match(body, /One cover/);
@@ -41,9 +43,14 @@ test("GET / is a public empty board with bid form", async () => {
   assert.match(body, /data-last24h=""/);
   assert.match(body, /data-last24h-window="rolling-24h"/);
   assert.match(body, /data-last24h-empty=""/);
+  assert.match(body, /data-last24h-empty-strip=""/);
   assert.match(body, /No paid listings in the last 24 hours/);
   assert.match(body, /rolling last 24 hours/);
+  assert.match(body, /No invented #1/);
   assert.doesNotMatch(body, /data-last24h-row/);
+  assert.doesNotMatch(body, /data-last24h-rank/);
+  assert.doesNotMatch(body, /This morning’s cover/);
+  assert.doesNotMatch(body, /class="row-cover/);
   assert.doesNotMatch(body, /data-cover-hop/);
   assert.doesNotMatch(body, /Test this today/);
   assert.doesNotMatch(body, /data-list-under-cover/);
@@ -189,7 +196,9 @@ test("GET / does not show yesterday's cover on a new day", async () => {
   const response = await app.inject({ method: "GET", url: "/" });
   assert.equal(response.statusCode, 200);
   assert.match(response.body, /data-empty-board/);
+  assert.match(response.body, /data-empty-cover=""/);
   assert.match(response.body, /Quiet morning/);
+  assert.match(response.body, /data-last24h-empty=""/);
   assert.doesNotMatch(response.body, /yesterday\.example/);
   assert.doesNotMatch(response.body, /\$99/);
   assert.doesNotMatch(response.body, /data-cover-why/);
@@ -230,6 +239,7 @@ test("masthead, folio, and data-issue-date name the same day in UTC+12", () => {
   assert.match(body, new RegExp(folio.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(body, /data-last24h=""/);
   assert.match(body, /data-last24h-empty=""/);
+  assert.match(body, /data-empty-cover=""/);
   assert.doesNotMatch(body, /August 24, 2026/);
   assert.doesNotMatch(body, /Aug 24, 2026/);
 });
@@ -2997,8 +3007,11 @@ test("GET / shows an honest last-24h strip so a newcomer can be seen today", asy
   assert.match(html, /Not a second all-time board/);
   assert.match(html, /data-last24h-id="lst-cover"/);
   assert.match(html, /data-last24h-id="lst-newcomer"/);
+  assert.match(html, /data-last24h-rank="1"/);
+  assert.match(html, /data-last24h-rank="2"/);
   assert.match(html, /newcomer\.example\/sku/);
   assert.match(html, /Last night’s \$6 still belongs on the last-24h strip/);
+  assert.match(html, /A strip rank is not today’s cover/);
   assert.doesNotMatch(html, /stale\.example/);
   assert.doesNotMatch(html, /\$99/);
   assert.doesNotMatch(html, /href="\/today"/);
@@ -3015,8 +3028,15 @@ test("GET / shows an honest last-24h strip so a newcomer can be seen today", asy
   assert.doesNotMatch(html, /data-take-after-list-seven/);
   assert.doesNotMatch(html, /data-list-after-take-seven/);
 
+  const previousTz = process.env.BOARD_TZ;
+  process.env.BOARD_TZ = "UTC";
   const app = await buildApp({ db, now });
   after(async () => {
+    if (previousTz === undefined) {
+      delete process.env.BOARD_TZ;
+    } else {
+      process.env.BOARD_TZ = previousTz;
+    }
     await app.close();
     db.close();
   });
@@ -3045,14 +3065,140 @@ test("GET / shows an honest last-24h strip so a newcomer can be seen today", asy
     now,
   });
   assert.match(empty, /data-empty-board/);
+  assert.match(empty, /data-empty-cover=""/);
   assert.match(empty, /Quiet morning/);
+  assert.match(empty, /not an invented cover/);
   assert.match(empty, /data-last24h=""/);
   assert.match(empty, /data-last24h-empty=""/);
+  assert.match(empty, /data-last24h-empty-strip=""/);
   assert.match(empty, /No paid listings in the last 24 hours/);
   assert.match(empty, /not a second cover/);
+  assert.match(empty, /No invented #1/);
   assert.doesNotMatch(empty, /data-last24h-row/);
+  assert.doesNotMatch(empty, /data-last24h-rank/);
   assert.doesNotMatch(empty, /data-cover-hop/);
   assert.doesNotMatch(empty, /This morning’s cover/);
+  assert.doesNotMatch(empty, /class="row-cover/);
+});
+
+test("GET / keeps a quiet morning honest — no invented cover on the last-24h strip", async () => {
+  const previousTz = process.env.BOARD_TZ;
+  process.env.BOARD_TZ = "UTC";
+  after(() => {
+    if (previousTz === undefined) {
+      delete process.env.BOARD_TZ;
+    } else {
+      process.env.BOARD_TZ = previousTz;
+    }
+  });
+  const now = new Date("2026-08-23T00:30:00.000Z");
+  const emptyApp = await buildApp({ databasePath: ":memory:", now });
+  after(() => emptyApp.close());
+  const empty = await emptyApp.inject({ method: "GET", url: "/" });
+  assert.equal(empty.statusCode, 200);
+  const quiet = empty.body;
+  assert.match(quiet, /data-empty-board/);
+  assert.match(quiet, /data-empty-cover=""/);
+  assert.match(quiet, /Quiet morning/);
+  assert.match(quiet, /No listings yet today/);
+  assert.match(quiet, /not an invented cover/);
+  assert.match(quiet, /data-last24h=""/);
+  assert.match(quiet, /data-last24h-window="rolling-24h"/);
+  assert.match(quiet, /data-last24h-empty=""/);
+  assert.match(quiet, /data-last24h-empty-strip=""/);
+  assert.match(quiet, /No paid listings in the last 24 hours/);
+  assert.match(quiet, /No invented #1/);
+  assert.match(quiet, /Claim #1 for/);
+  assert.doesNotMatch(quiet, /data-last24h-row/);
+  assert.doesNotMatch(quiet, /data-last24h-rank/);
+  assert.doesNotMatch(quiet, /This morning’s cover/);
+  assert.doesNotMatch(quiet, /class="row-cover/);
+  assert.doesNotMatch(quiet, /data-cover-hop/);
+  assert.doesNotMatch(quiet, /data-cover-why/);
+  assert.doesNotMatch(quiet, /Test this today/);
+  const emptyCoverAt = quiet.indexOf('data-empty-cover=""');
+  const emptyStripAt = quiet.indexOf('data-last24h-empty=""');
+  const claimAt = quiet.indexOf('id="claim"');
+  assert.ok(emptyCoverAt > -1 && emptyStripAt > emptyCoverAt, "empty cover stays above the empty last-24h strip");
+  assert.ok(emptyStripAt < claimAt, "empty strip stays before claim chrome");
+  assert.equal((quiet.match(/data-empty-cover=""/g) ?? []).length, 1);
+  assert.equal((quiet.match(/data-last24h-empty=""/g) ?? []).length, 1);
+  assert.equal((quiet.match(/This morning’s cover/g) ?? []).length, 0);
+
+  const overnightDb = openDatabase(":memory:");
+  placeBid(overnightDb, {
+    id: "lst-last-night",
+    day: "2026-08-22",
+    productUrl: "https://overnight.example/sku",
+    whyTestThisToday: "Last night’s $6 still belongs on the last-24h strip",
+    bidUsd: 6,
+    createdAt: "2026-08-22T12:00:00.000Z",
+  });
+  const overnightApp = await buildApp({ db: overnightDb, now });
+  after(async () => {
+    await overnightApp.close();
+    overnightDb.close();
+  });
+  const overnight = await overnightApp.inject({ method: "GET", url: "/" });
+  assert.equal(overnight.statusCode, 200);
+  const body = overnight.body;
+  assert.match(body, /data-empty-board/);
+  assert.match(body, /data-empty-cover=""/);
+  assert.match(body, /Quiet morning/);
+  assert.match(body, /No listings yet today/);
+  assert.match(body, /not an invented cover/);
+  assert.match(body, /data-last24h=""/);
+  assert.match(body, /data-last24h-window="rolling-24h"/);
+  assert.match(body, /data-last24h-id="lst-last-night"/);
+  assert.match(body, /data-last24h-rank="1"/);
+  assert.match(body, /overnight\.example\/sku/);
+  assert.match(body, /A strip rank is not today’s cover/);
+  assert.doesNotMatch(body, /data-last24h-empty=""/);
+  assert.doesNotMatch(body, /This morning’s cover/);
+  assert.doesNotMatch(body, /class="row-cover/);
+  assert.doesNotMatch(body, /data-cover-hop/);
+  assert.doesNotMatch(body, /data-cover-why/);
+  assert.doesNotMatch(body, /data-listing-id="lst-last-night"/);
+  assert.doesNotMatch(body, /Test this today/);
+  const overnightCoverAt = body.indexOf('data-empty-cover=""');
+  const overnightStripAt = body.indexOf('data-last24h=""');
+  const overnightRowAt = body.indexOf('data-last24h-id="lst-last-night"');
+  const overnightRankAt = body.indexOf('data-last24h-rank="1"');
+  const overnightClaimAt = body.indexOf('id="claim"');
+  assert.ok(overnightCoverAt > -1 && overnightStripAt > overnightCoverAt, "quiet cover stays empty above last-night spend");
+  assert.ok(overnightRowAt > overnightStripAt && overnightRowAt < overnightClaimAt, "last-night spend sits on the strip, not the cover");
+  assert.ok(overnightRankAt > overnightStripAt, "strip rank 1 is not today’s cover #1");
+  assert.equal((body.match(/This morning’s cover/g) ?? []).length, 0);
+  assert.equal((body.match(/data-empty-cover=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-cover-hop/g) ?? []).length, 0);
+  assert.equal((body.match(/data-last24h=/g) ?? []).length, 1);
+
+  const occupiedDb = openDatabase(":memory:");
+  placeBid(occupiedDb, {
+    id: "lst-cover",
+    day: "2026-08-23",
+    productUrl: "https://cover.example/apps/pick",
+    whyTestThisToday: "Cover app sellers should install this morning",
+    bidUsd: 20,
+    createdAt: "2026-08-23T00:10:00.000Z",
+  });
+  const occupiedApp = await buildApp({ db: occupiedDb, now });
+  after(async () => {
+    await occupiedApp.close();
+    occupiedDb.close();
+  });
+  const occupied = await occupiedApp.inject({ method: "GET", url: "/" });
+  assert.equal(occupied.statusCode, 200);
+  assert.match(occupied.body, /This morning’s cover/);
+  assert.match(occupied.body, /data-listing-id="lst-cover"/);
+  assert.match(occupied.body, /class="row row-cover row-1"/);
+  assert.match(occupied.body, /data-cover-hop=""/);
+  assert.match(occupied.body, /data-last24h-id="lst-cover"/);
+  assert.match(occupied.body, /data-last24h-rank="1"/);
+  assert.doesNotMatch(occupied.body, /data-empty-board/);
+  assert.doesNotMatch(occupied.body, /data-empty-cover/);
+  assert.equal((occupied.body.match(/This morning’s cover/g) ?? []).length, 1);
+  assert.equal((occupied.body.match(/data-cover-hop/g) ?? []).length, 1);
 });
 
 test("SPEC acceptance 10: GET /about and GET /rules are 200", async () => {

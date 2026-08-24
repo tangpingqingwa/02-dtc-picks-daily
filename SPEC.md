@@ -172,7 +172,7 @@ The auction is **today’s cover**, not a forever directory.
 | Day key | Calendar date in `BOARD_TZ` (`YYYY-MM-DD`). |
 | Reset | At `00:00` in `BOARD_TZ`, a new empty board starts. Yesterday’s listings leave the cover. |
 | Cover | Rank #1 **right now** for today’s `day` is the cover slot of this morning’s brief. |
-| Last 24h | A strip on `/` ranks paid rows whose `createdAt` falls in the **rolling last 24 hours**. Not civil midnight. Empty strip is valid. Not a second cover. |
+| Last 24h | A strip on `/` ranks paid rows whose `createdAt` falls in the **rolling last 24 hours**. Not civil midnight. Empty strip is valid. Not a second cover. A strip rank is not today’s cover #1. |
 | History | Keep paid rows for audit. The public cover shows **today’s** `day` only. The last-24h strip can still show last night’s paid rows. |
 
 Do not carry bids across the reset. Raising yesterday’s URL today is a **new** listing on the new day and pays a full bid ≥ $5.
@@ -241,6 +241,7 @@ Must state every rule in sections 6–11 in operator language. No extra ranking 
 - Do not invent click counts or visitor stats.
 - Do not show a listing that has not paid.
 - Empty board is a valid morning. Show the empty state; do not seed fake SKUs.
+- Empty cover stays empty. Do not invent a #1 on the cover slot or the last-24h strip.
 
 ---
 
