@@ -229,14 +229,22 @@ if [[ -f package.json ]]; then
     || fail "rolling last-24h strip test did not run"
   grep -q 'rolling 24h window, not civil midnight' "$test_log" \
     || fail "listLast24h window test did not run"
+  grep -q 'quiet morning honest' "$test_log" \
+    || fail "quiet-morning honesty test did not run"
+  grep -q 'no invented cover on the last-24h strip' "$test_log" \
+    || fail "quiet-morning no-invented-cover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
     || fail "board missing Outbid button"
   grep -q 'data-empty-board' src/views/board.ts \
     || fail "board missing honest empty marker"
+  grep -q 'data-empty-cover' src/views/board.ts \
+    || fail "empty cover is not stamped honest"
   grep -q 'Quiet morning' src/views/board.ts \
     || fail "empty state is not a quiet morning"
+  grep -q 'not an invented cover' src/views/board.ts \
+    || fail "empty cover does not refuse an invented #1"
   python3 - <<'PY' || fail "today’s cover or quiet morning must precede claim chrome"
 from pathlib import Path
 src = Path("src/views/board.ts").read_text()
@@ -556,6 +564,12 @@ PY
     || fail "board missing last-24h strip"
   grep -q 'data-last24h-empty' src/views/board.ts \
     || fail "last-24h strip missing honest empty"
+  grep -q 'No invented #1' src/views/board.ts \
+    || fail "empty last-24h strip does not refuse an invented #1"
+  grep -q 'data-last24h-rank' src/views/board.ts \
+    || fail "occupied last-24h strip missing rank that is not cover #1"
+  grep -q 'A strip rank is not today’s cover' src/views/board.ts \
+    || fail "last-24h strip must not claim today’s cover"
   grep -q 'rolling last 24 hours' src/views/board.ts \
     || fail "last-24h strip must name the rolling window"
   grep -q 'listLast24h' src/core/board.ts \
@@ -587,6 +601,14 @@ if cover < 0 or strip < 0 or claim < 0 or not (cover < strip < claim):
     raise SystemExit("strip must sit under the one cover, before claim")
 if "No paid listings in the last 24 hours" not in board:
     raise SystemExit("empty strip must stay honest")
+if 'data-empty-cover=""' not in board:
+    raise SystemExit("empty cover must stay stamped")
+if "No invented #1" not in board:
+    raise SystemExit("empty strip must refuse an invented #1")
+if "not an invented cover" not in board:
+    raise SystemExit("empty cover must refuse an invented #1")
+if "#${listing.rank}" in board.split("renderLast24hRow", 1)[-1].split("renderLast24hStrip", 1)[0]:
+    raise SystemExit("strip rank must not print cover #N")
 PY
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
