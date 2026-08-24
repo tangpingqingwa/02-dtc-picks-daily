@@ -237,6 +237,10 @@ if [[ -f package.json ]]; then
     || fail "strip-rank-is-not-cover test did not run"
   grep -q 'not today’s cover #1' "$test_log" \
     || fail "strip-not-cover leftover test did not run"
+  grep -q 'occupied cover product name the prize' "$test_log" \
+    || fail "cover-prize shopper test did not run"
+  grep -q '\$bid stays a later fact' "$test_log" \
+    || fail "cover-prize later-fact leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -314,8 +318,12 @@ if list_six < 0 or list_six < list_five:
 take_six = src.find("data-take-after-list-six")
 if take_six < 0 or take_six < take_five or take_six > list_after_take:
     raise SystemExit(1)
-host_after = src.find("<p class=\"host\">")
+host_after = src.find("<p class=\"host\"")
 if host_after < 0 or cover_hop > host_after or list_after_take > host_after:
+    raise SystemExit(1)
+name_prize = src.find("data-cover-name")
+later_money = src.find("data-later-fact")
+if name_prize < 0 or later_money < 0 or name_prize > later_money:
     raise SystemExit(1)
 PY
   grep -q 'Morning merch desk' src/views/board.ts \
@@ -340,6 +348,17 @@ PY
     || fail "occupied #1 missing prize-before-price mark"
   grep -q 'cover-why-line\[data-prize-before-price\]' src/views/styles.ts \
     || fail "cover why-line is not larger than \$bid + clicks"
+  grep -q 'data-cover-name' src/views/board.ts \
+    || fail "occupied cover missing product-name prize mark"
+  grep -q 'host\[data-cover-name\]' src/views/styles.ts \
+    || fail "cover product name is not larger than later-fact \$bid"
+  grep -q 'data-later-fact' src/views/board.ts \
+    || fail "occupied cover missing later-fact stamp on \$bid"
+  grep -q 'bid.later-fact' src/views/board.ts \
+    || fail "occupied cover \$bid is not a later-fact class"
+  grep -q 'later-fact\[data-later-fact\]' src/views/styles.ts \
+    || grep -q 'bid.later-fact' src/views/styles.ts \
+    || fail "later-fact \$bid is not muted off the cover prize"
   grep -q 'data-list-after-why' src/views/board.ts \
     || fail "paid cover missing list-after-why hop"
   grep -q 'under this reason' src/views/board.ts \
@@ -563,6 +582,60 @@ if float(later_blurb.group(1)) >= float(prize.group(1)):
     raise SystemExit("later blurbs must stay quieter than the cover prize")
 if "var(--primary)" in prize.group(0):
     raise SystemExit("do not recolor")
+PY
+  python3 - <<'PY' || fail "occupied cover product name must stay the prize; \$bid stays a muted later fact"
+import re
+from pathlib import Path
+
+board = Path("src/views/board.ts").read_text()
+css = Path("src/views/styles.ts").read_text()
+
+if board.count("data-cover-name") != 1:
+    raise SystemExit("cover name prize must stamp only occupied #1")
+if board.count('data-later-fact=""') < 2:
+    raise SystemExit("later-fact must stamp occupied cover money")
+if "data-take-after-list-seven" in board or "data-list-after-take-seven" in board:
+    raise SystemExit("do not add another named hop")
+if "take-after-list-seven" in css or "list-after-take-seven" in css:
+    raise SystemExit("do not stamp take-after-list-N / list-after-take-N")
+if "var(--primary)" in css.split(".row-cover .host[data-cover-name]", 1)[-1].split("}", 1)[0]:
+    raise SystemExit("do not recolor the cover name")
+
+name = re.search(r"\.row-cover \.host\[data-cover-name\]\s*\{[^}]*font-size:\s*([0-9.]+)rem", css)
+later_bid = re.search(
+    r"\.cover-later\[data-later-fact\] \.bid\.later-fact\s*,[\s\S]*?font-size:\s*([0-9.]+)rem",
+    css,
+)
+if not later_bid:
+    later_bid = re.search(
+        r"\.cover-later\[data-later-fact\]\s*\{[^}]*font-size:\s*([0-9.]+)rem",
+        css,
+    )
+why = re.search(r"\.cover-why-line\[data-prize-before-price\]\s*\{[^}]*font-size:\s*([0-9.]+)rem", css)
+stack_bid = re.search(r"\.bid \{\n(?:.*\n)*?\s*font-size:\s*([0-9.]+)rem", css)
+if not name or not later_bid or not why or not stack_bid:
+    raise SystemExit("missing cover-prize CSS")
+if float(name.group(1)) <= float(later_bid.group(1)):
+    raise SystemExit("cover product name must be larger than later-fact \$bid")
+if float(name.group(1)) < float(why.group(1)):
+    raise SystemExit("cover product name must stay at least as loud as the why-line")
+if float(stack_bid.group(1)) >= float(name.group(1)):
+    raise SystemExit("later-rank \$bid must stay quieter than the cover name")
+later_block = re.search(
+    r"\.cover-later\[data-later-fact\] \.bid\.later-fact[\s\S]*?color:\s*([^;]+);",
+    css,
+)
+if not later_block or "var(--primary)" in later_block.group(1):
+    raise SystemExit("later-fact \$bid must not shout in primary")
+if "var(--muted-foreground)" not in later_block.group(1) and "var(--muted)" not in later_block.group(1):
+    raise SystemExit("later-fact \$bid must recede to muted")
+row = board.split("export function renderListingRow", 1)[-1].split("export function renderBoardBody", 1)[0]
+if 'data-cover-name=""' not in row:
+    raise SystemExit("cover host must stamp data-cover-name")
+if "later-fact" not in row or "data-later-fact" not in row:
+    raise SystemExit("cover \$bid must stamp later-fact")
+if row.find("data-cover-name") > row.find("data-later-fact"):
+    raise SystemExit("cover name must precede later-fact money in markup")
 PY
   grep -q 'data-last24h' src/views/board.ts \
     || fail "board missing last-24h strip"

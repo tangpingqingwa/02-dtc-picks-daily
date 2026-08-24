@@ -200,7 +200,7 @@ bid_for_host() {
     const articles = [...html.matchAll(/<article class="row[\s\S]*?<\/article>/g)].map((m) => m[0]);
     for (const article of articles) {
       if (article.includes(host)) {
-        const bid = article.match(/<p class="bid">\$(\d+)<\/p>/);
+        const bid = article.match(/<(?:p|span) class="bid(?: later-fact)?"[^>]*>\$(\d+)<\/(?:p|span)>/);
         if (bid) {
           process.stdout.write(bid[1]);
           process.exit(0);

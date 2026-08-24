@@ -862,11 +862,39 @@ a.row-link:hover { color: var(--primary); }
   font-size: 1.25rem;
   white-space: normal;
 }
+.row-cover .host[data-cover-name] {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
 .row-cover .bid {
   font-size: 0.8rem;
 }
 .row-cover .clicks {
   font-size: 0.7rem;
+}
+.cover-later[data-later-fact] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.65rem;
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  letter-spacing: 0.02em;
+}
+.row-cover .bid.later-fact[data-later-fact],
+.cover-later[data-later-fact] .bid.later-fact,
+.cover-later[data-later-fact] .clicks.later-fact {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.cover-later[data-later-fact] .live-dot::before,
+.cover-later[data-later-fact] .live-dot::after {
+  background: var(--muted-foreground);
 }
 .row-cover .row-link { padding-bottom: 0.35rem; }
 .row-cover .claim-rank {
