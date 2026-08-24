@@ -256,9 +256,11 @@ nav[aria-label="Main"] a:hover {
 }
 .last24h-rank {
   flex-shrink: 0;
-  min-width: 1.5rem;
+  min-width: 2.75rem;
   font-size: 0.75rem;
   color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .last24h-body {
   min-width: 0;

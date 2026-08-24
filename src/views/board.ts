@@ -35,7 +35,7 @@ export function renderLast24hRow(listing: RankedListing, now?: Date): string {
   const bid = escapeHtml(formatUsd(listing.bidUsd));
   return html`<li class="last24h-row" data-last24h-row="" data-last24h-id="${escapeHtml(listing.id)}">
   <div class="last24h-link">
-    <span class="last24h-rank" data-last24h-rank="${listing.rank}">${listing.rank}</span>
+    <span class="last24h-rank" data-last24h-rank="${listing.rank}" data-last24h-fact="" aria-label="Last 24 hours rank ${listing.rank}, not today’s cover">24h ${listing.rank}</span>
     <span class="last24h-body">
       <span class="last24h-host">${host}</span>
       <span class="last24h-why">${blurb}</span>
@@ -60,7 +60,7 @@ export function renderLast24hStrip(listings: RankedListing[], now?: Date): strin
       </p>`;
   return html`<aside class="last24h" data-last24h="" data-last24h-window="rolling-24h"${occupied ? "" : ' data-last24h-empty-strip=""'}>
   <p class="last24h-kicker">Last 24 hours</p>
-  <p class="last24h-dek">Spend in the rolling last 24 hours. Not a midnight UTC reset. Not a second all-time board. A strip rank is not today’s cover.</p>
+  <p class="last24h-dek">Spend in the rolling last 24 hours. Not a midnight UTC reset. Not a second all-time board. A strip rank is a last-24h fact, not today’s cover #1.</p>
   ${rows}
 </aside>`;
 }
