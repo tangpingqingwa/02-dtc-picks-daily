@@ -305,6 +305,10 @@ if [[ -f package.json ]]; then
     || fail "occupied later-rail leftover test did not run"
   grep -q 'not a second first read' "$test_log" \
     || fail "occupied later-rail first-read leftover test did not run"
+  grep -q 'occupied Product URL after later claim rail' "$test_log" \
+    || fail "occupied URL-after-later-rail leftover test did not run"
+  grep -q 'not a twin on the bid-row' "$test_log" \
+    || fail "occupied URL-after-later-rail bid-row leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -400,6 +404,16 @@ if [[ -f package.json ]]; then
     || fail "occupied later-rail Claim #1 must include #claim so it beats occupied #claim sizes"
   grep -q '#claim .later-rail\[data-later-rail\] .outbid' src/views/styles.ts \
     || fail "occupied later-rail Outbid must include #claim so it beats occupied #claim sizes"
+  grep -q 'Occupied Product URL after later claim rail is later write' src/views/styles.ts \
+    || fail "occupied Product URL CSS must name later write after later claim rail, not a twin on the bid-row"
+  grep -q '#claim .later-rail\[data-later-rail\] .later-listing\[data-later-listing\]' src/views/styles.ts \
+    || fail "occupied Product URL after later rail must include #claim so it recedes under Outbid"
+  if grep -q 'desk\[data-occupied="true"\] .bid-row .later-listing' src/views/styles.ts; then
+    fail "occupied Product URL must not twin Outbid on the bid-row"
+  fi
+  if grep -q 'class="bid-row"' src/views/board.ts; then
+    fail "occupied form must drop the bid-row twin of Product URL and Outbid"
+  fi
   grep -q 'Occupied later List write after Take is the only List label' src/views/board.ts \
     || fail "occupied claim rail must name the later List write as the only List label"
   grep -q 'Occupied listing field after List is Why' src/views/board.ts \
@@ -410,6 +424,8 @@ if [[ -f package.json ]]; then
     || fail "occupied List landing must name Why as the prize, not louder Claim #1 chrome"
   grep -q 'Occupied claim rail after Why land is later rail' src/views/board.ts \
     || fail "occupied claim rail after Why land must name later rail, not a second first read"
+  grep -q 'Occupied Product URL after later claim rail is later write' src/views/board.ts \
+    || fail "occupied Product URL after later claim rail must name later write, not a twin on the bid-row"
   if grep -q 'class="claim-kicker"' src/views/board.ts; then
     fail "occupied claim rail must drop the second List kicker"
   fi
@@ -992,10 +1008,10 @@ if "Then why test this today" not in board:
 forms = board.split("const bidForm = occupied", 1)[-1]
 occupied_form = forms.split("? html`", 1)[-1].split(": html`", 1)[0]
 empty_form_html = forms.split(": html`", 1)[-1].split("</form>`", 1)[0]
-if 'class="bid-row"' not in occupied_form:
-    raise SystemExit("occupied claim must keep Product URL on the bid-row with Outbid")
+if 'class="bid-row"' in occupied_form:
+    raise SystemExit("occupied Product URL must not twin Outbid on the bid-row")
 if "${productUrlField}" not in occupied_form or ">Outbid<" not in occupied_form:
-    raise SystemExit("occupied bid-row must still hold Product URL and Outbid")
+    raise SystemExit("occupied later rail must still hold Outbid, then Product URL")
 if "data-later-listing" not in occupied_form:
     raise SystemExit("occupied form must stamp later-listing off the paid name")
 if "${whyField}" in occupied_form:
@@ -1004,10 +1020,13 @@ if "data-why-first" in occupied_form or "${occupiedListingField}" in occupied_fo
     raise SystemExit("occupied List landing Why must sit before Claim #1 chrome, not inside the bid-row form")
 if "data-list-land" in occupied_form or 'id="why"' in occupied_form:
     raise SystemExit("occupied List Why land must not live inside the bid-row form")
-bid_row_at = occupied_form.find('class="bid-row"')
+outbid_occ = occupied_form.find(">Outbid<")
+later_list_occ = occupied_form.find("data-later-listing")
 url_at_occ = occupied_form.find("${productUrlField}")
-if bid_row_at < 0 or url_at_occ < 0 or not (bid_row_at < url_at_occ):
-    raise SystemExit("occupied form must keep Product URL on the bid-row after Why landing")
+if outbid_occ < 0 or later_list_occ < 0 or url_at_occ < 0:
+    raise SystemExit("occupied form must keep Outbid, then later Product URL")
+if not (outbid_occ < later_list_occ < url_at_occ):
+    raise SystemExit("occupied Product URL must recede after later claim rail Outbid, not sit as a twin on the bid-row")
 occupied_land = board.split("const occupiedWhyLand", 1)[-1].split("const bidForm", 1)[0]
 if 'id="why"' not in occupied_land or "data-list-land" not in occupied_land:
     raise SystemExit("occupied List landing must stamp Why as the land")
@@ -1484,6 +1503,8 @@ if "Occupied List landing starts at Why" not in board:
     raise SystemExit("occupied List landing comment must name Why as the prize, not louder Claim #1 chrome")
 if "Occupied claim rail after Why land is later rail" not in board:
     raise SystemExit("occupied claim rail comment must name later rail after Why land, not a second first read")
+if "Occupied Product URL after later claim rail is later write" not in board:
+    raise SystemExit("occupied Product URL comment must name later write after later claim rail, not a twin on the bid-row")
 if 'data-prize-line=""' not in occupied_land and "${occupiedListingField}" not in occupied_land:
     raise SystemExit("occupied List landing must keep the Why prize-line listing field")
 if 'data-why-first=""' not in occupied_land and "data-why-first" not in occupied_land:
@@ -1524,8 +1545,8 @@ if len(why_first_rule) < 2:
 why_first_css = why_first_rule[1].split("Occupied List landing starts at Why — the prize line, not louder Claim #1 chrome first.", 1)[0]
 if ".desk[data-occupied=\"true\"] .why-first[data-why-first]" not in why_first_css:
     raise SystemExit("occupied write CSS must compose Why as the first write after List")
-if ".desk[data-occupied=\"true\"] .bid-row .later-listing[data-later-listing]" not in why_first_css:
-    raise SystemExit("occupied write CSS must recede Product URL after Why")
+if ".bid-row .later-listing" in why_first_css:
+    raise SystemExit("occupied Why-first CSS must not keep Product URL as a bid-row twin")
 if "background:" in why_first_css or "var(--primary)" in why_first_css:
     raise SystemExit("do not recolor the occupied Why-first write")
 if "take-after-list-seven" in why_first_css or "list-after-take-seven" in why_first_css:
@@ -1571,7 +1592,7 @@ if float(land_why.group(1)) >= float(take_h.group(1)):
 later_rail_rule = css.split("Occupied claim rail after Why land is later rail — quieter than Why, not a second first read.", 1)
 if len(later_rail_rule) < 2:
     raise SystemExit("occupied claim rail CSS must name later rail after Why land, not a second first read")
-later_rail_css = later_rail_rule[1].split("Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name.", 1)[0]
+later_rail_css = later_rail_rule[1].split("Occupied Product URL after later claim rail is later write — not a twin on the bid-row.", 1)[0]
 if ".desk[data-occupied=\"true\"] .later-rail[data-later-rail]" not in later_rail_css:
     raise SystemExit("occupied claim rail CSS must compose later-rail after Why land")
 if "claim-title" not in later_rail_css or ".outbid" not in later_rail_css:
@@ -1586,6 +1607,8 @@ if "claim-after-row" in later_rail_css or "data-later-claim" in later_rail_css:
     raise SystemExit("do not restamp later merch claim-this-rank")
 if "data-list-land" in later_rail_css or "data-why-first" in later_rail_css:
     raise SystemExit("do not restamp occupied List landing or Why-first on later rail")
+if "later-listing" in later_rail_css or "bid-row" in later_rail_css:
+    raise SystemExit("occupied later-rail CSS must recede Claim #1 / Outbid, not keep Product URL as a bid-row twin")
 rail_title = re.search(
     r"\.desk\[data-occupied=\"true\"\] #claim \.later-rail\[data-later-rail\] \.claim-title\s*\{[^}]*font-size:\s*([0-9.]+)rem",
     later_rail_css,
@@ -1608,6 +1631,48 @@ if float(rail_title.group(1)) >= float(take_h.group(1)):
     raise SystemExit("occupied later rail must stay quieter than Test this today")
 if "#claim" not in rail_title.group(0) or "#claim" not in rail_outbid.group(0):
     raise SystemExit("later-rail Claim #1 / Outbid rules must include #claim to beat occupied #claim sizes")
+url_after_rail_rule = css.split("Occupied Product URL after later claim rail is later write — not a twin on the bid-row.", 1)
+if len(url_after_rail_rule) < 2:
+    raise SystemExit("occupied Product URL CSS must name later write after later claim rail, not a twin on the bid-row")
+url_after_rail_css = url_after_rail_rule[1].split("Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name.", 1)[0]
+if ".desk[data-occupied=\"true\"] #claim .later-rail[data-later-rail] .later-listing[data-later-listing]" not in url_after_rail_css:
+    raise SystemExit("occupied Product URL CSS must recede later-listing under later-rail Outbid")
+if "bid-row" in url_after_rail_css:
+    raise SystemExit("occupied Product URL after later rail must not stay a twin on the bid-row")
+if "background:" in url_after_rail_css or "var(--primary)" in url_after_rail_css:
+    raise SystemExit("do not recolor occupied Product URL after later rail")
+if "take-after-list-seven" in url_after_rail_css or "list-after-take-seven" in url_after_rail_css:
+    raise SystemExit("do not stamp another named hop on occupied Product URL after later rail")
+if "empty-claim-first" in url_after_rail_css or "data-why-later" in url_after_rail_css or "data-unpaid-off" in url_after_rail_css:
+    raise SystemExit("occupied Product URL after later rail CSS must not swallow empty later-write or unpaid-off")
+if "claim-after-row" in url_after_rail_css or "data-later-claim" in url_after_rail_css:
+    raise SystemExit("do not restamp later merch claim-this-rank")
+if "data-list-land" in url_after_rail_css or "data-why-first" in url_after_rail_css:
+    raise SystemExit("do not restamp occupied List landing or Why-first on Product URL after later rail")
+rail_url = re.search(
+    r"\.desk\[data-occupied=\"true\"\] #claim \.later-rail\[data-later-rail\] \.later-listing\[data-later-listing\] \.field input\s*\{[^}]*height:\s*([0-9.]+)rem",
+    url_after_rail_css,
+)
+rail_url_font = re.search(
+    r"\.desk\[data-occupied=\"true\"\] #claim \.later-rail\[data-later-rail\] \.later-listing\[data-later-listing\] \.field input\s*\{[^}]*font-size:\s*([0-9.]+)rem",
+    url_after_rail_css,
+)
+if not rail_url or not rail_url_font or not rail_outbid or not rail_why or not land_why:
+    raise SystemExit("occupied Product URL after later rail, Outbid, and Why land must all have sizes")
+if float(rail_url.group(1)) >= float(rail_outbid.group(1)):
+    raise SystemExit("occupied Product URL after later rail must stay quieter than Outbid, not a twin on the bid-row")
+if float(rail_url.group(1)) >= float(rail_why.group(1)):
+    raise SystemExit("occupied Product URL after later rail must stay quieter than Why land")
+if float(rail_url_font.group(1)) >= float(land_why.group(1)):
+    raise SystemExit("occupied Product URL after later rail must stay quieter than Why")
+if float(rail_url.group(1)) >= float(take_h.group(1)):
+    raise SystemExit("occupied Product URL after later rail must stay quieter than Test this today")
+if "#claim" not in rail_url.group(0):
+    raise SystemExit("occupied Product URL after later rail must include #claim to recede under Outbid")
+if 'class="bid-row"' in board:
+    raise SystemExit("occupied Product URL must not twin Outbid on the bid-row")
+if "Occupied Product URL after later claim rail is later write" not in board:
+    raise SystemExit("occupied Product URL comment must name later write after later claim rail, not a twin on the bid-row")
 if row_fn.find("data-cover-why") < 0 or "Why test this today" not in row_fn:
     raise SystemExit("Why must stay the prize on the occupied cover")
 PY

@@ -600,14 +600,6 @@ nav[aria-label="Main"] a:hover {
   flex-direction: column;
   gap: 0.75rem;
 }
-.bid-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-@media (min-width: 768px) {
-  .bid-row { flex-direction: row; align-items: center; }
-}
 .field {
   position: relative;
   min-width: 0;
@@ -1214,11 +1206,6 @@ a.row-link:hover { color: var(--primary); }
 .desk[data-occupied="true"] .why-first[data-why-first] {
   margin: 0 0 0.35rem;
 }
-.desk[data-occupied="true"] .bid-row .later-listing[data-later-listing] {
-  flex: 1;
-  min-width: 0;
-  margin-top: 0;
-}
 /* Occupied List landing starts at Why — the prize line, not louder Claim #1 chrome first. */
 .desk[data-occupied="true"] .why-first[data-why-first][data-list-land] {
   scroll-margin-top: 1.5rem;
@@ -1287,6 +1274,26 @@ a.row-link:hover { color: var(--primary); }
   width: 1.15rem;
   height: 1.15rem;
   font-size: 0.7rem;
+}
+/* Occupied Product URL after later claim rail is later write — not a twin on the bid-row. */
+.desk[data-occupied="true"] #claim .later-rail[data-later-rail] .later-listing[data-later-listing] {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 16rem;
+  margin: 0.15rem auto 0;
+  padding-top: 0.4rem;
+  border-top: 1px dotted var(--border);
+}
+.desk[data-occupied="true"] #claim .later-rail[data-later-rail] .later-listing[data-later-listing] .field-label {
+  font-size: 0.52rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+.desk[data-occupied="true"] #claim .later-rail[data-later-rail] .later-listing[data-later-listing] .field input {
+  height: 1.45rem;
+  font-size: 0.62rem;
+  color: var(--muted-foreground);
 }
 /* Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name. */
 .later-stack[data-later-stack] .row[data-later-rank] .claim-after-row[data-claim-after-row] {

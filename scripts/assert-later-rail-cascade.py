@@ -337,7 +337,7 @@ def main() -> None:
     if len(later_rail) < 2:
         raise SystemExit("occupied later-rail CSS block missing")
     later_rail_css = later_rail[1].split(
-        "Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name.",
+        "Occupied Product URL after later claim rail is later write — not a twin on the bid-row.",
         1,
     )[0]
     rail_title = re.search(
