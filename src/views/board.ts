@@ -110,7 +110,7 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
     : "";
   const listAfterTake = isCover
     ? html`<p class="list-after-take-wrap list-after-cover" data-list-after-cover="">
-        <a class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six" href="#claim" data-list-after-take="" data-first-write="list" data-list-after-take-two="" data-list-after-take-three="" data-list-after-take-four="" data-list-after-take-five="" data-list-after-take-six="">List a product</a>
+        <a class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six" href="#why" data-list-after-take="" data-first-write="list" data-list-after-take-two="" data-list-after-take-three="" data-list-after-take-four="" data-list-after-take-five="" data-list-after-take-six="">List a product</a>
         after Test this today. Paying less than #1 still lists.
       </p>`
     : "";
@@ -210,14 +210,16 @@ export function renderBoardBody(model: BoardViewModel): string {
     </div>`;
   const occupiedListingField = html`<div class="field why-field" data-prize-line="">
       <label class="field-label" for="whyTestThisToday">Why</label>
-      <input id="whyTestThisToday" name="whyTestThisToday" type="text" maxlength="140" minlength="8" required placeholder="Why test this today"/>
+      <input id="whyTestThisToday" name="whyTestThisToday" form="bid-form" type="text" maxlength="140" minlength="8" required placeholder="Why test this today"/>
     </div>`;
   const formHint = html`<p class="form-hint">Already on the list? Enter the same URL and up your bid. You pay only the difference.</p>`;
+  const occupiedWhyLand = occupied
+    ? html`<div class="why-first" id="why" data-why-first="" data-list-land="">
+      ${occupiedListingField}
+    </div>`
+    : "";
   const bidForm = occupied
     ? html`<form id="bid-form" class="bid-form" method="post" action="/checkout">
-    <div class="why-first" data-why-first="">
-      ${occupiedListingField}
-    </div>
     <div class="bid-row">
       <div class="later-listing" data-later-listing="">
         ${productUrlField}
@@ -244,6 +246,7 @@ export function renderBoardBody(model: BoardViewModel): string {
   // Occupied later List write after Take is the only List label. Claim rail is Claim #1 / dashed $amount / ± / Outbid.
   // Occupied listing field after List is Why — the prize line, not a second generic line.
   // Occupied write after List starts at Why — the prize line, not Product URL first.
+  // Occupied List landing starts at Why — the prize line, not louder Claim #1 chrome first.
   const claimAfterOpen = occupied
     ? html`<div class="claim-after-cover" data-claim-after-cover="">`
     : "";
@@ -267,6 +270,7 @@ export function renderBoardBody(model: BoardViewModel): string {
 ${renderLast24hStrip(last24h, model.now)}
 ${claimAfterOpen}
 <section id="claim"${claimAttrs}>
+  ${occupiedWhyLand}
   <h2 class="claim-title"${claimTitleAttrs}>
     <span data-claim-copy>${claimCopy}</span>
     <span class="bid-stepper">
@@ -334,7 +338,8 @@ ${claimAfterClose}
         sync();
         var field = document.getElementById("whyTestThisToday") || document.getElementById("productUrl");
         if (field) field.focus();
-        document.getElementById("claim").scrollIntoView({ behavior: "smooth", block: "start" });
+        var land = document.getElementById("why") || document.getElementById("claim");
+        if (land) land.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     });
     sync();

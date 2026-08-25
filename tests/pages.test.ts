@@ -234,7 +234,7 @@ test("GET / ranks fixture-seeded rows by bid then older createdAt", async () => 
   assert.match(body, /row-cover/);
   assert.match(body, /List a product/);
   assert.match(body, /data-list-after-take=""/);
-  assert.match(body, /href="#claim"/);
+  assert.match(body, /href="#why"/);
   assert.match(body, /data-cover-hop=""/);
   assert.match(body, /data-first-click="take"/);
   assert.match(body, /href="\/r\/lst-cover"/);
@@ -503,7 +503,7 @@ test("GET / gives a seller one List a product hop under a paid cover", async () 
   assert.match(body, /data-list-after-take=""/);
   assert.doesNotMatch(body, /data-list-under-cover=/);
   assert.doesNotMatch(body, /data-list-after-why=/);
-  assert.match(body, /href="#claim"/);
+  assert.match(body, /href="#why"/);
   assert.match(body, /after Test this today/);
   assert.match(body, /Paying less than #1 still lists/);
   assert.match(body, />List a product</);
@@ -617,7 +617,7 @@ test("GET / lists after the why-line on a paid cover", async () => {
 
   assert.match(cover, /data-cover-why=""/);
   assert.doesNotMatch(cover, /data-list-after-why/);
-  assert.match(cover, /href="#claim"/);
+  assert.match(cover, /href="#why"/);
   assert.match(cover, />List a product</);
   assert.match(cover, /data-list-after-take=""/);
   assert.match(cover, /after Test this today/);
@@ -764,7 +764,7 @@ test("GET / lists after Test this today", async () => {
   assert.match(cover, /data-first-click="take"/);
   assert.match(cover, /data-list-after-take=""/);
   assert.match(cover, /data-first-write="list"/);
-  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
+  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#why"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   assert.match(cover, />List a product</);
   assert.match(cover, /after Test this today/);
   assert.match(cover, /Paying less than #1 still lists/);
@@ -866,7 +866,7 @@ test("GET / lets Test this today win the first click after list-after-take", asy
   assert.match(cover, /data-list-after-take-six=""/);
   assert.match(cover, />Test this today</);
   assert.match(cover, /href="\/r\/lst-cover"/);
-  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
+  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#why"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   assert.match(cover, /after Test this today/);
   const whyLineAt = cover.indexOf("cover-why-line");
   const takeAt = cover.indexOf("data-take-after-list");
@@ -1035,7 +1035,7 @@ test("GET / concentrates List a product as the first write after the take", asyn
   assert.match(cover, /data-list-after-take-four=""/);
   assert.match(cover, /data-list-after-take-five=""/);
   assert.match(cover, /data-list-after-take-six=""/);
-  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
+  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#why"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   assert.match(cover, />List a product</);
   assert.match(cover, /after Test this today/);
   assert.match(cover, /Paying less than #1 still lists/);
@@ -1192,7 +1192,7 @@ test("GET / concentrates Test this today after List a product is the first write
     /class="cover-hop cover-hop-first take-after-list-first take-after-list-two take-after-list-three take-after-list-four take-after-list-five take-after-list-six"[^>]*href="\/r\/lst-cover"[^>]*data-cover-hop=""[^>]*data-first-click="take"[^>]*data-take-after-list-first=""[^>]*data-take-after-list-two=""[^>]*data-take-after-list-three=""[^>]*data-take-after-list-four=""[^>]*data-take-after-list-five=""[^>]*data-take-after-list-six=""/,
   );
   assert.match(cover, />Test this today</);
-  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
+  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#why"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   const whyLineAt = cover.indexOf("cover-why-line");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
@@ -1351,7 +1351,7 @@ test("GET / concentrates List a product after Test this today is re-concentrated
   assert.match(cover, /data-list-after-take-six=""/);
   assert.match(
     cover,
-    /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/,
+    /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#why"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/,
   );
   assert.match(cover, />List a product</);
   assert.match(cover, /after Test this today/);
@@ -1521,7 +1521,7 @@ test("GET / concentrates Test this today after List a product is re-concentrated
     /class="cover-hop cover-hop-first take-after-list-first take-after-list-two take-after-list-three take-after-list-four take-after-list-five take-after-list-six"[^>]*href="\/r\/lst-cover"[^>]*data-cover-hop=""[^>]*data-first-click="take"[^>]*data-take-after-list-first=""[^>]*data-take-after-list-two=""[^>]*data-take-after-list-three=""[^>]*data-take-after-list-four=""[^>]*data-take-after-list-five=""[^>]*data-take-after-list-six=""/,
   );
   assert.match(cover, />Test this today</);
-  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
+  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#why"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   const whyLineAt = cover.indexOf("cover-why-line");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
@@ -1679,7 +1679,7 @@ test("GET / concentrates List a product after Test this today is re-concentrated
   assert.match(cover, /data-list-after-take-six=""/);
   assert.match(
     cover,
-    /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/,
+    /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#why"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/,
   );
   assert.match(cover, />List a product</);
   assert.match(cover, /after Test this today/);
@@ -1851,7 +1851,7 @@ test("GET / concentrates Test this today after List a product is re-concentrated
     /class="cover-hop cover-hop-first take-after-list-first take-after-list-two take-after-list-three take-after-list-four take-after-list-five take-after-list-six"[^>]*href="\/r\/lst-cover"[^>]*data-cover-hop=""[^>]*data-first-click="take"[^>]*data-take-after-list-first=""[^>]*data-take-after-list-two=""[^>]*data-take-after-list-three=""[^>]*data-take-after-list-four=""[^>]*data-take-after-list-five=""[^>]*data-take-after-list-six=""/,
   );
   assert.match(cover, />Test this today</);
-  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
+  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#why"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   const whyLineAt = cover.indexOf("cover-why-line");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
@@ -2008,7 +2008,7 @@ test("GET / concentrates List a product after Test this today is re-concentrated
   assert.match(cover, /data-list-after-take-six=""/);
   assert.match(
     cover,
-    /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/,
+    /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#why"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/,
   );
   assert.match(cover, />List a product</);
   assert.match(cover, /after Test this today/);
@@ -2178,7 +2178,7 @@ test("GET / concentrates Test this today after List a product is re-concentrated
     /class="cover-hop cover-hop-first take-after-list-first take-after-list-two take-after-list-three take-after-list-four take-after-list-five take-after-list-six"[^>]*href="\/r\/lst-cover"[^>]*data-cover-hop=""[^>]*data-first-click="take"[^>]*data-take-after-list-first=""[^>]*data-take-after-list-two=""[^>]*data-take-after-list-three=""[^>]*data-take-after-list-four=""[^>]*data-take-after-list-five=""[^>]*data-take-after-list-six=""/,
   );
   assert.match(cover, />Test this today</);
-  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
+  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#why"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   const whyLineAt = cover.indexOf("cover-why-line");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
@@ -2334,7 +2334,7 @@ test("GET / concentrates List a product after Test this today is re-concentrated
   assert.match(cover, /data-list-after-take-six=""/);
   assert.match(
     cover,
-    /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/,
+    /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#why"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/,
   );
   assert.match(cover, />List a product</);
   assert.match(cover, /after Test this today/);
@@ -2502,7 +2502,7 @@ test("GET / concentrates Test this today after List a product is re-concentrated
     /class="cover-hop cover-hop-first take-after-list-first take-after-list-two take-after-list-three take-after-list-four take-after-list-five take-after-list-six"[^>]*href="\/r\/lst-cover"[^>]*data-cover-hop=""[^>]*data-first-click="take"[^>]*data-take-after-list-first=""[^>]*data-take-after-list-two=""[^>]*data-take-after-list-three=""[^>]*data-take-after-list-four=""[^>]*data-take-after-list-five=""[^>]*data-take-after-list-six=""/,
   );
   assert.match(cover, />Test this today</);
-  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
+  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#why"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   const whyLineAt = cover.indexOf("cover-why-line");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
@@ -2657,7 +2657,7 @@ test("GET / concentrates List a product after Test this today is re-concentrated
   assert.match(cover, /data-list-after-take-six=""/);
   assert.match(
     cover,
-    /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/,
+    /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#why"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/,
   );
   assert.match(cover, />List a product</);
   assert.match(cover, /after Test this today/);
@@ -2823,7 +2823,7 @@ test("GET / concentrates Test this today after List a product is re-concentrated
     /class="cover-hop cover-hop-first take-after-list-first take-after-list-two take-after-list-three take-after-list-four take-after-list-five take-after-list-six"[^>]*href="\/r\/lst-cover"[^>]*data-cover-hop=""[^>]*data-first-click="take"[^>]*data-take-after-list-first=""[^>]*data-take-after-list-two=""[^>]*data-take-after-list-three=""[^>]*data-take-after-list-four=""[^>]*data-take-after-list-five=""[^>]*data-take-after-list-six=""/,
   );
   assert.match(cover, />Test this today</);
-  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
+  assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#why"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   const whyLineAt = cover.indexOf("cover-why-line");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
@@ -5459,7 +5459,7 @@ test("GET / keeps occupied cover one first click — Test this today, List stays
   assert.doesNotMatch(body, /data-list-after-why=/);
   assert.equal((body.match(/data-list-after-take=""/g) ?? []).length, 1);
   assert.doesNotMatch(body, /data-list-under-cover=/);
-  assert.equal((body.match(/href="#claim"/g) ?? []).length, 1);
+  assert.equal((body.match(/href="#why"/g) ?? []).length, 1);
   assert.equal((body.match(/data-prize-before-price=""/g) ?? []).length, 1);
   assert.equal((body.match(/data-claim-after-row=""/g) ?? []).length, 1);
   assert.ok(coverStart > -1 && whyAt > -1 && prizeAt > whyAt, "why stays the occupied cover prize");
@@ -5606,7 +5606,7 @@ test("GET / keeps occupied cover one later List write after Take — not three L
   assert.equal((cover.match(/>List a product</g) ?? []).length, 1);
   assert.equal((body.match(/data-list-after-cover=""/g) ?? []).length, 1);
   assert.equal((body.match(/data-list-after-take=""/g) ?? []).length, 1);
-  assert.equal((body.match(/href="#claim"/g) ?? []).length, 1);
+  assert.equal((body.match(/href="#why"/g) ?? []).length, 1);
   assert.equal((body.match(/data-first-click="take"/g) ?? []).length, 1);
   assert.ok(whyAt > -1 && takeAt > whyAt && hopLabelAt > takeAt, "Test this today stays the one first click");
   assert.ok(listAfterTakeAt > hopLabelAt, "one later List write sits after Take");
@@ -5839,7 +5839,7 @@ test("GET / keeps occupied listing field after List as Why — the prize line, n
   assert.ok(listAfterTakeAt > hopLabelAt && listLabelAt > listAfterTakeAt, "occupied later List write after Take stays the only List label");
   assert.ok(claimTitleAt > -1 && claimCopyAt > claimTitleAt, "occupied claim rail stays Claim #1");
   assert.ok(minusAt > claimCopyAt && plusAt > minusAt && outbidAt > plusAt, "occupied claim rail stays dashed $amount / ± / Outbid");
-  assert.ok(prizeLineAt > plusAt && whyLabelAt > prizeLineAt, "after List, the listing field is Why — the prize line");
+  assert.ok(prizeLineAt > -1 && whyLabelAt > prizeLineAt, "after List, the listing field is Why — the prize line");
   assert.ok(laterListingAt > whyLabelAt && productUrlAt > laterListingAt && outbidAt > productUrlAt, "Product URL recedes after Why, still with Outbid");
   assert.ok(laterClaimAt > -1, "later merch claim-this-rank quiet already shipped — do not restamp");
 
@@ -5899,12 +5899,13 @@ test("GET / starts occupied write after List at Why — the prize line, not Prod
   assert.match(css, /\.desk\[data-occupied="true"\] \.bid-row \.later-listing\[data-later-listing\]/);
   assert.doesNotMatch(css, /take-after-list-seven|list-after-take-seven/);
   const whyFirstCss = (css.split("Occupied write after List starts at Why — the prize line, not Product URL first.", 2)[1] ?? "")
-    .split("Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name.")[0] ?? "";
+    .split("Occupied List landing starts at Why — the prize line, not louder Claim #1 chrome first.")[0] ?? "";
   assert.match(whyFirstCss, /why-first\[data-why-first\]/);
   assert.match(whyFirstCss, /bid-row \.later-listing\[data-later-listing\]/);
   assert.doesNotMatch(whyFirstCss, /var\(--primary\)/);
   assert.doesNotMatch(whyFirstCss, /empty-claim-first|data-why-later|data-unpaid-off/);
   assert.doesNotMatch(whyFirstCss, /claim-after-row|data-later-claim|take-after-list-seven/);
+  assert.doesNotMatch(whyFirstCss, /data-list-land/);
   const prizeLine = css.match(
     /\.desk\[data-occupied="true"\] \.why-first\[data-why-first\] \.why-field\[data-prize-line\] input\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
   );
@@ -6006,7 +6007,7 @@ test("GET / starts occupied write after List at Why — the prize line, not Prod
   assert.ok(listAfterTakeAt > hopLabelAt && listLabelAt > listAfterTakeAt, "occupied later List write after Take stays the only List label");
   assert.ok(claimTitleAt > -1 && claimCopyAt > claimTitleAt, "occupied claim rail stays Claim #1");
   assert.ok(minusAt > claimCopyAt && plusAt > minusAt && outbidAt > plusAt, "occupied claim rail stays dashed $amount / ± / Outbid");
-  assert.ok(whyFirstAt > plusAt && prizeLineAt > whyFirstAt && whyLabelAt > prizeLineAt && whyAt > whyLabelAt, "occupied write after List starts at Why — the prize line");
+  assert.ok(whyFirstAt > -1 && prizeLineAt > whyFirstAt && whyLabelAt > prizeLineAt && whyAt > whyLabelAt, "occupied write after List starts at Why — the prize line");
   assert.ok(laterListingAt > whyAt && productUrlAt > laterListingAt && outbidAt > productUrlAt, "Product URL recedes after Why, not louder above it");
   assert.ok(laterClaimAt > -1, "later merch claim-this-rank quiet already shipped — do not restamp");
 
@@ -6028,6 +6029,9 @@ test("GET / starts occupied write after List at Why — the prize line, not Prod
   assert.match(quiet, /Then why test this today/);
   assert.doesNotMatch(quiet, /data-why-first=/);
   assert.doesNotMatch(quiet, /data-prize-line=/);
+  assert.doesNotMatch(quiet, /data-list-land=/);
+  assert.doesNotMatch(quiet, /id="why"/);
+  assert.doesNotMatch(quiet, /href="#why"/);
   assert.doesNotMatch(quiet, />Why</);
   assert.doesNotMatch(quiet, /One-line listing/);
   assert.doesNotMatch(quiet, /List a product/);
@@ -6065,6 +6069,202 @@ test("GET / starts occupied write after List at Why — the prize line, not Prod
   assert.match(emptyCoverHtml, /Then why test this today/);
   assert.doesNotMatch(emptyCoverHtml, /data-why-first=/);
   assert.doesNotMatch(emptyCoverHtml, /data-prize-line=/);
+  assert.doesNotMatch(emptyCoverHtml, />Why</);
+  assert.doesNotMatch(emptyCoverHtml, /One-line listing/);
+  assert.doesNotMatch(emptyCoverHtml, /This morning’s cover/);
+  assert.doesNotMatch(emptyCoverHtml, /data-two-prizes=/);
+});
+
+test("GET / starts occupied List landing at Why — the prize line, not louder Claim #1 chrome first", async () => {
+  const css = BOARD_CSS;
+  assert.match(css, /Occupied List landing starts at Why — the prize line, not louder Claim #1 chrome first/);
+  assert.match(css, /\.desk\[data-occupied="true"\] \.why-first\[data-why-first\]\[data-list-land\]/);
+  assert.doesNotMatch(css, /take-after-list-seven|list-after-take-seven/);
+  const landCss = (css.split("Occupied List landing starts at Why — the prize line, not louder Claim #1 chrome first.", 2)[1] ?? "")
+    .split("Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name.")[0] ?? "";
+  assert.match(landCss, /why-first\[data-why-first\]\[data-list-land\]/);
+  assert.match(landCss, /claim-title/);
+  assert.doesNotMatch(landCss, /var\(--primary\)/);
+  assert.doesNotMatch(landCss, /empty-claim-first|data-why-later|data-unpaid-off/);
+  assert.doesNotMatch(landCss, /claim-after-row|data-later-claim|take-after-list-seven/);
+  const landWhy = landCss.match(
+    /\.desk\[data-occupied="true"\] \.why-first\[data-why-first\]\[data-list-land\] \.why-field\[data-prize-line\] input\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
+  );
+  const landTitle = landCss.match(
+    /\.desk\[data-occupied="true"\] \.claim-after-cover\[data-claim-after-cover\] #claim \.claim-title\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
+  );
+  const takeHeight = css.match(/\.take-after-list-six\s*\{[^}]*min-height:\s*([0-9.]+)rem/);
+  const coverWhy = css.match(/\.cover-why-line\[data-prize-before-price\]\s*\{[^}]*font-size:\s*([0-9.]+)rem/);
+  assert.ok(landWhy && landTitle && takeHeight && coverWhy, "occupied List landing Why, Claim #1 chrome, Take, and cover Why must all have sizes");
+  assert.ok(Number(landTitle[1]) < Number(landWhy[1]), "occupied List landing starts at Why, not louder Claim #1 chrome first");
+  assert.ok(Number(landWhy[1]) < Number(coverWhy[1]), "occupied List landing Why stays quieter than the cover why prize");
+  assert.ok(Number(landWhy[1]) < Number(takeHeight[1]), "occupied List landing Why stays quieter than Test this today");
+
+  const db = openDatabase(":memory:");
+  const now = new Date("2026-08-22T13:00:00.000Z");
+  const day = dayKey(now);
+  placeBid(db, {
+    id: "lst-cover",
+    day,
+    productUrl: "https://cover.example/apps/pick",
+    whyTestThisToday: "Cover app sellers should install this morning",
+    bidUsd: 20,
+    clicks: 3,
+    createdAt: "2026-08-22T09:00:00.000Z",
+  });
+  placeBid(db, {
+    id: "lst-under",
+    day,
+    productUrl: "https://under.example/sku",
+    whyTestThisToday: "Cheaper SKU still belongs on the brief",
+    bidUsd: 8,
+    clicks: 1,
+    createdAt: "2026-08-22T12:00:00.000Z",
+  });
+
+  const app = await buildApp({ db, now });
+  after(async () => {
+    await app.close();
+    db.close();
+  });
+
+  const response = await app.inject({ method: "GET", url: "/" });
+  assert.equal(response.statusCode, 200);
+  const body = pageBody(response.body);
+  const coverStart = body.indexOf('data-listing-id="lst-cover"');
+  const cover = body.slice(coverStart, body.indexOf("</article>", coverStart));
+  const underStart = body.indexOf('data-listing-id="lst-under"');
+  const under = body.slice(underStart, body.indexOf("</article>", underStart));
+  const claimAt = body.indexOf('id="claim"');
+  const claim = body.slice(claimAt);
+  const whyPrizeAt = cover.indexOf("data-prize-before-price");
+  const takeAt = cover.indexOf('data-first-click="take"');
+  const hopLabelAt = cover.indexOf(">Test this today<");
+  const listAfterTakeAt = cover.indexOf('data-list-after-take=""');
+  const listHrefAt = cover.indexOf('href="#why"');
+  const listLabelAt = cover.indexOf(">List a product<");
+  const laterClaimAt = under.indexOf('data-claim-after-row=""');
+  const whyLandAt = claim.indexOf('id="why"');
+  const listLandAt = claim.indexOf('data-list-land=""');
+  const whyFirstAt = claim.indexOf('data-why-first=""');
+  const prizeLineAt = claim.indexOf('data-prize-line=""');
+  const whyLabelAt = claim.indexOf(">Why<");
+  const whyAt = claim.indexOf('name="whyTestThisToday"');
+  const claimTitleAt = claim.indexOf('class="claim-title"');
+  const claimCopyAt = claim.indexOf("Claim #1 for");
+  const minusAt = claim.indexOf('data-bid-step="-1"');
+  const plusAt = claim.indexOf('data-bid-step="1"');
+  const outbidAt = claim.indexOf(">Outbid<");
+  const laterListingAt = claim.indexOf('data-later-listing=""');
+  const productUrlAt = claim.indexOf('name="productUrl"');
+
+  assert.match(cover, /data-prize-before-price=""/);
+  assert.match(cover, /data-first-click="take"/);
+  assert.match(cover, />Test this today</);
+  assert.match(cover, /data-list-after-take=""/);
+  assert.match(cover, /href="#why"/);
+  assert.match(cover, />List a product</);
+  assert.match(cover, /after Test this today/);
+  assert.match(claim, /id="why"/);
+  assert.match(claim, /data-list-land=""/);
+  assert.match(claim, /data-why-first=""/);
+  assert.match(claim, /data-prize-line=""/);
+  assert.match(claim, />Why</);
+  assert.match(claim, /placeholder="Why test this today"/);
+  assert.match(claim, /Claim #1 for/);
+  assert.match(claim, /class="bid-field"/);
+  assert.match(claim, />Outbid</);
+  assert.match(claim, /data-later-listing=""/);
+  assert.match(claim, /name="productUrl"/);
+  assert.doesNotMatch(claim, /One-line listing/);
+  assert.doesNotMatch(claim, /What a seller should try this morning/);
+  assert.doesNotMatch(claim, /Then why test this today/);
+  assert.doesNotMatch(claim, /data-why-later=/);
+  assert.doesNotMatch(claim, /List a product/);
+  assert.doesNotMatch(cover, /id="why"/);
+  assert.doesNotMatch(cover, /data-list-land=/);
+  assert.doesNotMatch(under, /data-list-land=/);
+  assert.doesNotMatch(body, /One-line listing/);
+  assert.doesNotMatch(body, /take-after-list-seven/);
+  assert.doesNotMatch(body, /list-after-take-seven/);
+  assert.doesNotMatch(body, /href="#claim"/);
+  assert.equal((body.match(/href="#why"/g) ?? []).length, 1);
+  assert.equal((body.match(/id="why"/g) ?? []).length, 1);
+  assert.equal((body.match(/data-list-land=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-why-first=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-prize-line=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-list-after-take=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-first-click="take"/g) ?? []).length, 1);
+  assert.ok(whyPrizeAt > -1 && takeAt > whyPrizeAt && hopLabelAt > takeAt, "Why stays the prize on the cover; Take stays the one first click");
+  assert.ok(listAfterTakeAt > hopLabelAt && listHrefAt > hopLabelAt && listLabelAt > listHrefAt, "occupied List hop still sits after Take, and lands at Why");
+  assert.ok(whyLandAt > -1 && listLandAt > -1 && whyLandAt < claimTitleAt, "occupied List landing starts at Why — the prize line");
+  assert.ok(whyFirstAt > -1 && whyFirstAt < claimTitleAt && prizeLineAt > whyFirstAt && whyAt > whyLabelAt, "occupied write after List still starts at Why, before Claim #1 chrome");
+  assert.ok(claimTitleAt > whyAt && claimCopyAt > claimTitleAt, "occupied claim rail stays Claim #1 after the Why land");
+  assert.ok(minusAt > claimCopyAt && plusAt > minusAt && outbidAt > plusAt, "occupied claim rail stays dashed $amount / ± / Outbid");
+  assert.ok(laterListingAt > plusAt && productUrlAt > laterListingAt && outbidAt > productUrlAt, "Product URL recedes after Why, still with Outbid");
+  assert.ok(laterClaimAt > -1, "later merch claim-this-rank quiet already shipped — do not restamp");
+
+  const emptyApp = await buildApp({ databasePath: ":memory:" });
+  after(() => emptyApp.close());
+  const empty = await emptyApp.inject({ method: "GET", url: "/" });
+  const quiet = pageBody(empty.body);
+  const quietClaimAt = quiet.indexOf('id="claim"');
+  const quietFirstAt = quiet.indexOf('data-first-click="claim"');
+  const quietOutbidAt = quiet.indexOf(">Outbid<");
+  const quietUrlAt = quiet.indexOf('name="productUrl"');
+  const quietWhyLaterAt = quiet.indexOf('data-why-later=""');
+  const quietWhyAt = quiet.indexOf('name="whyTestThisToday"');
+  assert.match(quiet, /data-empty-cover=""/);
+  assert.match(quiet, /data-first-click="claim"/);
+  assert.match(quiet, /Claim #1 for/);
+  assert.match(quiet, /data-why-later=""/);
+  assert.match(quiet, /Then the product URL/);
+  assert.match(quiet, /Then why test this today/);
+  assert.doesNotMatch(quiet, /data-why-first=/);
+  assert.doesNotMatch(quiet, /data-prize-line=/);
+  assert.doesNotMatch(quiet, /data-list-land=/);
+  assert.doesNotMatch(quiet, /id="why"/);
+  assert.doesNotMatch(quiet, /href="#why"/);
+  assert.doesNotMatch(quiet, />Why</);
+  assert.doesNotMatch(quiet, /One-line listing/);
+  assert.doesNotMatch(quiet, /List a product/);
+  assert.doesNotMatch(quiet, /data-list-after-take=/);
+  assert.doesNotMatch(quiet, /data-first-click="take"/);
+  assert.ok(quietClaimAt > -1 && quietFirstAt > quietClaimAt, "empty morning still starts at Claim #1");
+  assert.ok(quietOutbidAt > quietFirstAt && quietUrlAt > quietOutbidAt, "empty morning still writes Product URL after Claim #1");
+  assert.ok(quietWhyLaterAt > quietUrlAt && quietWhyAt > quietWhyLaterAt, "empty morning still writes Why after Product URL");
+
+  const emptyCoverHtml = pageBody(renderBoardPage({
+    day: "2026-08-23",
+    tz: "UTC",
+    listings: [],
+    last24h: [
+      {
+        id: "lst-last-night",
+        day: "2026-08-22",
+        productUrl: "https://overnight.example/sku",
+        whyTestThisToday: "Last night’s $6 still belongs on the last-24h strip",
+        bidUsd: 6,
+        paidUsd: 6,
+        clicks: 0,
+        createdAt: "2026-08-22T12:00:00.000Z",
+        updatedAt: "2026-08-22T12:00:00.000Z",
+        rank: 1,
+      },
+    ],
+    defaultBidUsd: 5,
+    now: new Date("2026-08-23T00:30:00.000Z"),
+  }));
+  assert.match(emptyCoverHtml, /data-empty-cover=""/);
+  assert.match(emptyCoverHtml, /data-first-click="claim"/);
+  assert.match(emptyCoverHtml, /data-why-later=""/);
+  assert.match(emptyCoverHtml, /Then the product URL/);
+  assert.match(emptyCoverHtml, /Then why test this today/);
+  assert.doesNotMatch(emptyCoverHtml, /data-why-first=/);
+  assert.doesNotMatch(emptyCoverHtml, /data-prize-line=/);
+  assert.doesNotMatch(emptyCoverHtml, /data-list-land=/);
+  assert.doesNotMatch(emptyCoverHtml, /id="why"/);
+  assert.doesNotMatch(emptyCoverHtml, /href="#why"/);
   assert.doesNotMatch(emptyCoverHtml, />Why</);
   assert.doesNotMatch(emptyCoverHtml, /One-line listing/);
   assert.doesNotMatch(emptyCoverHtml, /This morning’s cover/);

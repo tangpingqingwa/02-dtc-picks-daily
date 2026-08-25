@@ -229,6 +229,7 @@ nav[aria-label="Main"] a:hover {
 .desk:has(.empty) .later-stack,
 .desk:has(.empty) .later-listing,
 .desk:has(.empty) .why-first,
+.desk:has(.empty) [data-list-land],
 .desk:has(.empty) [data-paid-name],
 .desk:has(.empty) .claim-kicker,
 .desk:has(.empty) .claim-after-cover,
@@ -561,6 +562,7 @@ nav[aria-label="Main"] a:hover {
 .desk[data-unpaid-off] .list-after-cover,
 .desk[data-unpaid-off] .later-listing,
 .desk[data-unpaid-off] .why-first,
+.desk[data-unpaid-off] [data-list-land],
 .desk[data-unpaid-off] .claim-kicker,
 .desk[data-unpaid-off] .claim-after-cover,
 .desk[data-unpaid-off] .claim-after-row {
@@ -1214,6 +1216,29 @@ a.row-link:hover { color: var(--primary); }
   flex: 1;
   min-width: 0;
   margin-top: 0;
+}
+/* Occupied List landing starts at Why — the prize line, not louder Claim #1 chrome first. */
+.desk[data-occupied="true"] .why-first[data-why-first][data-list-land] {
+  scroll-margin-top: 1.5rem;
+  margin: 0 0 0.85rem;
+}
+.desk[data-occupied="true"] .why-first[data-why-first][data-list-land] .why-field[data-prize-line] input {
+  height: 2.35rem;
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+.desk[data-occupied="true"] .claim-after-cover[data-claim-after-cover] #claim .claim-title {
+  font-size: 0.92rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+@media (min-width: 768px) {
+  .desk[data-occupied="true"] .claim-after-cover[data-claim-after-cover] #claim .claim-title {
+    font-size: 0.95rem;
+  }
 }
 /* Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name. */
 .later-stack[data-later-stack] .row[data-later-rank] .claim-after-row[data-claim-after-row] {
