@@ -1188,6 +1188,22 @@ a.row-link:hover { color: var(--primary); }
   font-size: 0.78rem;
   color: var(--muted-foreground);
 }
+/* Occupied listing field after List is Why — the prize line, not a second generic line. */
+.desk[data-occupied="true"] .later-listing[data-later-listing] .why-field[data-prize-line] .field-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.desk[data-occupied="true"] .later-listing[data-later-listing] .why-field[data-prize-line] input {
+  height: 2.25rem;
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
 /* Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name. */
 .later-stack[data-later-stack] .row[data-later-rank] .claim-after-row[data-claim-after-row] {
   margin: 0 0 0.2rem;
