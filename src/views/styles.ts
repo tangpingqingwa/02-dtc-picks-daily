@@ -230,6 +230,7 @@ nav[aria-label="Main"] a:hover {
 .desk:has(.empty) .later-listing,
 .desk:has(.empty) .why-first,
 .desk:has(.empty) [data-list-land],
+.desk:has(.empty) .later-rail,
 .desk:has(.empty) [data-paid-name],
 .desk:has(.empty) .claim-kicker,
 .desk:has(.empty) .claim-after-cover,
@@ -563,6 +564,7 @@ nav[aria-label="Main"] a:hover {
 .desk[data-unpaid-off] .later-listing,
 .desk[data-unpaid-off] .why-first,
 .desk[data-unpaid-off] [data-list-land],
+.desk[data-unpaid-off] .later-rail,
 .desk[data-unpaid-off] .claim-kicker,
 .desk[data-unpaid-off] .claim-after-cover,
 .desk[data-unpaid-off] .claim-after-row {
@@ -1239,6 +1241,52 @@ a.row-link:hover { color: var(--primary); }
   .desk[data-occupied="true"] .claim-after-cover[data-claim-after-cover] #claim .claim-title {
     font-size: 0.95rem;
   }
+}
+/* Occupied claim rail after Why land is later rail — quieter than Why, not a second first read. */
+.desk[data-occupied="true"] .later-rail[data-later-rail] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  margin: 0.1rem 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px dotted var(--border);
+}
+.desk[data-occupied="true"] .later-rail[data-later-rail] .claim-title {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--muted-foreground);
+}
+@media (min-width: 768px) {
+  .desk[data-occupied="true"] .later-rail[data-later-rail] .claim-title {
+    font-size: 0.82rem;
+  }
+}
+.desk[data-occupied="true"] .later-rail[data-later-rail] .outbid {
+  height: 1.85rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.desk[data-occupied="true"] .later-rail[data-later-rail] .bid-field {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.desk[data-occupied="true"] .later-rail[data-later-rail] .claim-note {
+  margin-top: 0.1rem;
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+.desk[data-occupied="true"] .later-rail[data-later-rail] .bid-form {
+  margin-top: 0.25rem;
+  width: 100%;
+}
+.desk[data-occupied="true"] .later-rail[data-later-rail] .step {
+  width: 1.15rem;
+  height: 1.15rem;
+  font-size: 0.7rem;
 }
 /* Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name. */
 .later-stack[data-later-stack] .row[data-later-rank] .claim-after-row[data-claim-after-row] {

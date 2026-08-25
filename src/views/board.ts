@@ -247,10 +247,15 @@ export function renderBoardBody(model: BoardViewModel): string {
   // Occupied listing field after List is Why — the prize line, not a second generic line.
   // Occupied write after List starts at Why — the prize line, not Product URL first.
   // Occupied List landing starts at Why — the prize line, not louder Claim #1 chrome first.
+  // Occupied claim rail after Why land is later rail — quieter than Why, not a second first read.
   const claimAfterOpen = occupied
     ? html`<div class="claim-after-cover" data-claim-after-cover="">`
     : "";
   const claimAfterClose = occupied ? html`</div>` : "";
+  const laterRailOpen = occupied
+    ? html`<div class="later-rail" data-later-rail="">`
+    : "";
+  const laterRailClose = occupied ? html`</div>` : "";
 
   return html`<div class="desk"${deskAttrs}>
 <header class="masthead">
@@ -271,6 +276,7 @@ ${renderLast24hStrip(last24h, model.now)}
 ${claimAfterOpen}
 <section id="claim"${claimAttrs}>
   ${occupiedWhyLand}
+  ${laterRailOpen}
   <h2 class="claim-title"${claimTitleAttrs}>
     <span data-claim-copy>${claimCopy}</span>
     <span class="bid-stepper">
@@ -296,6 +302,7 @@ ${claimAfterOpen}
     Paying less than the #1 price still puts you on the board at whatever place that bid can take.
   </p>
   ${bidForm}
+  ${laterRailClose}
 </section>
 ${claimAfterClose}
 </div>
