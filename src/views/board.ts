@@ -208,9 +208,9 @@ export function renderBoardBody(model: BoardViewModel): string {
       <label class="field-label" for="whyTestThisToday">Why test this today</label>
       <input id="whyTestThisToday" name="whyTestThisToday" type="text" maxlength="140" minlength="8" required placeholder="What a seller should try this morning"/>
     </div>`;
-  const occupiedListingField = html`<div class="field why-field">
-      <label class="field-label" for="whyTestThisToday">One-line listing</label>
-      <input id="whyTestThisToday" name="whyTestThisToday" type="text" maxlength="140" minlength="8" required placeholder="One-line listing"/>
+  const occupiedListingField = html`<div class="field why-field" data-prize-line="">
+      <label class="field-label" for="whyTestThisToday">Why</label>
+      <input id="whyTestThisToday" name="whyTestThisToday" type="text" maxlength="140" minlength="8" required placeholder="Why test this today"/>
     </div>`;
   const formHint = html`<p class="form-hint">Already on the list? Enter the same URL and up your bid. You pay only the difference.</p>`;
   const bidForm = occupied
@@ -240,6 +240,7 @@ export function renderBoardBody(model: BoardViewModel): string {
   // Occupied cover: Test this today is the one first click. One later List write sits after Take.
   // Occupied morning: Take is the first click. Claim #1 is a later write after the cover.
   // Occupied later List write after Take is the only List label. Claim rail is Claim #1 / dashed $amount / ± / Outbid.
+  // Occupied listing field after List is Why — the prize line, not a second generic line.
   const claimAfterOpen = occupied
     ? html`<div class="claim-after-cover" data-claim-after-cover="">`
     : "";
