@@ -6288,10 +6288,10 @@ test("GET / keeps occupied claim rail after Why land quieter later rail — not 
   assert.doesNotMatch(railCss, /claim-after-row|data-later-claim|take-after-list-seven/);
   assert.doesNotMatch(railCss, /data-list-land|data-why-first/);
   const railTitle = railCss.match(
-    /\.desk\[data-occupied="true"\] \.later-rail\[data-later-rail\] \.claim-title\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
+    /\.desk\[data-occupied="true"\] #claim \.later-rail\[data-later-rail\] \.claim-title\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
   );
   const railOutbid = railCss.match(
-    /\.desk\[data-occupied="true"\] \.later-rail\[data-later-rail\] \.outbid\s*\{[^}]*height:\s*([0-9.]+)rem/,
+    /\.desk\[data-occupied="true"\] #claim \.later-rail\[data-later-rail\] \.outbid\s*\{[^}]*height:\s*([0-9.]+)rem/,
   );
   const landWhy = css.match(
     /\.desk\[data-occupied="true"\] \.why-first\[data-why-first\]\[data-list-land\] \.why-field\[data-prize-line\] input\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
@@ -6306,6 +6306,35 @@ test("GET / keeps occupied claim rail after Why land quieter later rail — not 
   assert.ok(Number(railOutbid[1]) < Number(landWhyHeight[1]), "occupied later rail Outbid stays quieter than Why land");
   assert.ok(Number(railTitle[1]) < Number(coverWhy[1]), "occupied later rail stays quieter than the cover why prize");
   assert.ok(Number(railTitle[1]) < Number(takeHeight[1]), "occupied later rail stays quieter than Test this today");
+
+  function cssSpecificity(selector: string): [number, number, number] {
+    const ids = selector.match(/#[A-Za-z_-][\w-]*/g)?.length ?? 0;
+    const classes = selector.match(/\.[A-Za-z_-][\w-]*/g)?.length ?? 0;
+    const attrs = selector.match(/\[[^\]]+\]/g)?.length ?? 0;
+    return [ids, classes + attrs, 0];
+  }
+  function specCmp(a: [number, number, number], b: [number, number, number]): number {
+    for (let i = 0; i < 3; i += 1) if (a[i] !== b[i]) return a[i] - b[i];
+    return 0;
+  }
+  const occupiedClaimTitleSel =
+    '.desk[data-occupied="true"] .claim-after-cover[data-claim-after-cover] #claim .claim-title';
+  const occupiedOutbidSel =
+    '.desk[data-occupied="true"] .claim-after-cover[data-claim-after-cover] #claim .outbid';
+  const laterTitleSel = railTitle[0].slice(0, railTitle[0].indexOf("{")).trim();
+  const laterOutbidSel = railOutbid[0].slice(0, railOutbid[0].indexOf("{")).trim();
+  assert.match(laterTitleSel, /#claim/);
+  assert.match(laterOutbidSel, /#claim/);
+  const titleBeat = specCmp(cssSpecificity(laterTitleSel), cssSpecificity(occupiedClaimTitleSel));
+  const outbidBeat = specCmp(cssSpecificity(laterOutbidSel), cssSpecificity(occupiedOutbidSel));
+  assert.ok(
+    titleBeat > 0 || (titleBeat === 0 && css.lastIndexOf(laterTitleSel) > css.lastIndexOf(occupiedClaimTitleSel)),
+    "later-rail Claim #1 must beat occupied #claim in the cascade, not only grep a quieter source number",
+  );
+  assert.ok(
+    outbidBeat > 0 || (outbidBeat === 0 && css.lastIndexOf(laterOutbidSel) > css.lastIndexOf(occupiedOutbidSel)),
+    "later-rail Outbid must beat occupied #claim in the cascade, not only grep a quieter source number",
+  );
 
   const db = openDatabase(":memory:");
   const now = new Date("2026-08-22T13:00:00.000Z");

@@ -396,6 +396,10 @@ if [[ -f package.json ]]; then
     || fail "occupied claim rail CSS must name later rail after Why land, not a second first read"
   grep -q 'later-rail\[data-later-rail\]' src/views/styles.ts \
     || fail "occupied claim rail CSS missing later-rail composition"
+  grep -q '#claim .later-rail\[data-later-rail\] .claim-title' src/views/styles.ts \
+    || fail "occupied later-rail Claim #1 must include #claim so it beats occupied #claim sizes"
+  grep -q '#claim .later-rail\[data-later-rail\] .outbid' src/views/styles.ts \
+    || fail "occupied later-rail Outbid must include #claim so it beats occupied #claim sizes"
   grep -q 'Occupied later List write after Take is the only List label' src/views/board.ts \
     || fail "occupied claim rail must name the later List write as the only List label"
   grep -q 'Occupied listing field after List is Why' src/views/board.ts \
@@ -1583,11 +1587,11 @@ if "claim-after-row" in later_rail_css or "data-later-claim" in later_rail_css:
 if "data-list-land" in later_rail_css or "data-why-first" in later_rail_css:
     raise SystemExit("do not restamp occupied List landing or Why-first on later rail")
 rail_title = re.search(
-    r"\.desk\[data-occupied=\"true\"\] \.later-rail\[data-later-rail\] \.claim-title\s*\{[^}]*font-size:\s*([0-9.]+)rem",
+    r"\.desk\[data-occupied=\"true\"\] #claim \.later-rail\[data-later-rail\] \.claim-title\s*\{[^}]*font-size:\s*([0-9.]+)rem",
     later_rail_css,
 )
 rail_outbid = re.search(
-    r"\.desk\[data-occupied=\"true\"\] \.later-rail\[data-later-rail\] \.outbid\s*\{[^}]*height:\s*([0-9.]+)rem",
+    r"\.desk\[data-occupied=\"true\"\] #claim \.later-rail\[data-later-rail\] \.outbid\s*\{[^}]*height:\s*([0-9.]+)rem",
     later_rail_css,
 )
 rail_why = re.search(
@@ -1602,9 +1606,13 @@ if float(rail_outbid.group(1)) >= float(rail_why.group(1)):
     raise SystemExit("occupied later rail Outbid must stay quieter than Why land")
 if float(rail_title.group(1)) >= float(take_h.group(1)):
     raise SystemExit("occupied later rail must stay quieter than Test this today")
+if "#claim" not in rail_title.group(0) or "#claim" not in rail_outbid.group(0):
+    raise SystemExit("later-rail Claim #1 / Outbid rules must include #claim to beat occupied #claim sizes")
 if row_fn.find("data-cover-why") < 0 or "Why test this today" not in row_fn:
     raise SystemExit("Why must stay the prize on the occupied cover")
 PY
+  python3 scripts/assert-later-rail-cascade.py \
+    || fail "occupied later-rail Claim #1 / Outbid lost the cascade to occupied #claim sizes"
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"
   grep -q 'text-decoration-style: dashed' src/views/styles.ts \

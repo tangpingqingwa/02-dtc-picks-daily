@@ -1253,37 +1253,37 @@ a.row-link:hover { color: var(--primary); }
   padding-top: 0.55rem;
   border-top: 1px dotted var(--border);
 }
-.desk[data-occupied="true"] .later-rail[data-later-rail] .claim-title {
+.desk[data-occupied="true"] #claim .later-rail[data-later-rail] .claim-title {
   font-size: 0.78rem;
   font-weight: 500;
   letter-spacing: 0;
   color: var(--muted-foreground);
 }
 @media (min-width: 768px) {
-  .desk[data-occupied="true"] .later-rail[data-later-rail] .claim-title {
+  .desk[data-occupied="true"] #claim .later-rail[data-later-rail] .claim-title {
     font-size: 0.82rem;
   }
 }
-.desk[data-occupied="true"] .later-rail[data-later-rail] .outbid {
+.desk[data-occupied="true"] #claim .later-rail[data-later-rail] .outbid {
   height: 1.85rem;
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
-.desk[data-occupied="true"] .later-rail[data-later-rail] .bid-field {
+.desk[data-occupied="true"] #claim .later-rail[data-later-rail] .bid-field {
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
 }
-.desk[data-occupied="true"] .later-rail[data-later-rail] .claim-note {
+.desk[data-occupied="true"] #claim .later-rail[data-later-rail] .claim-note {
   margin-top: 0.1rem;
   font-size: 0.68rem;
   font-weight: 500;
 }
-.desk[data-occupied="true"] .later-rail[data-later-rail] .bid-form {
+.desk[data-occupied="true"] #claim .later-rail[data-later-rail] .bid-form {
   margin-top: 0.25rem;
   width: 100%;
 }
-.desk[data-occupied="true"] .later-rail[data-later-rail] .step {
+.desk[data-occupied="true"] #claim .later-rail[data-later-rail] .step {
   width: 1.15rem;
   height: 1.15rem;
   font-size: 0.7rem;
