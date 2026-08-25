@@ -233,7 +233,7 @@ test("GET / ranks fixture-seeded rows by bid then older createdAt", async () => 
   assert.match(body, /Also on the desk/);
   assert.match(body, /row-cover/);
   assert.match(body, /List a product/);
-  assert.match(body, /data-list-under-cover=""/);
+  assert.match(body, /data-list-after-take=""/);
   assert.match(body, /href="#claim"/);
   assert.match(body, /data-cover-hop=""/);
   assert.match(body, /data-first-click="take"/);
@@ -241,22 +241,20 @@ test("GET / ranks fixture-seeded rows by bid then older createdAt", async () => 
   assert.match(body, /aria-label="Test this today at cover\.example\/apps\/pick"/);
   const coverAt = body.indexOf('data-listing-id="lst-cover"');
   const hopAt = body.indexOf("data-cover-hop");
-  const listHopAt = body.indexOf('data-list-under-cover=""');
+  const listAfterTakeAt = body.indexOf('data-list-after-take=""');
   const claimAt = body.indexOf('id="claim"');
   const stackAt = body.indexOf("Also on the desk");
   const coverWhyAt = body.indexOf('data-cover-why=""');
-  const listAfterAt = body.indexOf('data-list-after-why=""');
   const hopLabelAt = body.indexOf(">Test this today<");
   const fieldWhyAt = body.indexOf('for="whyTestThisToday"');
   assert.ok(coverAt > -1 && claimAt > coverAt, "today’s #1 must precede claim chrome");
-  assert.ok(listHopAt > -1 && listHopAt < coverAt, "seller list hop sits above the paid cover");
   assert.ok(hopAt > coverAt && hopAt < claimAt, "cover hop lives on today’s #1, not the listing form");
   assert.ok(hopLabelAt > hopAt && hopLabelAt < claimAt, "Test this today is the cover action, not a field label");
   assert.ok(coverWhyAt > coverAt && coverWhyAt < hopAt, "cover why-line is the first cover read, before Test this today");
-  assert.ok(listAfterAt > coverWhyAt && listAfterAt < hopAt, "list-after-why sits under the why-line, before Test this today");
-  assert.ok(hopAt > listAfterAt && hopAt < body.indexOf(">$20<"), "Test this today takes after list-after-why, before $bid");
-  const listAfterTakeAt = body.indexOf('data-list-after-take=""');
-  assert.ok(listAfterTakeAt > hopAt && listAfterTakeAt < body.indexOf(">$20<"), "list-after-take sits after Test this today, before $bid");
+  assert.ok(hopAt > coverWhyAt && hopAt < body.indexOf(">$20<"), "Test this today takes after the why prize, before $bid");
+  assert.ok(listAfterTakeAt > hopAt && listAfterTakeAt < body.indexOf(">$20<"), "one later List write sits after Test this today, before $bid");
+  assert.doesNotMatch(body, /data-list-under-cover/);
+  assert.doesNotMatch(body, /data-list-after-why/);
   assert.ok(fieldWhyAt > claimAt, "the listing field still lives on the claim form");
   assert.ok(stackAt > coverAt && stackAt < claimAt, "desk-stack rows stay under the cover, still before listing");
   assert.ok(stackAt > hopAt, "stack rows sit under the cover hop");
@@ -408,14 +406,16 @@ test("GET / gives a shopper one Test this today hop on the paid cover", async ()
   assert.match(cover, /data-cover-why=""/);
   assert.match(cover, /Why test this today/);
   assert.match(cover, /Cover app sellers should install this morning/);
-  assert.match(cover, /data-list-after-why=""/);
+  assert.doesNotMatch(cover, /data-list-after-why/);
   assert.match(cover, /data-take-after-list=""/);
-  const listAfterAt = cover.indexOf("data-list-after-why");
+  const whyLineAt = cover.indexOf("cover-why-line");
   const hopAt = cover.indexOf("data-cover-hop");
   const takeAt = cover.indexOf("data-take-after-list");
+  const listAfterTakeAt = cover.indexOf("data-list-after-take");
   const bidAt = cover.indexOf(">$20<");
-  assert.ok(listAfterAt > -1 && hopAt > listAfterAt, "Test this today sits after list-after-why");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "the take wrap is the next control after listing");
+  assert.ok(whyLineAt > -1 && hopAt > whyLineAt, "Test this today sits after the why prize");
+  assert.ok(takeAt > whyLineAt && takeAt < hopAt, "the take wrap is the next control after the why prize");
+  assert.ok(listAfterTakeAt > hopAt, "one later List write sits after Test this today");
   assert.ok(hopAt < bidAt && hopAt < cover.indexOf('class="host"'), "taking the cover is not buried under host or $bid");
   assert.doesNotMatch(cover, /class="row-link" href=/);
   assert.match(under, /href="\/r\/lst-under"/);
@@ -440,7 +440,7 @@ test("GET / gives a shopper one Test this today hop on the paid cover", async ()
   assert.doesNotMatch(under, /Test this today/);
   assert.equal((body.match(/data-cover-hop/g) ?? []).length, 1);
   assert.equal((body.match(/data-cover-why=""/g) ?? []).length, 1);
-  assert.equal((body.match(/data-list-after-why=""/g) ?? []).length, 1);
+  assert.doesNotMatch(body, /data-list-after-why=/);
   assert.equal((body.match(/data-take-after-list=""/g) ?? []).length, 1);
   assert.equal((body.match(/data-list-after-take=""/g) ?? []).length, 1);
   assert.equal((body.match(/data-first-click="take"/g) ?? []).length, 1);
@@ -492,8 +492,7 @@ test("GET / gives a seller one List a product hop under a paid cover", async () 
   const response = await app.inject({ method: "GET", url: "/" });
   assert.equal(response.statusCode, 200);
   const body = response.body;
-  const listHopAt = body.indexOf('data-list-under-cover=""');
-  const listAfterAt = body.indexOf('data-list-after-why=""');
+  const listAfterTakeAt = body.indexOf('data-list-after-take=""');
   const coverAt = body.indexOf('data-listing-id="lst-cover"');
   const hopAt = body.indexOf("data-cover-hop");
   const claimAt = body.indexOf('id="claim"');
@@ -501,19 +500,17 @@ test("GET / gives a seller one List a product hop under a paid cover", async () 
   const fieldWhyAt = body.indexOf('for="whyTestThisToday"');
   const kickerAt = body.indexOf('class="claim-kicker"');
 
-  assert.match(body, /data-list-under-cover=""/);
-  assert.match(body, /data-list-after-why=""/);
+  assert.match(body, /data-list-after-take=""/);
+  assert.doesNotMatch(body, /data-list-under-cover=/);
+  assert.doesNotMatch(body, /data-list-after-why=/);
   assert.match(body, /href="#claim"/);
-  assert.match(body, /under today’s cover/);
+  assert.match(body, /after Test this today/);
   assert.match(body, /Paying less than #1 still lists/);
-  assert.equal((body.match(/data-list-under-cover=""/g) ?? []).length, 1);
-  assert.equal((body.match(/data-list-after-why=""/g) ?? []).length, 1);
-  assert.ok(listHopAt > -1 && listHopAt < coverAt, "seller list hop sits above today’s cover, not below the fold");
-  assert.ok(listHopAt < hopAt, "listing hop is not the shopper cover hop");
-  assert.ok(coverWhyAt > coverAt && listAfterAt > coverWhyAt && listAfterAt < hopAt, "list-after-why sits under the cover reason, before Test this today");
+  assert.equal((body.match(/data-list-after-take=""/g) ?? []).length, 1);
+  assert.ok(listAfterTakeAt > hopAt && listAfterTakeAt < claimAt, "one later List write sits after Test this today");
+  assert.ok(coverWhyAt > coverAt && coverWhyAt < hopAt, "cover why-line sits on today’s #1, before the hop");
   assert.ok(claimAt > coverAt, "the listing form still lives under the cover");
   assert.ok(kickerAt > claimAt, "List a product kicker stays on the form");
-  assert.ok(coverWhyAt > coverAt && coverWhyAt < hopAt, "cover why-line sits on today’s #1, before the hop");
   assert.ok(fieldWhyAt > claimAt, "the listing field still lives on the claim form");
   assert.equal((body.match(/data-cover-hop/g) ?? []).length, 1);
 });
@@ -558,16 +555,16 @@ test("GET / names why this is today’s cover before $bid and the hop", async ()
   assert.match(cover, /data-cover-why=""/);
   assert.match(cover, /<p class="cover-why-label">Why test this today<\/p>/);
   assert.match(cover, /<p class="cover-why-line" data-prize-before-price="">Cover app sellers should install this morning<\/p>/);
-  assert.match(cover, /data-list-after-why=""/);
+  assert.doesNotMatch(cover, /data-list-after-why/);
   assert.doesNotMatch(cover, /class="blurb"/);
   const whyAt = cover.indexOf("data-cover-why");
-  const listAfterAt = cover.indexOf("data-list-after-why");
+  const listAfterTakeAt = cover.indexOf("data-list-after-take");
   const bidAt = cover.indexOf(">$20<");
   const hopAt = cover.indexOf("data-cover-hop");
   assert.ok(whyAt > -1 && whyAt < bidAt, "cover reason precedes $bid");
   assert.ok(whyAt < hopAt, "cover reason precedes Test this today");
-  assert.ok(listAfterAt > whyAt && listAfterAt < hopAt, "list-after-why sits after the why-line, before Test this today");
-  assert.ok(hopAt < bidAt, "Test this today takes after list-after-why, before $bid");
+  assert.ok(hopAt < bidAt, "Test this today takes after the why prize, before $bid");
+  assert.ok(listAfterTakeAt > hopAt && listAfterTakeAt < bidAt, "one later List write sits after Test this today, before $bid");
 
   assert.match(under, /class="slot"/);
   assert.match(under, /Cheaper SKU still belongs on the brief/);
@@ -616,23 +613,24 @@ test("GET / lists after the why-line on a paid cover", async () => {
   const under = body.slice(underStart, underEnd);
 
   assert.match(cover, /data-cover-why=""/);
-  assert.match(cover, /data-list-after-why=""/);
+  assert.doesNotMatch(cover, /data-list-after-why/);
   assert.match(cover, /href="#claim"/);
   assert.match(cover, />List a product</);
-  assert.match(cover, /under this reason/);
+  assert.match(cover, /data-list-after-take=""/);
+  assert.match(cover, /after Test this today/);
   assert.match(cover, /Paying less than #1 still lists/);
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const hopAt = cover.indexOf("data-cover-hop");
+  const listAfterTakeAt = cover.indexOf("data-list-after-take");
   const bidAt = cover.indexOf(">$20<");
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "seller hop sits after the labeled why-line");
-  assert.ok(listAfterAt < hopAt, "seller hop is not the shopper Test this today hop");
-  assert.ok(listAfterAt < bidAt, "listing after the why-line is not buried under $bid");
+  assert.ok(whyLineAt > -1 && hopAt > whyLineAt, "why prize sits before Test this today");
+  assert.ok(listAfterTakeAt > hopAt, "one later List write sits after Test this today");
+  assert.ok(listAfterTakeAt < bidAt, "listing after Take is not buried under $bid");
 
   assert.doesNotMatch(under, /data-list-after-why/);
   assert.doesNotMatch(under, /under this reason/);
-  assert.equal((body.match(/data-list-after-why=""/g) ?? []).length, 1);
-  assert.equal((body.match(/data-list-under-cover=""/g) ?? []).length, 1);
+  assert.doesNotMatch(body, /data-list-after-why=/);
+  assert.doesNotMatch(body, /data-list-under-cover=/);
   assert.equal((body.match(/data-cover-hop/g) ?? []).length, 1);
 
   const emptyApp = await buildApp({ databasePath: ":memory:" });
@@ -682,20 +680,19 @@ test("GET / takes the cover after list-after-why", async () => {
   const underEnd = body.indexOf("</article>", underStart);
   const under = body.slice(underStart, underEnd);
 
-  assert.match(cover, /data-list-after-why=""/);
+  assert.doesNotMatch(cover, /data-list-after-why/);
   assert.match(cover, /data-take-after-list=""/);
   assert.match(cover, /data-cover-hop=""/);
   assert.match(cover, /data-first-click="take"/);
   assert.match(cover, />Test this today</);
   assert.match(cover, /href="\/r\/lst-cover"/);
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
   const bidAt = cover.indexOf(">$20<");
   const hostAt = cover.indexOf('class="host"');
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "the shopper take is the next control after listing");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt, "why stays the prize; Take follows the why-line");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt && takeAt < hopAt, "the shopper take is the next control after the why prize");
   assert.ok(hopAt < bidAt && hopAt < hostAt, "Test this today is not quieter than host or $bid");
   assert.ok((cover.match(/data-cover-hop/g) ?? []).length === 1, "one cover hop");
 
@@ -704,8 +701,8 @@ test("GET / takes the cover after list-after-why", async () => {
   assert.doesNotMatch(under, /Test this today/);
   assert.equal((body.match(/data-take-after-list=""/g) ?? []).length, 1);
   assert.equal((body.match(/data-cover-hop/g) ?? []).length, 1);
-  assert.equal((body.match(/data-list-after-why=""/g) ?? []).length, 1);
-  assert.equal((body.match(/data-list-under-cover=""/g) ?? []).length, 1);
+  assert.doesNotMatch(body, /data-list-after-why=/);
+  assert.doesNotMatch(body, /data-list-under-cover=/);
 
   const hop = await app.inject({ method: "GET", url: "/r/lst-cover" });
   assert.equal(hop.statusCode, 302);
@@ -758,7 +755,7 @@ test("GET / lists after Test this today", async () => {
   const underEnd = body.indexOf("</article>", underStart);
   const under = body.slice(underStart, underEnd);
 
-  assert.match(cover, /data-list-after-why=""/);
+  assert.doesNotMatch(cover, /data-list-after-why/);
   assert.match(cover, /data-take-after-list=""/);
   assert.match(cover, /data-cover-hop=""/);
   assert.match(cover, /data-first-click="take"/);
@@ -769,15 +766,14 @@ test("GET / lists after Test this today", async () => {
   assert.match(cover, /after Test this today/);
   assert.match(cover, /Paying less than #1 still lists/);
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
   const listAfterTakeAt = cover.indexOf("data-list-after-take");
   const firstWriteAt = cover.indexOf('data-first-write="list"');
   const bidAt = cover.indexOf(">$20<");
   const hostAt = cover.indexOf('class="host"');
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "take-after-list stays the shopper hop after listing");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt, "why stays the prize; Take follows the why-line");
+  assert.ok(takeAt > whyLineAt && takeAt < hopAt, "take-after-list stays the shopper hop after the why prize");
   assert.ok(listAfterTakeAt > hopAt, "seller write is the next control after Test this today");
   assert.ok(firstWriteAt > hopAt && firstWriteAt > listAfterTakeAt, "first write is stamped on list-after-take");
   assert.ok(listAfterTakeAt < bidAt && listAfterTakeAt < hostAt, "listing after the take is not buried under host or $bid");
@@ -792,8 +788,8 @@ test("GET / lists after Test this today", async () => {
   assert.equal((body.match(/data-list-after-take=""/g) ?? []).length, 1);
   assert.equal((body.match(/data-take-after-list=""/g) ?? []).length, 1);
   assert.equal((body.match(/data-cover-hop/g) ?? []).length, 1);
-  assert.equal((body.match(/data-list-after-why=""/g) ?? []).length, 1);
-  assert.equal((body.match(/data-list-under-cover=""/g) ?? []).length, 1);
+  assert.doesNotMatch(body, /data-list-after-why=/);
+  assert.doesNotMatch(body, /data-list-under-cover=/);
 
   const hop = await app.inject({ method: "GET", url: "/r/lst-cover" });
   assert.equal(hop.statusCode, 302);
@@ -848,7 +844,7 @@ test("GET / lets Test this today win the first click after list-after-take", asy
   const underEnd = body.indexOf("</article>", underStart);
   const under = body.slice(underStart, underEnd);
 
-  assert.match(cover, /data-list-after-why=""/);
+  assert.doesNotMatch(cover, /data-list-after-why/);
   assert.match(cover, /data-take-after-list=""/);
   assert.match(cover, /data-cover-hop=""/);
   assert.match(cover, /data-first-click="take"/);
@@ -870,7 +866,6 @@ test("GET / lets Test this today win the first click after list-after-take", asy
   assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   assert.match(cover, /after Test this today/);
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
   const firstClickAt = cover.indexOf('data-first-click="take"');
@@ -889,8 +884,8 @@ test("GET / lets Test this today win the first click after list-after-take", asy
   const listSixAt = cover.indexOf("data-list-after-take-six");
   const bidAt = cover.indexOf(">$20<");
   const hostAt = cover.indexOf('class="host"');
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "take-after-list stays the shopper hop after listing");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt, "why stays the prize; Take follows the why-line");
+  assert.ok(takeAt > whyLineAt && takeAt < hopAt, "take-after-list stays the shopper hop after the why prize");
   assert.ok(firstClickAt > takeAt && firstClickAt < listAfterTakeAt, "Test this today is the first click, before list-after-take");
   assert.ok(takeFirstAt > firstClickAt && takeFirstAt < listAfterTakeAt, "concentrated take stays on the existing first-click hop");
   assert.ok(takeTwoAt > takeFirstAt && takeTwoAt < listAfterTakeAt, "take-after-list-two stays on the existing first-click hop");
@@ -955,8 +950,8 @@ test("GET / lets Test this today win the first click after list-after-take", asy
   assert.equal((body.match(/data-list-after-take=""/g) ?? []).length, 1);
   assert.equal((body.match(/data-take-after-list=""/g) ?? []).length, 1);
   assert.equal((body.match(/data-cover-hop/g) ?? []).length, 1);
-  assert.equal((body.match(/data-list-after-why=""/g) ?? []).length, 1);
-  assert.equal((body.match(/data-list-under-cover=""/g) ?? []).length, 1);
+  assert.doesNotMatch(body, /data-list-after-why=/);
+  assert.doesNotMatch(body, /data-list-under-cover=/);
 
   const hop = await app.inject({ method: "GET", url: "/r/lst-cover" });
   assert.equal(hop.statusCode, 302);
@@ -1196,7 +1191,6 @@ test("GET / concentrates Test this today after List a product is the first write
   assert.match(cover, />Test this today</);
   assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
   const firstClickAt = cover.indexOf('data-first-click="take"');
@@ -1215,8 +1209,8 @@ test("GET / concentrates Test this today after List a product is the first write
   const listSixAt = cover.indexOf("data-list-after-take-six");
   const bidAt = cover.indexOf(">$20<");
   const hostAt = cover.indexOf('class="host"');
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "take-after-list stays the shopper hop after listing");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt, "why stays the prize; Take follows the why-line");
+  assert.ok(takeAt > whyLineAt && takeAt < hopAt, "take-after-list stays the shopper hop after the why prize");
   assert.ok(firstClickAt > takeAt && firstClickAt < listAfterTakeAt, "Test this today stays the first click");
   assert.ok(takeFirstAt > firstClickAt && takeFirstAt < listAfterTakeAt, "the existing take hop is concentrated after the first-write stamp");
   assert.ok(takeTwoAt > takeFirstAt && takeTwoAt < listAfterTakeAt, "take-after-list-two stays on the existing first-click hop");
@@ -1364,7 +1358,6 @@ test("GET / concentrates List a product after Test this today is re-concentrated
     /class="cover-hop cover-hop-first take-after-list-first take-after-list-two take-after-list-three take-after-list-four take-after-list-five take-after-list-six"[^>]*href="\/r\/lst-cover"[^>]*data-cover-hop=""[^>]*data-first-click="take"[^>]*data-take-after-list-first=""[^>]*data-take-after-list-two=""[^>]*data-take-after-list-three=""[^>]*data-take-after-list-four=""[^>]*data-take-after-list-five=""[^>]*data-take-after-list-six=""/,
   );
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
   const firstClickAt = cover.indexOf('data-first-click="take"');
@@ -1385,8 +1378,8 @@ test("GET / concentrates List a product after Test this today is re-concentrated
   const hostAt = cover.indexOf('class="host"');
   const claimAt = body.indexOf('id="claim"');
   const fieldWhyAt = body.indexOf('for="whyTestThisToday"');
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "take-after-list stays the shopper hop after listing");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt, "why stays the prize; Take follows the why-line");
+  assert.ok(takeAt > whyLineAt && takeAt < hopAt, "take-after-list stays the shopper hop after the why prize");
   assert.ok(firstClickAt > takeAt && firstClickAt < listAfterTakeAt, "Test this today stays the first click");
   assert.ok(takeFirstAt > firstClickAt && takeFirstAt < listAfterTakeAt, "the louder take stays on the existing hop");
   assert.ok(takeTwoAt > takeFirstAt && takeTwoAt < listAfterTakeAt, "take-after-list-two stays on the existing first-click hop");
@@ -1527,7 +1520,6 @@ test("GET / concentrates Test this today after List a product is re-concentrated
   assert.match(cover, />Test this today</);
   assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
   const firstClickAt = cover.indexOf('data-first-click="take"');
@@ -1546,8 +1538,8 @@ test("GET / concentrates Test this today after List a product is re-concentrated
   const listSixAt = cover.indexOf("data-list-after-take-six");
   const bidAt = cover.indexOf(">$20<");
   const hostAt = cover.indexOf('class="host"');
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "take-after-list stays the shopper hop after listing");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt, "why stays the prize; Take follows the why-line");
+  assert.ok(takeAt > whyLineAt && takeAt < hopAt, "take-after-list stays the shopper hop after the why prize");
   assert.ok(firstClickAt > takeAt && firstClickAt < listAfterTakeAt, "Test this today stays the first click");
   assert.ok(takeFirstAt > firstClickAt && takeFirstAt < listAfterTakeAt, "the louder take stays on the existing hop");
   assert.ok(takeTwoAt > takeFirstAt && takeTwoAt < listAfterTakeAt, "the existing take hop is concentrated after the taller list");
@@ -1694,7 +1686,6 @@ test("GET / concentrates List a product after Test this today is re-concentrated
     /class="cover-hop cover-hop-first take-after-list-first take-after-list-two take-after-list-three take-after-list-four take-after-list-five take-after-list-six"[^>]*href="\/r\/lst-cover"[^>]*data-cover-hop=""[^>]*data-first-click="take"[^>]*data-take-after-list-first=""[^>]*data-take-after-list-two=""[^>]*data-take-after-list-three=""[^>]*data-take-after-list-four=""[^>]*data-take-after-list-five=""[^>]*data-take-after-list-six=""/,
   );
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
   const firstClickAt = cover.indexOf('data-first-click="take"');
@@ -1715,8 +1706,8 @@ test("GET / concentrates List a product after Test this today is re-concentrated
   const hostAt = cover.indexOf('class="host"');
   const claimAt = body.indexOf('id="claim"');
   const fieldWhyAt = body.indexOf('for="whyTestThisToday"');
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "take-after-list stays the shopper hop after listing");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt, "why stays the prize; Take follows the why-line");
+  assert.ok(takeAt > whyLineAt && takeAt < hopAt, "take-after-list stays the shopper hop after the why prize");
   assert.ok(firstClickAt > takeAt && firstClickAt < listAfterTakeAt, "Test this today stays the first click");
   assert.ok(takeFirstAt > firstClickAt && takeFirstAt < listAfterTakeAt, "the louder take stays on the existing hop");
   assert.ok(takeTwoAt > takeFirstAt && takeTwoAt < listAfterTakeAt, "take-after-list-two stays on the existing first-click hop");
@@ -1859,7 +1850,6 @@ test("GET / concentrates Test this today after List a product is re-concentrated
   assert.match(cover, />Test this today</);
   assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
   const firstClickAt = cover.indexOf('data-first-click="take"');
@@ -1878,8 +1868,8 @@ test("GET / concentrates Test this today after List a product is re-concentrated
   const listSixAt = cover.indexOf("data-list-after-take-six");
   const bidAt = cover.indexOf(">$20<");
   const hostAt = cover.indexOf('class="host"');
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "take-after-list stays the shopper hop after listing");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt, "why stays the prize; Take follows the why-line");
+  assert.ok(takeAt > whyLineAt && takeAt < hopAt, "take-after-list stays the shopper hop after the why prize");
   assert.ok(firstClickAt > takeAt && firstClickAt < listAfterTakeAt, "Test this today stays the first click");
   assert.ok(takeFirstAt > firstClickAt && takeFirstAt < listAfterTakeAt, "the louder take stays on the existing hop");
   assert.ok(takeTwoAt > takeFirstAt && takeTwoAt < listAfterTakeAt, "take-after-list-two stays on the existing first-click hop");
@@ -2025,7 +2015,6 @@ test("GET / concentrates List a product after Test this today is re-concentrated
     /class="cover-hop cover-hop-first take-after-list-first take-after-list-two take-after-list-three take-after-list-four take-after-list-five take-after-list-six"[^>]*href="\/r\/lst-cover"[^>]*data-cover-hop=""[^>]*data-first-click="take"[^>]*data-take-after-list-first=""[^>]*data-take-after-list-two=""[^>]*data-take-after-list-three=""[^>]*data-take-after-list-four=""[^>]*data-take-after-list-five=""[^>]*data-take-after-list-six=""/,
   );
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
   const firstClickAt = cover.indexOf('data-first-click="take"');
@@ -2046,8 +2035,8 @@ test("GET / concentrates List a product after Test this today is re-concentrated
   const hostAt = cover.indexOf('class="host"');
   const claimAt = body.indexOf('id="claim"');
   const fieldWhyAt = body.indexOf('for="whyTestThisToday"');
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "take-after-list stays the shopper hop after listing");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt, "why stays the prize; Take follows the why-line");
+  assert.ok(takeAt > whyLineAt && takeAt < hopAt, "take-after-list stays the shopper hop after the why prize");
   assert.ok(firstClickAt > takeAt && firstClickAt < listAfterTakeAt, "Test this today stays the first click");
   assert.ok(takeFirstAt > firstClickAt && takeFirstAt < listAfterTakeAt, "the louder take stays on the existing hop");
   assert.ok(takeTwoAt > takeFirstAt && takeTwoAt < listAfterTakeAt, "take-after-list-two stays on the existing first-click hop");
@@ -2188,7 +2177,6 @@ test("GET / concentrates Test this today after List a product is re-concentrated
   assert.match(cover, />Test this today</);
   assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
   const firstClickAt = cover.indexOf('data-first-click="take"');
@@ -2207,8 +2195,8 @@ test("GET / concentrates Test this today after List a product is re-concentrated
   const listSixAt = cover.indexOf("data-list-after-take-six");
   const bidAt = cover.indexOf(">$20<");
   const hostAt = cover.indexOf('class="host"');
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "take-after-list stays the shopper hop after listing");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt, "why stays the prize; Take follows the why-line");
+  assert.ok(takeAt > whyLineAt && takeAt < hopAt, "take-after-list stays the shopper hop after the why prize");
   assert.ok(firstClickAt > takeAt && firstClickAt < listAfterTakeAt, "Test this today stays the first click");
   assert.ok(takeFirstAt > firstClickAt && takeFirstAt < listAfterTakeAt, "the louder take stays on the existing hop");
   assert.ok(takeTwoAt > takeFirstAt && takeTwoAt < listAfterTakeAt, "take-after-list-two stays on the existing first-click hop");
@@ -2353,7 +2341,6 @@ test("GET / concentrates List a product after Test this today is re-concentrated
     /class="cover-hop cover-hop-first take-after-list-first take-after-list-two take-after-list-three take-after-list-four take-after-list-five take-after-list-six"[^>]*href="\/r\/lst-cover"[^>]*data-cover-hop=""[^>]*data-first-click="take"[^>]*data-take-after-list-first=""[^>]*data-take-after-list-two=""[^>]*data-take-after-list-three=""[^>]*data-take-after-list-four=""[^>]*data-take-after-list-five=""[^>]*data-take-after-list-six=""/,
   );
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
   const firstClickAt = cover.indexOf('data-first-click="take"');
@@ -2374,8 +2361,8 @@ test("GET / concentrates List a product after Test this today is re-concentrated
   const hostAt = cover.indexOf('class="host"');
   const claimAt = body.indexOf('id="claim"');
   const fieldWhyAt = body.indexOf('for="whyTestThisToday"');
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "take-after-list stays the shopper hop after listing");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt, "why stays the prize; Take follows the why-line");
+  assert.ok(takeAt > whyLineAt && takeAt < hopAt, "take-after-list stays the shopper hop after the why prize");
   assert.ok(firstClickAt > takeAt && firstClickAt < listAfterTakeAt, "Test this today stays the first click");
   assert.ok(takeFirstAt > firstClickAt && takeFirstAt < listAfterTakeAt, "the louder take stays on the existing hop");
   assert.ok(takeTwoAt > takeFirstAt && takeTwoAt < listAfterTakeAt, "take-after-list-two stays on the existing first-click hop");
@@ -2514,7 +2501,6 @@ test("GET / concentrates Test this today after List a product is re-concentrated
   assert.match(cover, />Test this today</);
   assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
   const firstClickAt = cover.indexOf('data-first-click="take"');
@@ -2533,8 +2519,8 @@ test("GET / concentrates Test this today after List a product is re-concentrated
   const listSixAt = cover.indexOf("data-list-after-take-six");
   const bidAt = cover.indexOf(">$20<");
   const hostAt = cover.indexOf('class="host"');
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "take-after-list stays the shopper hop after listing");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt, "why stays the prize; Take follows the why-line");
+  assert.ok(takeAt > whyLineAt && takeAt < hopAt, "take-after-list stays the shopper hop after the why prize");
   assert.ok(firstClickAt > takeAt && firstClickAt < listAfterTakeAt, "Test this today stays the first click");
   assert.ok(takeFirstAt > firstClickAt && takeFirstAt < listAfterTakeAt, "the louder take stays on the existing hop");
   assert.ok(takeTwoAt > takeFirstAt && takeTwoAt < listAfterTakeAt, "take-after-list-two stays on the existing first-click hop");
@@ -2678,7 +2664,6 @@ test("GET / concentrates List a product after Test this today is re-concentrated
     /class="cover-hop cover-hop-first take-after-list-first take-after-list-two take-after-list-three take-after-list-four take-after-list-five take-after-list-six"[^>]*href="\/r\/lst-cover"[^>]*data-cover-hop=""[^>]*data-first-click="take"[^>]*data-take-after-list-first=""[^>]*data-take-after-list-two=""[^>]*data-take-after-list-three=""[^>]*data-take-after-list-four=""[^>]*data-take-after-list-five=""[^>]*data-take-after-list-six=""/,
   );
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
   const firstClickAt = cover.indexOf('data-first-click="take"');
@@ -2699,8 +2684,8 @@ test("GET / concentrates List a product after Test this today is re-concentrated
   const hostAt = cover.indexOf('class="host"');
   const claimAt = body.indexOf('id="claim"');
   const fieldWhyAt = body.indexOf('for="whyTestThisToday"');
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "take-after-list stays the shopper hop after listing");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt, "why stays the prize; Take follows the why-line");
+  assert.ok(takeAt > whyLineAt && takeAt < hopAt, "take-after-list stays the shopper hop after the why prize");
   assert.ok(firstClickAt > takeAt && firstClickAt < listAfterTakeAt, "Test this today stays the first click");
   assert.ok(takeFirstAt > firstClickAt && takeFirstAt < listAfterTakeAt, "the louder take stays on the existing hop");
   assert.ok(takeTwoAt > takeFirstAt && takeTwoAt < listAfterTakeAt, "take-after-list-two stays on the existing first-click hop");
@@ -2837,7 +2822,6 @@ test("GET / concentrates Test this today after List a product is re-concentrated
   assert.match(cover, />Test this today</);
   assert.match(cover, /class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six"[^>]*href="#claim"[^>]*data-list-after-take=""[^>]*data-first-write="list"[^>]*data-list-after-take-two=""[^>]*data-list-after-take-three=""[^>]*data-list-after-take-four=""[^>]*data-list-after-take-five=""[^>]*data-list-after-take-six=""/);
   const whyLineAt = cover.indexOf("cover-why-line");
-  const listAfterAt = cover.indexOf("data-list-after-why");
   const takeAt = cover.indexOf("data-take-after-list");
   const hopAt = cover.indexOf("data-cover-hop");
   const firstClickAt = cover.indexOf('data-first-click="take"');
@@ -2856,8 +2840,8 @@ test("GET / concentrates Test this today after List a product is re-concentrated
   const listSixAt = cover.indexOf("data-list-after-take-six");
   const bidAt = cover.indexOf(">$20<");
   const hostAt = cover.indexOf('class="host"');
-  assert.ok(whyLineAt > -1 && listAfterAt > whyLineAt, "list-after-why stays under the labeled why-line");
-  assert.ok(takeAt > listAfterAt && takeAt < hopAt, "take-after-list stays the shopper hop after listing");
+  assert.ok(whyLineAt > -1 && takeAt > whyLineAt, "why stays the prize; Take follows the why-line");
+  assert.ok(takeAt > whyLineAt && takeAt < hopAt, "take-after-list stays the shopper hop after the why prize");
   assert.ok(firstClickAt > takeAt && firstClickAt < listAfterTakeAt, "Test this today stays the first click");
   assert.ok(takeFirstAt > firstClickAt && takeFirstAt < listAfterTakeAt, "the louder take stays on the existing hop");
   assert.ok(takeTwoAt > takeFirstAt && takeTwoAt < listAfterTakeAt, "take-after-list-two stays on the existing first-click hop");
@@ -5331,7 +5315,7 @@ test("GET / keeps occupied later merch claim-this-rank quieter than Take — cov
 test("GET / keeps occupied cover one first click — Test this today, List stays after the cover", async () => {
   const css = BOARD_CSS;
   assert.match(css, /Occupied cover: Take is the one first click/);
-  assert.match(css, /List under Why, List after Take, and masthead List recede/);
+  assert.match(css, /One later List write after Take recedes/);
   assert.match(css, /\.desk\[data-occupied="true"\] \.list-after-cover\[data-list-after-cover\]/);
   assert.match(css, /\.desk:has\(\.empty\) \.list-after-cover/);
   assert.match(css, /\.desk\[data-unpaid-off\] \.list-after-cover/);
@@ -5346,12 +5330,13 @@ test("GET / keeps occupied cover one first click — Test this today, List stays
     /\.row-cover\[data-paid-name\] \.host\[data-cover-name\]\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
   );
   assert.ok(listSize && takeHeight && whyPrize && paidName, "occupied List recede, Take, why prize, and paid name must all have sizes");
-  assert.ok(Number(listSize[1]) < Number(takeHeight[1]), "occupied List rails stay quieter than Test this today");
-  assert.ok(Number(listSize[1]) < Number(whyPrize[1]), "occupied List rails stay quieter than the why prize");
-  assert.ok(Number(listSize[1]) < Number(paidName[1]), "occupied List rails stay quieter than the paid cover name");
+  assert.ok(Number(listSize[1]) < Number(takeHeight[1]), "occupied List write stays quieter than Test this today");
+  assert.ok(Number(listSize[1]) < Number(whyPrize[1]), "occupied List write stays quieter than the why prize");
+  assert.ok(Number(listSize[1]) < Number(paidName[1]), "occupied List write stays quieter than the paid cover name");
   assert.doesNotMatch(recede, /var\(--primary\)/);
   assert.doesNotMatch(recede, /empty-claim-first|data-why-later|data-later-write|data-unpaid-off/);
   assert.doesNotMatch(recede, /claim-after-row|data-later-claim|take-after-list-seven|list-after-take-seven/);
+  assert.doesNotMatch(recede, /list-under-cover|list-after-why|masthead-list/);
   assert.doesNotMatch(css, /take-after-list-seven|list-after-take-seven|data-later-claim-quiet/);
 
   const db = openDatabase(":memory:");
@@ -5401,11 +5386,9 @@ test("GET / keeps occupied cover one first click — Test this today, List stays
   const under = body.slice(underStart, body.indexOf("</article>", underStart));
   const whyAt = cover.indexOf('data-cover-why=""');
   const prizeAt = cover.indexOf("data-prize-before-price");
-  const listAfterWhyAt = cover.indexOf('data-list-after-why=""');
   const takeAt = cover.indexOf('data-first-click="take"');
   const hopLabelAt = cover.indexOf(">Test this today<");
   const listAfterTakeAt = cover.indexOf('data-list-after-take=""');
-  const mastheadListAt = body.indexOf('data-list-under-cover=""');
   const stackAt = body.indexOf('data-later-stack=""');
   const stripAt = body.indexOf('data-last24h=""');
   const laterClaimAt = under.indexOf('data-claim-after-row=""');
@@ -5421,16 +5404,16 @@ test("GET / keeps occupied cover one first click — Test this today, List stays
   assert.match(cover, /data-first-click="take"/);
   assert.match(cover, />Test this today</);
   assert.match(cover, /href="\/r\/lst-cover"/);
-  assert.match(cover, /class="list-after-why-wrap list-after-cover"/);
+  assert.doesNotMatch(cover, /class="list-after-why-wrap list-after-cover"/);
   assert.match(cover, /class="list-after-take-wrap list-after-cover"/);
   assert.match(cover, /data-list-after-cover=""/);
-  assert.match(cover, /data-list-after-why=""/);
-  assert.match(cover, /under this reason/);
+  assert.doesNotMatch(cover, /data-list-after-why/);
+  assert.doesNotMatch(cover, /under this reason/);
   assert.match(cover, /data-list-after-take=""/);
   assert.match(cover, /after Test this today/);
-  assert.match(body, /class="masthead-list list-after-cover"/);
-  assert.match(body, /data-list-under-cover=""/);
-  assert.match(body, /under today’s cover/);
+  assert.doesNotMatch(body, /class="masthead-list list-after-cover"/);
+  assert.doesNotMatch(body, /data-list-under-cover=/);
+  assert.doesNotMatch(body, /under today’s cover/);
   assert.match(body, /data-occupied="true"/);
   assert.match(body, /data-later-stack=""/);
   assert.match(body, /data-claim-after-row=""/);
@@ -5452,17 +5435,16 @@ test("GET / keeps occupied cover one first click — Test this today, List stays
   assert.doesNotMatch(body, /data-empty-claim-first/);
   assert.doesNotMatch(body, /data-first-click="claim"/);
   assert.equal((body.match(/data-first-click="take"/g) ?? []).length, 1);
-  assert.equal((body.match(/data-list-after-cover=""/g) ?? []).length, 3);
-  assert.equal((body.match(/data-list-after-why=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-list-after-cover=""/g) ?? []).length, 1);
+  assert.doesNotMatch(body, /data-list-after-why=/);
   assert.equal((body.match(/data-list-after-take=""/g) ?? []).length, 1);
-  assert.equal((body.match(/data-list-under-cover=""/g) ?? []).length, 1);
+  assert.doesNotMatch(body, /data-list-under-cover=/);
+  assert.equal((body.match(/href="#claim"/g) ?? []).length, 1);
   assert.equal((body.match(/data-prize-before-price=""/g) ?? []).length, 1);
   assert.equal((body.match(/data-claim-after-row=""/g) ?? []).length, 1);
   assert.ok(coverStart > -1 && whyAt > -1 && prizeAt > whyAt, "why stays the occupied cover prize");
   assert.ok(takeAt > prizeAt && hopLabelAt > takeAt, "Test this today is the one first click after the why prize");
-  assert.ok(listAfterWhyAt > whyAt && listAfterWhyAt < takeAt, "List under Why recedes under the prize, before Take");
-  assert.ok(listAfterTakeAt > hopLabelAt, "List after Take recedes after Test this today");
-  assert.ok(mastheadListAt > -1 && mastheadListAt < coverStart, "masthead List still sits above the cover and recedes after Take");
+  assert.ok(listAfterTakeAt > hopLabelAt, "one later List write sits after Test this today");
   assert.ok(stackAt > coverStart && laterClaimAt > -1, "later merch claim-this-rank quiet already shipped — do not restamp");
   assert.ok(stripAt > stackAt && wrapAt > stripAt && claimAt > wrapAt, "last-24h strip and Claim stay after the cover");
 
@@ -5532,6 +5514,96 @@ test("GET / keeps occupied cover one first click — Test this today, List stays
   assert.doesNotMatch(emptyCoverHtml, /This morning’s cover/);
   assert.doesNotMatch(emptyCoverHtml, /data-first-click="take"/);
   assert.doesNotMatch(emptyCoverHtml, /data-two-prizes=/);
+});
+
+test("GET / keeps occupied cover one later List write after Take — not three List rails", async () => {
+  const css = BOARD_CSS;
+  assert.match(css, /Occupied cover: Take is the one first click/);
+  assert.match(css, /One later List write after Take recedes after that hop/);
+  assert.doesNotMatch(css, /List under Why, List after Take, and masthead List recede/);
+  assert.doesNotMatch(css, /take-after-list-seven|list-after-take-seven/);
+  const recede = (css.split("Occupied cover: Take is the one first click", 2)[1] ?? "")
+    .split("@media (min-width: 768px)")[0] ?? "";
+  assert.doesNotMatch(recede, /list-under-cover|list-after-why|masthead-list/);
+  assert.doesNotMatch(recede, /claim-after-row|data-later-claim|empty-claim-first/);
+  assert.doesNotMatch(recede, /var\(--primary\)/);
+
+  const db = openDatabase(":memory:");
+  const now = new Date("2026-08-22T13:00:00.000Z");
+  const day = dayKey(now);
+  placeBid(db, {
+    id: "lst-cover",
+    day,
+    productUrl: "https://cover.example/apps/pick",
+    whyTestThisToday: "Cover app sellers should install this morning",
+    bidUsd: 20,
+    clicks: 3,
+    createdAt: "2026-08-22T09:00:00.000Z",
+  });
+  placeBid(db, {
+    id: "lst-under",
+    day,
+    productUrl: "https://under.example/sku",
+    whyTestThisToday: "Cheaper SKU still belongs on the brief",
+    bidUsd: 8,
+    clicks: 1,
+    createdAt: "2026-08-22T12:00:00.000Z",
+  });
+
+  const app = await buildApp({ db, now });
+  after(async () => {
+    await app.close();
+    db.close();
+  });
+
+  const response = await app.inject({ method: "GET", url: "/" });
+  assert.equal(response.statusCode, 200);
+  const body = pageBody(response.body);
+  const coverStart = body.indexOf('data-listing-id="lst-cover"');
+  const cover = body.slice(coverStart, body.indexOf("</article>", coverStart));
+  const underStart = body.indexOf('data-listing-id="lst-under"');
+  const under = body.slice(underStart, body.indexOf("</article>", underStart));
+  const whyAt = cover.indexOf("data-prize-before-price");
+  const takeAt = cover.indexOf('data-first-click="take"');
+  const hopLabelAt = cover.indexOf(">Test this today<");
+  const listAfterTakeAt = cover.indexOf('data-list-after-take=""');
+  const laterClaimAt = under.indexOf('data-claim-after-row=""');
+
+  assert.match(cover, /data-prize-before-price=""/);
+  assert.match(cover, /data-first-click="take"/);
+  assert.match(cover, />Test this today</);
+  assert.match(cover, /class="list-after-take-wrap list-after-cover"/);
+  assert.match(cover, /data-list-after-take=""/);
+  assert.match(cover, />List a product</);
+  assert.match(cover, /after Test this today/);
+  assert.doesNotMatch(cover, /data-list-after-why/);
+  assert.doesNotMatch(cover, /under this reason/);
+  assert.doesNotMatch(body, /data-list-under-cover=/);
+  assert.doesNotMatch(body, /class="masthead-list/);
+  assert.doesNotMatch(body, /under today’s cover/);
+  assert.doesNotMatch(body, /take-after-list-seven/);
+  assert.doesNotMatch(body, /list-after-take-seven/);
+  assert.equal((cover.match(/>List a product</g) ?? []).length, 1);
+  assert.equal((body.match(/data-list-after-cover=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-list-after-take=""/g) ?? []).length, 1);
+  assert.equal((body.match(/href="#claim"/g) ?? []).length, 1);
+  assert.equal((body.match(/data-first-click="take"/g) ?? []).length, 1);
+  assert.ok(whyAt > -1 && takeAt > whyAt && hopLabelAt > takeAt, "Test this today stays the one first click");
+  assert.ok(listAfterTakeAt > hopLabelAt, "one later List write sits after Take");
+  assert.ok(laterClaimAt > -1, "later merch claim-this-rank quiet already shipped — do not restamp");
+  assert.doesNotMatch(under, /List a product/);
+  assert.doesNotMatch(under, /data-list-after-cover=/);
+
+  const emptyApp = await buildApp({ databasePath: ":memory:" });
+  after(() => emptyApp.close());
+  const empty = await emptyApp.inject({ method: "GET", url: "/" });
+  const quiet = pageBody(empty.body);
+  assert.match(quiet, /data-empty-cover=""/);
+  assert.match(quiet, /data-first-click="claim"/);
+  assert.doesNotMatch(quiet, /List a product/);
+  assert.doesNotMatch(quiet, /data-list-after-cover=/);
+  assert.doesNotMatch(quiet, /data-list-after-take=/);
+  assert.doesNotMatch(quiet, /data-first-click="take"/);
 });
 
 test("SPEC acceptance 10: GET /about and GET /rules are 200", async () => {

@@ -101,10 +101,6 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
     ? html`<div class="cover-why" data-cover-why="">
       <p class="cover-why-label">Why test this today</p>
       <p class="cover-why-line" data-prize-before-price="">${blurb}</p>
-      <p class="list-after-why-wrap list-after-cover" data-list-after-cover="">
-        <a class="list-after-why" href="#claim" data-list-after-why="">List a product</a>
-        under this reason. Paying less than #1 still lists.
-      </p>
     </div>`
     : "";
   const coverHop = isCover
@@ -197,12 +193,6 @@ export function renderBoardBody(model: BoardViewModel): string {
           <p><strong>No listings yet today.</strong></p>
           <p>The desk is open. An empty morning is valid — not a broken site, not an invented cover. Bid ${escapeHtml(formatUsd(MIN_BID_USD))} to take the cover.</p>
         </div>`;
-  const listHop = occupied
-    ? html`<p class="masthead-list list-after-cover" data-list-after-cover="">
-    <a class="list-under-cover" href="#claim" data-list-under-cover="">List a product</a>
-    under today’s cover. Paying less than #1 still lists.
-  </p>`
-    : "";
   const deskAttrs = occupied
     ? ` data-occupied="true"${stripOccupied ? ' data-two-prizes=""' : ""}`
     : ` data-occupied="false" data-empty-claim-first=""${leftoverUnpaid ? ' data-unpaid-off=""' : ""}`;
@@ -248,7 +238,7 @@ export function renderBoardBody(model: BoardViewModel): string {
     ${formHint}
   </form>`;
 
-  // Occupied cover: Test this today is the one first click. List rails recede after that hop.
+  // Occupied cover: Test this today is the one first click. One later List write sits after Take.
   // Occupied morning: Take is the first click. Claim #1 is a later write after the cover.
   const claimAfterOpen = occupied
     ? html`<div class="claim-after-cover" data-claim-after-cover="">`
@@ -266,7 +256,6 @@ export function renderBoardBody(model: BoardViewModel): string {
     <span class="issue-tz">${escapeHtml(model.tz)}</span>
   </p>
   <p class="masthead-dek">One cover. Product URL plus why test this today. Rank is the bid.</p>
-  ${listHop}
 </header>
 <section id="leaderboard" aria-label="Today’s cover">
   ${rows}
