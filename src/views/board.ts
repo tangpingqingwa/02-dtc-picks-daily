@@ -220,11 +220,9 @@ export function renderBoardBody(model: BoardViewModel): string {
     : "";
   const bidForm = occupied
     ? html`<form id="bid-form" class="bid-form" method="post" action="/checkout">
-    <div class="bid-row">
-      <div class="later-listing" data-later-listing="">
-        ${productUrlField}
-      </div>
-      <button type="submit" class="outbid">Outbid</button>
+    <button type="submit" class="outbid">Outbid</button>
+    <div class="later-listing" data-later-listing="">
+      ${productUrlField}
     </div>
     ${formHint}
   </form>`
@@ -248,6 +246,7 @@ export function renderBoardBody(model: BoardViewModel): string {
   // Occupied write after List starts at Why — the prize line, not Product URL first.
   // Occupied List landing starts at Why — the prize line, not louder Claim #1 chrome first.
   // Occupied claim rail after Why land is later rail — quieter than Why, not a second first read.
+  // Occupied Product URL after later claim rail is later write — not a twin on the bid-row.
   const claimAfterOpen = occupied
     ? html`<div class="claim-after-cover" data-claim-after-cover="">`
     : "";
