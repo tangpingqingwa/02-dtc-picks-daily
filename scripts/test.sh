@@ -297,6 +297,10 @@ if [[ -f package.json ]]; then
     || fail "occupied why-first leftover test did not run"
   grep -q 'not Product URL first' "$test_log" \
     || fail "occupied why-first URL leftover test did not run"
+  grep -q 'starts occupied List landing at Why' "$test_log" \
+    || fail "occupied list-lands-why leftover test did not run"
+  grep -q 'not louder Claim #1 chrome first' "$test_log" \
+    || fail "occupied list-lands-why chrome leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -333,6 +337,10 @@ if [[ -f package.json ]]; then
     || fail "occupied listing field after List missing Why prize-line stamp"
   grep -q 'data-why-first' src/views/board.ts \
     || fail "occupied write after List missing Why-first stamp"
+  grep -q 'data-list-land' src/views/board.ts \
+    || fail "occupied List landing missing Why land stamp"
+  grep -q 'id="why"' src/views/board.ts \
+    || fail "occupied List landing missing Why land id"
   grep -q '>Why</label>' src/views/board.ts \
     || fail "occupied listing field after List must be labeled Why"
   if grep -q 'One-line listing' src/views/board.ts; then
@@ -372,12 +380,18 @@ if [[ -f package.json ]]; then
     || fail "occupied write CSS must name Why as the first write after List"
   grep -q 'why-first\[data-why-first\]' src/views/styles.ts \
     || fail "occupied write CSS missing Why-first composition"
+  grep -q 'Occupied List landing starts at Why' src/views/styles.ts \
+    || fail "occupied List landing CSS must name Why as the landing, not louder Claim #1 chrome"
+  grep -q 'why-first\[data-why-first\]\[data-list-land\]' src/views/styles.ts \
+    || fail "occupied List landing CSS missing Why land composition"
   grep -q 'Occupied later List write after Take is the only List label' src/views/board.ts \
     || fail "occupied claim rail must name the later List write as the only List label"
   grep -q 'Occupied listing field after List is Why' src/views/board.ts \
     || fail "occupied listing field after List must name Why as the prize line"
   grep -q 'Occupied write after List starts at Why' src/views/board.ts \
     || fail "occupied write after List must name Why as the first write"
+  grep -q 'Occupied List landing starts at Why' src/views/board.ts \
+    || fail "occupied List landing must name Why as the prize, not louder Claim #1 chrome"
   if grep -q 'class="claim-kicker"' src/views/board.ts; then
     fail "occupied claim rail must drop the second List kicker"
   fi
@@ -552,8 +566,8 @@ PY
     || fail "cover hop is not labeled Test this today"
   grep -q 'data-list-after-take' src/views/board.ts \
     || fail "paid morning missing one later List a product write after Take"
-  grep -q 'href="#claim"' src/views/board.ts \
-    || fail "seller hop does not jump to the listing form"
+  grep -q 'href="#why"' src/views/board.ts \
+    || fail "occupied List hop does not land at Why"
   grep -q 'data-cover-why' src/views/board.ts \
     || fail "paid cover missing labeled why-line"
   grep -q 'cover-why-line' src/views/board.ts \
@@ -966,24 +980,41 @@ if "${productUrlField}" not in occupied_form or ">Outbid<" not in occupied_form:
     raise SystemExit("occupied bid-row must still hold Product URL and Outbid")
 if "data-later-listing" not in occupied_form:
     raise SystemExit("occupied form must stamp later-listing off the paid name")
-if "${occupiedListingField}" not in occupied_form:
-    raise SystemExit("occupied claim rail must not wear the cover why placeholder")
 if "${whyField}" in occupied_form:
     raise SystemExit("occupied claim rail must drop empty Why later-write chrome")
-if "data-why-first" not in occupied_form:
-    raise SystemExit("occupied write after List must stamp Why first")
-why_first_at = occupied_form.find("data-why-first")
-why_field_at = occupied_form.find("${occupiedListingField}")
+if "data-why-first" in occupied_form or "${occupiedListingField}" in occupied_form:
+    raise SystemExit("occupied List landing Why must sit before Claim #1 chrome, not inside the bid-row form")
+if "data-list-land" in occupied_form or 'id="why"' in occupied_form:
+    raise SystemExit("occupied List Why land must not live inside the bid-row form")
 bid_row_at = occupied_form.find('class="bid-row"')
 url_at_occ = occupied_form.find("${productUrlField}")
-if why_first_at < 0 or why_field_at < 0 or bid_row_at < 0 or url_at_occ < 0:
-    raise SystemExit("occupied form must keep Why-first write, then Product URL")
-if not (why_first_at < why_field_at < bid_row_at < url_at_occ):
-    raise SystemExit("occupied write after List must start at Why, not Product URL first")
+if bid_row_at < 0 or url_at_occ < 0 or not (bid_row_at < url_at_occ):
+    raise SystemExit("occupied form must keep Product URL on the bid-row after Why landing")
+occupied_land = board.split("const occupiedWhyLand", 1)[-1].split("const bidForm", 1)[0]
+if 'id="why"' not in occupied_land or "data-list-land" not in occupied_land:
+    raise SystemExit("occupied List landing must stamp Why as the land")
+if "${occupiedListingField}" not in occupied_land:
+    raise SystemExit("occupied List landing must keep the Why prize-line listing field")
+if "data-why-first" not in occupied_land:
+    raise SystemExit("occupied write after List must stamp Why first")
+claim_open = board.split('<section id="claim"', 1)[-1]
+land_at = claim_open.find("${occupiedWhyLand}")
+title_at = claim_open.find("claim-title")
+form_at = claim_open.find("${bidForm}")
+if land_at < 0 or title_at < 0 or form_at < 0:
+    raise SystemExit("occupied List landing must compose Why before Claim #1 chrome")
+if not (land_at < title_at < form_at):
+    raise SystemExit("occupied List landing must start at Why, not louder Claim #1 chrome first")
+if 'href="#why"' not in board:
+    raise SystemExit("occupied List hop must land at Why")
+if 'href="#claim"' in board.split("list-after-take", 1)[-1].split("data-list-after-take-six", 1)[0]:
+    raise SystemExit("occupied List hop must not still land at Claim #1 chrome")
 if 'class="bid-row"' in empty_form_html:
     raise SystemExit("empty morning must not keep Product URL in the same claim rail as Outbid")
 if "data-why-first" in empty_form_html:
     raise SystemExit("empty morning must not start the write at Why")
+if "data-list-land" in empty_form_html or 'id="why"' in empty_form_html:
+    raise SystemExit("empty morning must not land List at Why")
 outbid_at = empty_form_html.find(">Outbid<")
 later_at = empty_form_html.find("data-later-write")
 url_at = empty_form_html.find("${productUrlField}")
@@ -1009,6 +1040,8 @@ if ".later-listing" not in hide or "[data-paid-name]" not in hide:
     raise SystemExit("empty CSS must keep paid-name and later-listing off empty")
 if ".why-first" not in hide:
     raise SystemExit("empty CSS must keep occupied Why-first write off empty")
+if "[data-list-land]" not in hide:
+    raise SystemExit("empty CSS must keep occupied List Why land off empty")
 if "claim-after-cover" not in hide:
     raise SystemExit("empty CSS must keep occupied later Claim wrap off empty")
 if "claim-after-row" not in hide:
@@ -1106,6 +1139,8 @@ if "What a seller should try this morning" in listing_field:
     raise SystemExit("occupied Why prize line must not copy empty later-write placeholder")
 if "One-line listing" in listing_field:
     raise SystemExit("occupied listing field after List must drop One-line listing")
+if 'form="bid-form"' not in listing_field:
+    raise SystemExit("occupied Why land must stay on the bid form when it sits before Claim #1 chrome")
 row_fn = board.split("export function renderListingRow", 1)[-1].split("export function renderBoardBody", 1)[0]
 if 'data-cover-name=""' not in row_fn:
     raise SystemExit("cover host must still stamp data-cover-name")
@@ -1170,17 +1205,19 @@ if ".desk:has(.empty) .later-listing" not in css:
     raise SystemExit("empty CSS must keep later-listing off empty")
 if ".desk:has(.empty) .why-first" not in css:
     raise SystemExit("empty CSS must keep occupied Why-first write off empty")
+if ".desk:has(.empty) [data-list-land]" not in css:
+    raise SystemExit("empty CSS must keep occupied List Why land off empty")
 if board.count("data-paid-name") < 1:
     raise SystemExit("data-paid-name must stamp occupied cover #1")
 if row_fn.count("data-paid-name") != 1:
     raise SystemExit("data-paid-name must stamp only occupied cover #1")
 if "What a seller should try this morning" not in board:
     raise SystemExit("empty Why later-write placeholder must stay")
-if "${occupiedListingField}" not in occupied_form:
-    raise SystemExit("occupied claim must use the Why prize-line listing field")
-if "What a seller should try this morning" in occupied_form:
+if "${occupiedListingField}" not in occupied_land:
+    raise SystemExit("occupied List landing must use the Why prize-line listing field")
+if "What a seller should try this morning" in occupied_land or "What a seller should try this morning" in occupied_form:
     raise SystemExit("occupied claim must drop the cover why placeholder")
-if "One-line listing" in occupied_form:
+if "One-line listing" in occupied_form or "One-line listing" in occupied_land:
     raise SystemExit("occupied claim must not keep One-line listing")
 if "isPaidListing" not in board or "paidListings" not in board:
     raise SystemExit("board view must drop unpaid occupancy before cover")
@@ -1206,6 +1243,8 @@ if ".desk[data-unpaid-off] .later-listing" not in unpaid_block:
     raise SystemExit("unpaid-off CSS must keep later-listing off leftover")
 if ".desk[data-unpaid-off] .why-first" not in unpaid_block:
     raise SystemExit("unpaid-off CSS must keep occupied Why-first write off leftover")
+if ".desk[data-unpaid-off] [data-list-land]" not in unpaid_block:
+    raise SystemExit("unpaid-off CSS must keep occupied List Why land off leftover")
 if ".desk[data-unpaid-off] .claim-after-row" not in unpaid_block:
     raise SystemExit("unpaid-off CSS must keep later-row claim-this-rank off leftover")
 if ".desk[data-unpaid-off] .list-after-cover" not in unpaid_block:
@@ -1404,10 +1443,14 @@ if "Occupied listing field after List is Why" not in board:
     raise SystemExit("occupied listing comment must name Why as the prize line after List")
 if "Occupied write after List starts at Why" not in board:
     raise SystemExit("occupied write comment must name Why as the first write after List")
-if 'data-prize-line=""' not in occupied_form and "${occupiedListingField}" not in occupied_form:
-    raise SystemExit("occupied form must keep the Why prize-line listing field")
-if 'data-why-first=""' not in occupied_form and "data-why-first" not in occupied_form:
-    raise SystemExit("occupied form must keep the Why-first write after List")
+if "Occupied List landing starts at Why" not in board:
+    raise SystemExit("occupied List landing comment must name Why as the prize, not louder Claim #1 chrome")
+if 'data-prize-line=""' not in occupied_land and "${occupiedListingField}" not in occupied_land:
+    raise SystemExit("occupied List landing must keep the Why prize-line listing field")
+if 'data-why-first=""' not in occupied_land and "data-why-first" not in occupied_land:
+    raise SystemExit("occupied List landing must keep the Why-first write after List")
+if 'data-list-land=""' not in occupied_land:
+    raise SystemExit("occupied List landing must stamp Why as the land")
 why_line_rule = css.split("Occupied listing field after List is Why — the prize line, not a second generic line.", 1)
 if len(why_line_rule) < 2:
     raise SystemExit("occupied listing CSS must name Why as the prize line after List")
@@ -1439,7 +1482,7 @@ if float(prize_line_size.group(1)) >= float(paid_size.group(1)):
 why_first_rule = css.split("Occupied write after List starts at Why — the prize line, not Product URL first.", 1)
 if len(why_first_rule) < 2:
     raise SystemExit("occupied write CSS must name Why as the first write after List")
-why_first_css = why_first_rule[1].split("Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name.", 1)[0]
+why_first_css = why_first_rule[1].split("Occupied List landing starts at Why — the prize line, not louder Claim #1 chrome first.", 1)[0]
 if ".desk[data-occupied=\"true\"] .why-first[data-why-first]" not in why_first_css:
     raise SystemExit("occupied write CSS must compose Why as the first write after List")
 if ".desk[data-occupied=\"true\"] .bid-row .later-listing[data-later-listing]" not in why_first_css:
@@ -1452,6 +1495,38 @@ if "empty-claim-first" in why_first_css or "data-why-later" in why_first_css or 
     raise SystemExit("occupied Why-first CSS must not swallow empty later-write or unpaid-off")
 if "claim-after-row" in why_first_css or "data-later-claim" in why_first_css:
     raise SystemExit("do not restamp later merch claim-this-rank")
+if "data-list-land" in why_first_css:
+    raise SystemExit("occupied Why-first CSS must not swallow List landing composition")
+land_rule = css.split("Occupied List landing starts at Why — the prize line, not louder Claim #1 chrome first.", 1)
+if len(land_rule) < 2:
+    raise SystemExit("occupied List landing CSS must name Why as the landing, not louder Claim #1 chrome")
+land_css = land_rule[1].split("Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name.", 1)[0]
+if ".desk[data-occupied=\"true\"] .why-first[data-why-first][data-list-land]" not in land_css:
+    raise SystemExit("occupied List landing CSS must compose Why as the land")
+if "claim-title" not in land_css:
+    raise SystemExit("occupied List landing CSS must recede Claim #1 chrome so it is not louder first")
+if "background:" in land_css or "var(--primary)" in land_css:
+    raise SystemExit("do not recolor occupied List landing")
+if "take-after-list-seven" in land_css or "list-after-take-seven" in land_css:
+    raise SystemExit("do not stamp another named hop on occupied List landing")
+if "empty-claim-first" in land_css or "data-why-later" in land_css or "data-unpaid-off" in land_css:
+    raise SystemExit("occupied List landing CSS must not swallow empty later-write or unpaid-off")
+if "claim-after-row" in land_css or "data-later-claim" in land_css:
+    raise SystemExit("do not restamp later merch claim-this-rank")
+land_title = re.search(
+    r"\.desk\[data-occupied=\"true\"\] \.claim-after-cover\[data-claim-after-cover\] #claim \.claim-title\s*\{[^}]*font-size:\s*([0-9.]+)rem",
+    land_css,
+)
+land_why = re.search(
+    r"\.desk\[data-occupied=\"true\"\] \.why-first\[data-why-first\]\[data-list-land\] \.why-field\[data-prize-line\] input\s*\{[^}]*font-size:\s*([0-9.]+)rem",
+    land_css,
+)
+if not land_title or not land_why:
+    raise SystemExit("occupied List landing Why and Claim #1 chrome must both have sizes")
+if float(land_title.group(1)) >= float(land_why.group(1)):
+    raise SystemExit("occupied List landing must not meet louder Claim #1 chrome first")
+if float(land_why.group(1)) >= float(take_h.group(1)):
+    raise SystemExit("occupied List landing Why must stay quieter than Test this today")
 if row_fn.find("data-cover-why") < 0 or "Why test this today" not in row_fn:
     raise SystemExit("Why must stay the prize on the occupied cover")
 PY
