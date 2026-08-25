@@ -228,6 +228,7 @@ nav[aria-label="Main"] a:hover {
 .desk:has(.empty) .row-cover,
 .desk:has(.empty) .later-stack,
 .desk:has(.empty) .later-listing,
+.desk:has(.empty) .why-first,
 .desk:has(.empty) [data-paid-name],
 .desk:has(.empty) .claim-kicker,
 .desk:has(.empty) .claim-after-cover,
@@ -559,6 +560,7 @@ nav[aria-label="Main"] a:hover {
 .desk[data-unpaid-off] .list-after-take,
 .desk[data-unpaid-off] .list-after-cover,
 .desk[data-unpaid-off] .later-listing,
+.desk[data-unpaid-off] .why-first,
 .desk[data-unpaid-off] .claim-kicker,
 .desk[data-unpaid-off] .claim-after-cover,
 .desk[data-unpaid-off] .claim-after-row {
@@ -1189,20 +1191,29 @@ a.row-link:hover { color: var(--primary); }
   color: var(--muted-foreground);
 }
 /* Occupied listing field after List is Why — the prize line, not a second generic line. */
-.desk[data-occupied="true"] .later-listing[data-later-listing] .why-field[data-prize-line] .field-label {
+.desk[data-occupied="true"] .why-first[data-why-first] .why-field[data-prize-line] .field-label {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
-.desk[data-occupied="true"] .later-listing[data-later-listing] .why-field[data-prize-line] input {
+.desk[data-occupied="true"] .why-first[data-why-first] .why-field[data-prize-line] input {
   height: 2.25rem;
   font-family: var(--serif);
   font-size: 1.05rem;
   font-weight: 650;
   letter-spacing: -0.02em;
   color: var(--foreground);
+}
+/* Occupied write after List starts at Why — the prize line, not Product URL first. */
+.desk[data-occupied="true"] .why-first[data-why-first] {
+  margin: 0 0 0.35rem;
+}
+.desk[data-occupied="true"] .bid-row .later-listing[data-later-listing] {
+  flex: 1;
+  min-width: 0;
+  margin-top: 0;
 }
 /* Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name. */
 .later-stack[data-later-stack] .row[data-later-rank] .claim-after-row[data-claim-after-row] {

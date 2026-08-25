@@ -4023,7 +4023,8 @@ test("GET / keeps empty morning Claim #1 the first click — product URL is a la
   assert.doesNotMatch(paid, /data-why-later=/);
   assert.doesNotMatch(paid, /Then why test this today/);
   assert.ok(paidBidRowAt > paidClaimAt && paidProductAt > paidBidRowAt, "occupied form still puts Product URL on the claim rail");
-  assert.ok(paidOutbidAt > paidProductAt && paidWhyAt > paidOutbidAt, "occupied Outbid still sits with Product URL, listing under");
+  assert.ok(paidWhyAt > paidClaimAt && paidWhyAt < paidBidRowAt, "occupied write after List starts at Why");
+  assert.ok(paidOutbidAt > paidProductAt, "occupied Outbid still sits with Product URL");
   assert.match(paid, /data-later-listing=""/);
   assert.match(paid, /data-prize-line=""/);
   assert.match(paid, />Why</);
@@ -4196,7 +4197,8 @@ test("GET / keeps empty morning Claim #1 the first click — Why test this today
   assert.doesNotMatch(paid, /data-why-later=/);
   assert.doesNotMatch(paid, /Then why test this today/);
   assert.ok(paidBidRowAt > paidClaimAt && paidProductAt > paidBidRowAt, "occupied form still puts Product URL on the claim rail");
-  assert.ok(paidOutbidAt > paidProductAt && paidWhyAt > paidOutbidAt, "occupied listing stays under Product URL + Outbid, not a later empty write");
+  assert.ok(paidWhyAt > paidClaimAt && paidWhyAt < paidBidRowAt, "occupied write after List starts at Why");
+  assert.ok(paidOutbidAt > paidProductAt, "occupied Outbid still sits with Product URL, not a later empty write");
   assert.match(paid, /data-later-listing=""/);
   assert.match(paid, /data-prize-line=""/);
   assert.match(paid, />Why</);
@@ -5014,7 +5016,7 @@ test("GET / keeps occupied morning one first click — Take the cover, Claim sta
   assert.ok(wrapAt > stripAt && claimAt > wrapAt, "Claim #1 is a later write after the cover");
   assert.ok(claimTitleAt > claimAt && outbidAt > claimTitleAt, "occupied Claim / Outbid sit on the later rail");
   assert.ok(productUrlAt > claimAt && productUrlAt > takeAt, "occupied Product URL stays with Outbid after the take");
-  assert.ok(laterListingAt > claimAt, "occupied Why prize line stays a later write after Claim, not on the prize");
+  assert.ok(laterListingAt > claimAt, "occupied listing stays on the claim rail after Claim, not on the prize");
 
   const hop = await app.inject({ method: "GET", url: "/r/lst-cover" });
   assert.equal(hop.statusCode, 302);
@@ -5731,16 +5733,16 @@ test("GET / keeps occupied later List write the only List label — claim rail d
 test("GET / keeps occupied listing field after List as Why — the prize line, not One-line listing", async () => {
   const css = BOARD_CSS;
   assert.match(css, /Occupied listing field after List is Why — the prize line, not a second generic line/);
-  assert.match(css, /\.desk\[data-occupied="true"\] \.later-listing\[data-later-listing\] \.why-field\[data-prize-line\]/);
+  assert.match(css, /\.desk\[data-occupied="true"\] \.why-first\[data-why-first\] \.why-field\[data-prize-line\]/);
   assert.doesNotMatch(css, /take-after-list-seven|list-after-take-seven/);
   const whyLineCss = (css.split("Occupied listing field after List is Why — the prize line, not a second generic line.", 2)[1] ?? "")
-    .split("Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name.")[0] ?? "";
+    .split("Occupied write after List starts at Why — the prize line, not Product URL first.")[0] ?? "";
   assert.match(whyLineCss, /why-field\[data-prize-line\]/);
   assert.doesNotMatch(whyLineCss, /var\(--primary\)/);
   assert.doesNotMatch(whyLineCss, /empty-claim-first|data-why-later|data-unpaid-off/);
   assert.doesNotMatch(whyLineCss, /claim-after-row|data-later-claim|take-after-list-seven/);
   const prizeLine = whyLineCss.match(
-    /\.desk\[data-occupied="true"\] \.later-listing\[data-later-listing\] \.why-field\[data-prize-line\] input\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
+    /\.desk\[data-occupied="true"\] \.why-first\[data-why-first\] \.why-field\[data-prize-line\] input\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
   );
   const laterListing = css.match(/\.later-listing\[data-later-listing\] \.field input\s*\{[^}]*font-size:\s*([0-9.]+)rem/);
   const coverWhy = css.match(/\.cover-why-line\[data-prize-before-price\]\s*\{[^}]*font-size:\s*([0-9.]+)rem/);
@@ -5837,8 +5839,8 @@ test("GET / keeps occupied listing field after List as Why — the prize line, n
   assert.ok(listAfterTakeAt > hopLabelAt && listLabelAt > listAfterTakeAt, "occupied later List write after Take stays the only List label");
   assert.ok(claimTitleAt > -1 && claimCopyAt > claimTitleAt, "occupied claim rail stays Claim #1");
   assert.ok(minusAt > claimCopyAt && plusAt > minusAt && outbidAt > plusAt, "occupied claim rail stays dashed $amount / ± / Outbid");
-  assert.ok(productUrlAt > plusAt && outbidAt > productUrlAt && laterListingAt > outbidAt, "occupied listing field stays under Product URL + Outbid");
-  assert.ok(prizeLineAt > laterListingAt && whyLabelAt > prizeLineAt, "after List, the listing field is Why — the prize line");
+  assert.ok(prizeLineAt > plusAt && whyLabelAt > prizeLineAt, "after List, the listing field is Why — the prize line");
+  assert.ok(laterListingAt > whyLabelAt && productUrlAt > laterListingAt && outbidAt > productUrlAt, "Product URL recedes after Why, still with Outbid");
   assert.ok(laterClaimAt > -1, "later merch claim-this-rank quiet already shipped — do not restamp");
 
   const emptyApp = await buildApp({ databasePath: ":memory:" });
@@ -5883,6 +5885,185 @@ test("GET / keeps occupied listing field after List as Why — the prize line, n
   assert.match(emptyCoverHtml, /data-first-click="claim"/);
   assert.match(emptyCoverHtml, /data-why-later=""/);
   assert.match(emptyCoverHtml, /data-last24h-prize=""/);
+  assert.doesNotMatch(emptyCoverHtml, /data-prize-line=/);
+  assert.doesNotMatch(emptyCoverHtml, />Why</);
+  assert.doesNotMatch(emptyCoverHtml, /One-line listing/);
+  assert.doesNotMatch(emptyCoverHtml, /This morning’s cover/);
+  assert.doesNotMatch(emptyCoverHtml, /data-two-prizes=/);
+});
+
+test("GET / starts occupied write after List at Why — the prize line, not Product URL first", async () => {
+  const css = BOARD_CSS;
+  assert.match(css, /Occupied write after List starts at Why — the prize line, not Product URL first/);
+  assert.match(css, /\.desk\[data-occupied="true"\] \.why-first\[data-why-first\]/);
+  assert.match(css, /\.desk\[data-occupied="true"\] \.bid-row \.later-listing\[data-later-listing\]/);
+  assert.doesNotMatch(css, /take-after-list-seven|list-after-take-seven/);
+  const whyFirstCss = (css.split("Occupied write after List starts at Why — the prize line, not Product URL first.", 2)[1] ?? "")
+    .split("Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name.")[0] ?? "";
+  assert.match(whyFirstCss, /why-first\[data-why-first\]/);
+  assert.match(whyFirstCss, /bid-row \.later-listing\[data-later-listing\]/);
+  assert.doesNotMatch(whyFirstCss, /var\(--primary\)/);
+  assert.doesNotMatch(whyFirstCss, /empty-claim-first|data-why-later|data-unpaid-off/);
+  assert.doesNotMatch(whyFirstCss, /claim-after-row|data-later-claim|take-after-list-seven/);
+  const prizeLine = css.match(
+    /\.desk\[data-occupied="true"\] \.why-first\[data-why-first\] \.why-field\[data-prize-line\] input\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
+  );
+  const laterListing = css.match(/\.later-listing\[data-later-listing\] \.field input\s*\{[^}]*font-size:\s*([0-9.]+)rem/);
+  const coverWhy = css.match(/\.cover-why-line\[data-prize-before-price\]\s*\{[^}]*font-size:\s*([0-9.]+)rem/);
+  const takeHeight = css.match(/\.take-after-list-six\s*\{[^}]*min-height:\s*([0-9.]+)rem/);
+  assert.ok(prizeLine && laterListing && coverWhy && takeHeight, "occupied Why-first write, receded URL, cover Why, and Take must all have sizes");
+  assert.ok(Number(prizeLine[1]) > Number(laterListing[1]), "occupied write after List starts at Why, not a louder Product URL");
+  assert.ok(Number(prizeLine[1]) < Number(coverWhy[1]), "occupied Why write stays quieter than the cover why prize");
+  assert.ok(Number(prizeLine[1]) < Number(takeHeight[1]), "occupied Why write stays quieter than Test this today");
+
+  const db = openDatabase(":memory:");
+  const now = new Date("2026-08-22T13:00:00.000Z");
+  const day = dayKey(now);
+  placeBid(db, {
+    id: "lst-cover",
+    day,
+    productUrl: "https://cover.example/apps/pick",
+    whyTestThisToday: "Cover app sellers should install this morning",
+    bidUsd: 20,
+    clicks: 3,
+    createdAt: "2026-08-22T09:00:00.000Z",
+  });
+  placeBid(db, {
+    id: "lst-under",
+    day,
+    productUrl: "https://under.example/sku",
+    whyTestThisToday: "Cheaper SKU still belongs on the brief",
+    bidUsd: 8,
+    clicks: 1,
+    createdAt: "2026-08-22T12:00:00.000Z",
+  });
+
+  const app = await buildApp({ db, now });
+  after(async () => {
+    await app.close();
+    db.close();
+  });
+
+  const response = await app.inject({ method: "GET", url: "/" });
+  assert.equal(response.statusCode, 200);
+  const body = pageBody(response.body);
+  const coverStart = body.indexOf('data-listing-id="lst-cover"');
+  const cover = body.slice(coverStart, body.indexOf("</article>", coverStart));
+  const underStart = body.indexOf('data-listing-id="lst-under"');
+  const under = body.slice(underStart, body.indexOf("</article>", underStart));
+  const claimAt = body.indexOf('id="claim"');
+  const claim = body.slice(claimAt);
+  const whyPrizeAt = cover.indexOf("data-prize-before-price");
+  const takeAt = cover.indexOf('data-first-click="take"');
+  const hopLabelAt = cover.indexOf(">Test this today<");
+  const listAfterTakeAt = cover.indexOf('data-list-after-take=""');
+  const listLabelAt = cover.indexOf(">List a product<");
+  const laterClaimAt = under.indexOf('data-claim-after-row=""');
+  const claimTitleAt = claim.indexOf('class="claim-title"');
+  const claimCopyAt = claim.indexOf("Claim #1 for");
+  const minusAt = claim.indexOf('data-bid-step="-1"');
+  const plusAt = claim.indexOf('data-bid-step="1"');
+  const outbidAt = claim.indexOf(">Outbid<");
+  const whyFirstAt = claim.indexOf('data-why-first=""');
+  const prizeLineAt = claim.indexOf('data-prize-line=""');
+  const whyLabelAt = claim.indexOf(">Why<");
+  const whyAt = claim.indexOf('name="whyTestThisToday"');
+  const laterListingAt = claim.indexOf('data-later-listing=""');
+  const productUrlAt = claim.indexOf('name="productUrl"');
+
+  assert.match(cover, /data-prize-before-price=""/);
+  assert.match(cover, /data-first-click="take"/);
+  assert.match(cover, />Test this today</);
+  assert.match(cover, /data-list-after-take=""/);
+  assert.match(cover, />List a product</);
+  assert.match(cover, /after Test this today/);
+  assert.match(claim, /Claim #1 for/);
+  assert.match(claim, /class="bid-field"/);
+  assert.match(claim, />Outbid</);
+  assert.match(claim, /data-why-first=""/);
+  assert.match(claim, /data-prize-line=""/);
+  assert.match(claim, />Why</);
+  assert.match(claim, /placeholder="Why test this today"/);
+  assert.match(claim, /data-later-listing=""/);
+  assert.match(claim, /name="productUrl"/);
+  assert.doesNotMatch(claim, /One-line listing/);
+  assert.doesNotMatch(claim, /What a seller should try this morning/);
+  assert.doesNotMatch(claim, /Then why test this today/);
+  assert.doesNotMatch(claim, /data-why-later=/);
+  assert.doesNotMatch(claim, /List a product/);
+  assert.doesNotMatch(cover, /data-why-first=/);
+  assert.doesNotMatch(cover, /data-prize-line=/);
+  assert.doesNotMatch(under, /data-why-first=/);
+  assert.doesNotMatch(body, /One-line listing/);
+  assert.doesNotMatch(body, /take-after-list-seven/);
+  assert.doesNotMatch(body, /list-after-take-seven/);
+  assert.equal((body.match(/data-why-first=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-prize-line=""/g) ?? []).length, 1);
+  assert.equal((body.match(/>Why</g) ?? []).length, 1);
+  assert.equal((body.match(/data-list-after-take=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-first-click="take"/g) ?? []).length, 1);
+  assert.ok(whyPrizeAt > -1 && takeAt > whyPrizeAt && hopLabelAt > takeAt, "Why stays the prize on the cover; Take stays the one first click");
+  assert.ok(listAfterTakeAt > hopLabelAt && listLabelAt > listAfterTakeAt, "occupied later List write after Take stays the only List label");
+  assert.ok(claimTitleAt > -1 && claimCopyAt > claimTitleAt, "occupied claim rail stays Claim #1");
+  assert.ok(minusAt > claimCopyAt && plusAt > minusAt && outbidAt > plusAt, "occupied claim rail stays dashed $amount / ± / Outbid");
+  assert.ok(whyFirstAt > plusAt && prizeLineAt > whyFirstAt && whyLabelAt > prizeLineAt && whyAt > whyLabelAt, "occupied write after List starts at Why — the prize line");
+  assert.ok(laterListingAt > whyAt && productUrlAt > laterListingAt && outbidAt > productUrlAt, "Product URL recedes after Why, not louder above it");
+  assert.ok(laterClaimAt > -1, "later merch claim-this-rank quiet already shipped — do not restamp");
+
+  const emptyApp = await buildApp({ databasePath: ":memory:" });
+  after(() => emptyApp.close());
+  const empty = await emptyApp.inject({ method: "GET", url: "/" });
+  const quiet = pageBody(empty.body);
+  const quietClaimAt = quiet.indexOf('id="claim"');
+  const quietFirstAt = quiet.indexOf('data-first-click="claim"');
+  const quietOutbidAt = quiet.indexOf(">Outbid<");
+  const quietUrlAt = quiet.indexOf('name="productUrl"');
+  const quietWhyLaterAt = quiet.indexOf('data-why-later=""');
+  const quietWhyAt = quiet.indexOf('name="whyTestThisToday"');
+  assert.match(quiet, /data-empty-cover=""/);
+  assert.match(quiet, /data-first-click="claim"/);
+  assert.match(quiet, /Claim #1 for/);
+  assert.match(quiet, /data-why-later=""/);
+  assert.match(quiet, /Then the product URL/);
+  assert.match(quiet, /Then why test this today/);
+  assert.doesNotMatch(quiet, /data-why-first=/);
+  assert.doesNotMatch(quiet, /data-prize-line=/);
+  assert.doesNotMatch(quiet, />Why</);
+  assert.doesNotMatch(quiet, /One-line listing/);
+  assert.doesNotMatch(quiet, /List a product/);
+  assert.doesNotMatch(quiet, /data-list-after-take=/);
+  assert.doesNotMatch(quiet, /data-first-click="take"/);
+  assert.ok(quietClaimAt > -1 && quietFirstAt > quietClaimAt, "empty morning still starts at Claim #1");
+  assert.ok(quietOutbidAt > quietFirstAt && quietUrlAt > quietOutbidAt, "empty morning still writes Product URL after Claim #1");
+  assert.ok(quietWhyLaterAt > quietUrlAt && quietWhyAt > quietWhyLaterAt, "empty morning still writes Why after Product URL");
+
+  const emptyCoverHtml = pageBody(renderBoardPage({
+    day: "2026-08-23",
+    tz: "UTC",
+    listings: [],
+    last24h: [
+      {
+        id: "lst-last-night",
+        day: "2026-08-22",
+        productUrl: "https://overnight.example/sku",
+        whyTestThisToday: "Last night’s $6 still belongs on the last-24h strip",
+        bidUsd: 6,
+        paidUsd: 6,
+        clicks: 0,
+        createdAt: "2026-08-22T12:00:00.000Z",
+        updatedAt: "2026-08-22T12:00:00.000Z",
+        rank: 1,
+      },
+    ],
+    defaultBidUsd: 5,
+    now: new Date("2026-08-23T00:30:00.000Z"),
+  }));
+  assert.match(emptyCoverHtml, /data-empty-cover=""/);
+  assert.match(emptyCoverHtml, /data-first-click="claim"/);
+  assert.match(emptyCoverHtml, /data-why-later=""/);
+  assert.match(emptyCoverHtml, /Then the product URL/);
+  assert.match(emptyCoverHtml, /Then why test this today/);
+  assert.doesNotMatch(emptyCoverHtml, /data-why-first=/);
   assert.doesNotMatch(emptyCoverHtml, /data-prize-line=/);
   assert.doesNotMatch(emptyCoverHtml, />Why</);
   assert.doesNotMatch(emptyCoverHtml, /One-line listing/);
