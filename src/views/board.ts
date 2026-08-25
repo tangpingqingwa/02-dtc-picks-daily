@@ -101,7 +101,7 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
     ? html`<div class="cover-why" data-cover-why="">
       <p class="cover-why-label">Why test this today</p>
       <p class="cover-why-line" data-prize-before-price="">${blurb}</p>
-      <p class="list-after-why-wrap">
+      <p class="list-after-why-wrap list-after-cover" data-list-after-cover="">
         <a class="list-after-why" href="#claim" data-list-after-why="">List a product</a>
         under this reason. Paying less than #1 still lists.
       </p>
@@ -113,7 +113,7 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
       </p>`
     : "";
   const listAfterTake = isCover
-    ? html`<p class="list-after-take-wrap">
+    ? html`<p class="list-after-take-wrap list-after-cover" data-list-after-cover="">
         <a class="list-after-take list-after-take-first list-after-take-two list-after-take-three list-after-take-four list-after-take-five list-after-take-six" href="#claim" data-list-after-take="" data-first-write="list" data-list-after-take-two="" data-list-after-take-three="" data-list-after-take-four="" data-list-after-take-five="" data-list-after-take-six="">List a product</a>
         after Test this today. Paying less than #1 still lists.
       </p>`
@@ -198,7 +198,7 @@ export function renderBoardBody(model: BoardViewModel): string {
           <p>The desk is open. An empty morning is valid — not a broken site, not an invented cover. Bid ${escapeHtml(formatUsd(MIN_BID_USD))} to take the cover.</p>
         </div>`;
   const listHop = occupied
-    ? html`<p class="masthead-list">
+    ? html`<p class="masthead-list list-after-cover" data-list-after-cover="">
     <a class="list-under-cover" href="#claim" data-list-under-cover="">List a product</a>
     under today’s cover. Paying less than #1 still lists.
   </p>`
@@ -248,6 +248,7 @@ export function renderBoardBody(model: BoardViewModel): string {
     ${formHint}
   </form>`;
 
+  // Occupied cover: Test this today is the one first click. List rails recede after that hop.
   // Occupied morning: Take is the first click. Claim #1 is a later write after the cover.
   const claimAfterOpen = occupied
     ? html`<div class="claim-after-cover" data-claim-after-cover="">`
