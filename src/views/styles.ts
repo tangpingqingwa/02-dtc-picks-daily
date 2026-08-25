@@ -229,7 +229,8 @@ nav[aria-label="Main"] a:hover {
 .desk:has(.empty) .later-listing,
 .desk:has(.empty) [data-paid-name],
 .desk:has(.empty) .claim-kicker,
-.desk:has(.empty) .claim-after-cover {
+.desk:has(.empty) .claim-after-cover,
+.desk:has(.empty) .claim-after-row {
   display: none;
 }
 .desk:has(.empty) #claim .claim-title {
@@ -563,7 +564,8 @@ nav[aria-label="Main"] a:hover {
 .desk[data-unpaid-off] .list-after-take,
 .desk[data-unpaid-off] .later-listing,
 .desk[data-unpaid-off] .claim-kicker,
-.desk[data-unpaid-off] .claim-after-cover {
+.desk[data-unpaid-off] .claim-after-cover,
+.desk[data-unpaid-off] .claim-after-row {
   display: none;
 }
 .claim-note[data-unpaid-off] {
@@ -1024,29 +1026,23 @@ a.row-link:hover { color: var(--primary); }
   75%, 100% { transform: scale(2); opacity: 0; }
 }
 .claim-rank {
-  position: absolute;
-  left: 50%;
-  top: 0.375rem;
-  z-index: 20;
-  transform: translateX(-50%);
+  display: inline;
+  margin: 0;
   border: 0;
-  border-radius: 2px;
-  background: var(--primary);
-  color: var(--primary-foreground);
-  padding: 0.125rem 0.625rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  padding: 0;
+  background: none;
+  color: var(--muted-foreground);
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
   white-space: nowrap;
-  box-shadow: 0 1px 2px rgb(40 38 36 / 0.12);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s;
 }
-.row:hover .claim-rank,
-.row:focus-within .claim-rank {
-  opacity: 1;
-  pointer-events: auto;
+.claim-rank:hover,
+.claim-rank:focus {
+  color: var(--foreground);
 }
 .row-cover {
   margin: 0 0 1rem;
@@ -1076,6 +1072,8 @@ a.row-link:hover { color: var(--primary); }
   text-wrap: pretty;
 }
 .later-stack[data-later-stack] .row[data-later-rank] {
+  display: flex;
+  flex-direction: column;
   padding-left: 0;
   padding-right: 0;
 }
@@ -1153,6 +1151,21 @@ a.row-link:hover { color: var(--primary); }
 .later-listing[data-later-listing] .field input {
   height: 1.85rem;
   font-size: 0.78rem;
+  color: var(--muted-foreground);
+}
+/* Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name. */
+.later-stack[data-later-stack] .row[data-later-rank] .claim-after-row[data-claim-after-row] {
+  margin: 0 0 0.2rem;
+  padding: 0 0 0.05rem 1.85rem;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+}
+.later-stack[data-later-stack] .row[data-later-rank] .claim-after-row[data-claim-after-row] .claim-rank {
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   color: var(--muted-foreground);
 }
 .row-1 .rank {

@@ -273,6 +273,10 @@ if [[ -f package.json ]]; then
     || fail "occupied take-before-claim leftover test did not run"
   grep -q 'Take the cover, Claim stays after' "$test_log" \
     || fail "occupied Claim-after-cover leftover test did not run"
+  grep -q 'occupied later merch claim-this-rank quieter than Take' "$test_log" \
+    || fail "later-claim-quiet leftover test did not run"
+  grep -q 'cover stays the prize' "$test_log" \
+    || fail "later-claim-quiet prize leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -339,6 +343,14 @@ if [[ -f package.json ]]; then
     || fail "occupied claim must use the claim-after-cover wrap"
   grep -q 'claim-after-cover\[data-claim-after-cover\]' src/views/styles.ts \
     || fail "occupied morning CSS missing claim-after-cover composition"
+  grep -q 'data-claim-after-row' src/views/board.ts \
+    || fail "occupied later merch missing claim-after-row wrap on claim-this-rank"
+  grep -q 'claim-after-row' src/views/board.ts \
+    || fail "later merch must wrap claim-this-rank as claim-after-row"
+  grep -q 'claim-after-row\[data-claim-after-row\]' src/views/styles.ts \
+    || fail "later merch CSS missing claim-after-row later-write composition"
+  grep -q 'not a filled pill on the name' src/views/styles.ts \
+    || fail "later merch CSS must name claim-this-rank as not a filled pill"
   if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven|data-later-rank-quiet|data-later-quiet|data-why-later-quiet|data-paid-name-quiet|data-unpaid-off-quiet|data-unpaid-off-board|data-later-claim|data-later-claim-quiet' \
     src/views/board.ts src/views/styles.ts >/dev/null; then
     fail "do not stamp another named hop; compose empty vs occupied"
@@ -922,6 +934,8 @@ if ".later-listing" not in hide or "[data-paid-name]" not in hide:
     raise SystemExit("empty CSS must keep paid-name and later-listing off empty")
 if "claim-after-cover" not in hide:
     raise SystemExit("empty CSS must keep occupied later Claim wrap off empty")
+if "claim-after-row" not in hide:
+    raise SystemExit("empty CSS must keep later-row claim-this-rank off empty")
 if "display: none" not in block:
     raise SystemExit("empty occupied chrome must stay off, not restyled")
 if "background:" in hide:
@@ -1096,6 +1110,8 @@ if ".desk[data-unpaid-off] .cover-hop" not in unpaid_block:
     raise SystemExit("unpaid-off CSS must keep occupied cover hops off leftover")
 if ".desk[data-unpaid-off] .later-listing" not in unpaid_block:
     raise SystemExit("unpaid-off CSS must keep later-listing off leftover")
+if ".desk[data-unpaid-off] .claim-after-row" not in unpaid_block:
+    raise SystemExit("unpaid-off CSS must keep later-row claim-this-rank off leftover")
 if "display: none" not in unpaid_block:
     raise SystemExit("unpaid leftover cover must stay off, not restyled")
 if "background:" in unpaid_block or "var(--primary)" in unpaid_block:
@@ -1168,6 +1184,56 @@ if "data-later-claim" in board or "#claim.later-claim" in css:
 row_cover = row_fn.split("if (isCover)", 1)[-1].split("const claim =", 1)[0]
 if "claim-rank" in row_cover or "claim this rank" in row_cover:
     raise SystemExit("occupied cover must not hang Claim on the prize")
+if "data-claim-after-row" in row_cover:
+    raise SystemExit("occupied cover must not wrap claim-this-rank on the prize")
+later_row = row_fn.split("const claim =", 1)[-1]
+if 'data-claim-after-row=""' not in later_row or 'class="claim-after-row"' not in later_row:
+    raise SystemExit("later merch must wrap claim-this-rank as a later write after the product")
+dek_at = later_row.find('class="dek"')
+link_end = later_row.find("</a>")
+claim_wrap = later_row.find("data-claim-after-row")
+claim_btn = later_row.find("claim this rank")
+if dek_at < 0 or link_end < 0 or claim_wrap < 0 or claim_btn < 0:
+    raise SystemExit("later merch must keep the product, then claim-this-rank")
+if not (dek_at < link_end < claim_wrap < claim_btn):
+    raise SystemExit("claim-this-rank must recede after the later product, not sit on the name")
+if later_row.find("class=\"claim-rank\"") < claim_wrap:
+    raise SystemExit("claim-rank node must live inside the later-write wrap")
+if 'data-claim-after-row=""' not in board:
+    raise SystemExit("later merch must stamp data-claim-after-row")
+if "data-later-claim-quiet" in board or "data-later-claim" in board:
+    raise SystemExit("stamp-only later-claim mute is REJECT")
+if ".row:hover .claim-rank" in css:
+    raise SystemExit("claim-this-rank must not hover-reveal a pill on the product")
+claim_rank_css = re.search(r"\.claim-rank\s*\{[^}]*\}", css)
+if not claim_rank_css:
+    raise SystemExit("claim-this-rank CSS missing")
+pill = claim_rank_css.group(0)
+if "position: absolute" in pill or "position:absolute" in pill:
+    raise SystemExit("claim-this-rank must leave the overlay on the product name")
+if "var(--primary)" in pill:
+    raise SystemExit("later claim-this-rank must not stay a filled primary pill")
+later_write_rule = css.split("Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name.", 1)
+if len(later_write_rule) < 2:
+    raise SystemExit("later merch CSS must name claim-this-rank as a quieter later write")
+later_write_css = later_write_rule[1].split(".row-1 .rank", 1)[0]
+if ".later-stack[data-later-stack] .row[data-later-rank] .claim-after-row[data-claim-after-row]" not in later_write_css:
+    raise SystemExit("later merch CSS must compose claim-after-row after the product")
+if "background:" in later_write_css or "var(--primary)" in later_write_css:
+    raise SystemExit("do not recolor later merch claim-this-rank")
+if "take-after-list-seven" in later_write_css or "data-later-claim" in later_write_css:
+    raise SystemExit("do not stamp another named hop on later claim-this-rank")
+if "empty-claim-first" in later_write_css or "data-why-later" in later_write_css or "data-unpaid-off" in later_write_css:
+    raise SystemExit("later merch claim CSS must not swallow empty later-write or unpaid-off")
+row_claim_size = re.search(r"font-size:\s*([0-9.]+)rem", later_write_css)
+if not row_claim_size:
+    raise SystemExit("later merch claim-this-rank must recede in size")
+if float(row_claim_size.group(1)) >= float(take_h.group(1)):
+    raise SystemExit("later merch claim-this-rank must stay quieter than Test this today")
+if float(row_claim_size.group(1)) >= float(paid_size.group(1)):
+    raise SystemExit("later merch claim-this-rank must stay quieter than the paid cover name")
+if ".desk:has(.empty) .claim-after-row" not in css:
+    raise SystemExit("empty CSS must keep later-row claim-this-rank off empty")
 PY
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"

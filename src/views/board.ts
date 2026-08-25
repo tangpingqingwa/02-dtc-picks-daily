@@ -156,7 +156,9 @@ export function renderListingRow(listing: RankedListing, now?: Date): string {
     </div>`;
   return html`<article class="row${topClass}" data-rank="${rank}" data-listing-id="${escapeHtml(listing.id)}" data-later-rank="">
   <a class="row-link" href="${href}">${inner}</a>
-  <button type="button" class="claim-rank" data-claim-bid="${claimRankUsd(listing)}">claim this rank for ${claim}</button>
+  <p class="claim-after-row" data-claim-after-row="">
+    <button type="button" class="claim-rank" data-claim-bid="${claimRankUsd(listing)}">claim this rank for ${claim}</button>
+  </p>
 </article>`;
 }
 
