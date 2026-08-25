@@ -285,6 +285,10 @@ if [[ -f package.json ]]; then
     || fail "occupied one-later-List leftover test did not run"
   grep -q 'not three List rails' "$test_log" \
     || fail "occupied one-later-List collapse leftover test did not run"
+  grep -q 'occupied later List write the only List label' "$test_log" \
+    || fail "occupied one-List-label leftover test did not run"
+  grep -q 'claim rail drops the second List' "$test_log" \
+    || fail "occupied claim-rail List-label leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -345,6 +349,14 @@ if [[ -f package.json ]]; then
     || fail "paid-name CSS missing occupied cover identity"
   grep -q 'later-listing\[data-later-listing\]' src/views/styles.ts \
     || fail "occupied claim CSS missing later-listing composition"
+  grep -q 'Occupied later List write after Take is the only List label' src/views/board.ts \
+    || fail "occupied claim rail must name the later List write as the only List label"
+  if grep -q 'class="claim-kicker"' src/views/board.ts; then
+    fail "occupied claim rail must drop the second List kicker"
+  fi
+  if grep -q 'claimKicker' src/views/board.ts; then
+    fail "occupied claim rail must not keep a List kicker variable"
+  fi
   grep -q 'data-claim-after-cover' src/views/board.ts \
     || fail "occupied morning missing claim-after-cover wrap on Claim #1"
   grep -q 'claim-after-cover' src/views/board.ts \
@@ -1313,6 +1325,23 @@ if "data-prize-before-price" not in board:
     raise SystemExit("why must stay the occupied cover prize")
 if 'data-claim-after-row=""' not in board:
     raise SystemExit("later merch claim-this-rank quiet already shipped — do not drop it")
+if "claimKicker" in board or 'class="claim-kicker"' in board:
+    raise SystemExit("occupied claim rail must drop the second List kicker")
+if board.count(">List a product<") != 1:
+    raise SystemExit("occupied later List write after Take should stay the only List label")
+claim_src = board.split('id="claim"', 1)[-1]
+if "List a product" in claim_src:
+    raise SystemExit("claim rail must not label a second List")
+if "${claimCopy}" not in claim_src or "${bidForm}" not in claim_src:
+    raise SystemExit("claim rail must stay Claim #1 / Outbid")
+if 'data-bid-step="-1"' not in claim_src or 'data-bid-step="1"' not in claim_src:
+    raise SystemExit("claim rail must stay dashed $amount / ±")
+if "Claim #1 for" not in board or ">Outbid<" not in board:
+    raise SystemExit("claim rail must keep Claim #1 / Outbid copy")
+if ".desk[data-occupied=\"true\"] .claim-after-cover[data-claim-after-cover] #claim .claim-kicker" in css:
+    raise SystemExit("occupied claim CSS must not restyle a second List kicker")
+if "Occupied later List write after Take is the only List label" not in board:
+    raise SystemExit("occupied claim rail comment must name the only List label")
 PY
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"

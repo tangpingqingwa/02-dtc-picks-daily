@@ -371,12 +371,6 @@ nav[aria-label="Main"] a:hover {
   padding-top: 1.1rem;
   border-top: 1px dashed var(--border);
 }
-.desk[data-occupied="true"] .claim-after-cover[data-claim-after-cover] #claim .claim-kicker {
-  font-size: 0.58rem;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  color: var(--muted-foreground);
-}
 .desk[data-occupied="true"] .claim-after-cover[data-claim-after-cover] #claim .claim-title {
   font-size: 1.15rem;
   font-weight: 500;
