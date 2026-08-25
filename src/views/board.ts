@@ -215,12 +215,14 @@ export function renderBoardBody(model: BoardViewModel): string {
   const formHint = html`<p class="form-hint">Already on the list? Enter the same URL and up your bid. You pay only the difference.</p>`;
   const bidForm = occupied
     ? html`<form id="bid-form" class="bid-form" method="post" action="/checkout">
-    <div class="bid-row">
-      ${productUrlField}
-      <button type="submit" class="outbid">Outbid</button>
-    </div>
-    <div class="later-listing" data-later-listing="">
+    <div class="why-first" data-why-first="">
       ${occupiedListingField}
+    </div>
+    <div class="bid-row">
+      <div class="later-listing" data-later-listing="">
+        ${productUrlField}
+      </div>
+      <button type="submit" class="outbid">Outbid</button>
     </div>
     ${formHint}
   </form>`
@@ -241,6 +243,7 @@ export function renderBoardBody(model: BoardViewModel): string {
   // Occupied morning: Take is the first click. Claim #1 is a later write after the cover.
   // Occupied later List write after Take is the only List label. Claim rail is Claim #1 / dashed $amount / ± / Outbid.
   // Occupied listing field after List is Why — the prize line, not a second generic line.
+  // Occupied write after List starts at Why — the prize line, not Product URL first.
   const claimAfterOpen = occupied
     ? html`<div class="claim-after-cover" data-claim-after-cover="">`
     : "";
@@ -329,7 +332,7 @@ ${claimAfterClose}
       btn.addEventListener("click", function () {
         input.value = String(btn.getAttribute("data-claim-bid"));
         sync();
-        var field = document.getElementById("productUrl");
+        var field = document.getElementById("whyTestThisToday") || document.getElementById("productUrl");
         if (field) field.focus();
         document.getElementById("claim").scrollIntoView({ behavior: "smooth", block: "start" });
       });

@@ -293,6 +293,10 @@ if [[ -f package.json ]]; then
     || fail "occupied list-why leftover test did not run"
   grep -q 'the prize line, not One-line listing' "$test_log" \
     || fail "occupied Why prize-line leftover test did not run"
+  grep -q 'starts occupied write after List at Why' "$test_log" \
+    || fail "occupied why-first leftover test did not run"
+  grep -q 'not Product URL first' "$test_log" \
+    || fail "occupied why-first URL leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -327,6 +331,8 @@ if [[ -f package.json ]]; then
     || fail "occupied claim rail missing later-listing stamp"
   grep -q 'data-prize-line' src/views/board.ts \
     || fail "occupied listing field after List missing Why prize-line stamp"
+  grep -q 'data-why-first' src/views/board.ts \
+    || fail "occupied write after List missing Why-first stamp"
   grep -q '>Why</label>' src/views/board.ts \
     || fail "occupied listing field after List must be labeled Why"
   if grep -q 'One-line listing' src/views/board.ts; then
@@ -362,10 +368,16 @@ if [[ -f package.json ]]; then
     || fail "occupied listing CSS must name Why as the prize line after List"
   grep -q 'why-field\[data-prize-line\]' src/views/styles.ts \
     || fail "occupied listing CSS missing Why prize-line composition"
+  grep -q 'Occupied write after List starts at Why' src/views/styles.ts \
+    || fail "occupied write CSS must name Why as the first write after List"
+  grep -q 'why-first\[data-why-first\]' src/views/styles.ts \
+    || fail "occupied write CSS missing Why-first composition"
   grep -q 'Occupied later List write after Take is the only List label' src/views/board.ts \
     || fail "occupied claim rail must name the later List write as the only List label"
   grep -q 'Occupied listing field after List is Why' src/views/board.ts \
     || fail "occupied listing field after List must name Why as the prize line"
+  grep -q 'Occupied write after List starts at Why' src/views/board.ts \
+    || fail "occupied write after List must name Why as the first write"
   if grep -q 'class="claim-kicker"' src/views/board.ts; then
     fail "occupied claim rail must drop the second List kicker"
   fi
@@ -958,8 +970,20 @@ if "${occupiedListingField}" not in occupied_form:
     raise SystemExit("occupied claim rail must not wear the cover why placeholder")
 if "${whyField}" in occupied_form:
     raise SystemExit("occupied claim rail must drop empty Why later-write chrome")
+if "data-why-first" not in occupied_form:
+    raise SystemExit("occupied write after List must stamp Why first")
+why_first_at = occupied_form.find("data-why-first")
+why_field_at = occupied_form.find("${occupiedListingField}")
+bid_row_at = occupied_form.find('class="bid-row"')
+url_at_occ = occupied_form.find("${productUrlField}")
+if why_first_at < 0 or why_field_at < 0 or bid_row_at < 0 or url_at_occ < 0:
+    raise SystemExit("occupied form must keep Why-first write, then Product URL")
+if not (why_first_at < why_field_at < bid_row_at < url_at_occ):
+    raise SystemExit("occupied write after List must start at Why, not Product URL first")
 if 'class="bid-row"' in empty_form_html:
     raise SystemExit("empty morning must not keep Product URL in the same claim rail as Outbid")
+if "data-why-first" in empty_form_html:
+    raise SystemExit("empty morning must not start the write at Why")
 outbid_at = empty_form_html.find(">Outbid<")
 later_at = empty_form_html.find("data-later-write")
 url_at = empty_form_html.find("${productUrlField}")
@@ -983,6 +1007,8 @@ if ".cover-hop" not in hide or ".cover-later" not in hide or ".list-under-cover"
     raise SystemExit("empty CSS must keep occupied cover hops off empty")
 if ".later-listing" not in hide or "[data-paid-name]" not in hide:
     raise SystemExit("empty CSS must keep paid-name and later-listing off empty")
+if ".why-first" not in hide:
+    raise SystemExit("empty CSS must keep occupied Why-first write off empty")
 if "claim-after-cover" not in hide:
     raise SystemExit("empty CSS must keep occupied later Claim wrap off empty")
 if "claim-after-row" not in hide:
@@ -1142,6 +1168,8 @@ if ".desk:has(.empty) .later-stack" not in css:
     raise SystemExit("empty CSS must keep later-stack off empty")
 if ".desk:has(.empty) .later-listing" not in css:
     raise SystemExit("empty CSS must keep later-listing off empty")
+if ".desk:has(.empty) .why-first" not in css:
+    raise SystemExit("empty CSS must keep occupied Why-first write off empty")
 if board.count("data-paid-name") < 1:
     raise SystemExit("data-paid-name must stamp occupied cover #1")
 if row_fn.count("data-paid-name") != 1:
@@ -1176,6 +1204,8 @@ if ".desk[data-unpaid-off] .cover-hop" not in unpaid_block:
     raise SystemExit("unpaid-off CSS must keep occupied cover hops off leftover")
 if ".desk[data-unpaid-off] .later-listing" not in unpaid_block:
     raise SystemExit("unpaid-off CSS must keep later-listing off leftover")
+if ".desk[data-unpaid-off] .why-first" not in unpaid_block:
+    raise SystemExit("unpaid-off CSS must keep occupied Why-first write off leftover")
 if ".desk[data-unpaid-off] .claim-after-row" not in unpaid_block:
     raise SystemExit("unpaid-off CSS must keep later-row claim-this-rank off leftover")
 if ".desk[data-unpaid-off] .list-after-cover" not in unpaid_block:
@@ -1372,13 +1402,17 @@ if "Occupied later List write after Take is the only List label" not in board:
     raise SystemExit("occupied claim rail comment must name the only List label")
 if "Occupied listing field after List is Why" not in board:
     raise SystemExit("occupied listing comment must name Why as the prize line after List")
+if "Occupied write after List starts at Why" not in board:
+    raise SystemExit("occupied write comment must name Why as the first write after List")
 if 'data-prize-line=""' not in occupied_form and "${occupiedListingField}" not in occupied_form:
     raise SystemExit("occupied form must keep the Why prize-line listing field")
+if 'data-why-first=""' not in occupied_form and "data-why-first" not in occupied_form:
+    raise SystemExit("occupied form must keep the Why-first write after List")
 why_line_rule = css.split("Occupied listing field after List is Why — the prize line, not a second generic line.", 1)
 if len(why_line_rule) < 2:
     raise SystemExit("occupied listing CSS must name Why as the prize line after List")
-why_line_css = why_line_rule[1].split("Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name.", 1)[0]
-if ".desk[data-occupied=\"true\"] .later-listing[data-later-listing] .why-field[data-prize-line]" not in why_line_css:
+why_line_css = why_line_rule[1].split("Occupied write after List starts at Why — the prize line, not Product URL first.", 1)[0]
+if ".desk[data-occupied=\"true\"] .why-first[data-why-first] .why-field[data-prize-line]" not in why_line_css:
     raise SystemExit("occupied listing CSS must compose Why as the prize line after List")
 if "background:" in why_line_css or "var(--primary)" in why_line_css:
     raise SystemExit("do not recolor the occupied Why prize line")
@@ -1389,7 +1423,7 @@ if "empty-claim-first" in why_line_css or "data-why-later" in why_line_css or "d
 if "claim-after-row" in why_line_css or "data-later-claim" in why_line_css:
     raise SystemExit("do not restamp later merch claim-this-rank")
 prize_line_size = re.search(
-    r"\.desk\[data-occupied=\"true\"\] \.later-listing\[data-later-listing\] \.why-field\[data-prize-line\] input\s*\{[^}]*font-size:\s*([0-9.]+)rem",
+    r"\.desk\[data-occupied=\"true\"\] \.why-first\[data-why-first\] \.why-field\[data-prize-line\] input\s*\{[^}]*font-size:\s*([0-9.]+)rem",
     why_line_css,
 )
 if not prize_line_size or not listing_size or not why_prize or not take_h or not paid_size:
@@ -1402,6 +1436,22 @@ if float(prize_line_size.group(1)) >= float(take_h.group(1)):
     raise SystemExit("occupied Why write must stay quieter than Test this today")
 if float(prize_line_size.group(1)) >= float(paid_size.group(1)):
     raise SystemExit("occupied Why write must stay quieter than the paid cover name")
+why_first_rule = css.split("Occupied write after List starts at Why — the prize line, not Product URL first.", 1)
+if len(why_first_rule) < 2:
+    raise SystemExit("occupied write CSS must name Why as the first write after List")
+why_first_css = why_first_rule[1].split("Occupied later merch: claim-this-rank is a quieter later write after the product, not a filled pill on the name.", 1)[0]
+if ".desk[data-occupied=\"true\"] .why-first[data-why-first]" not in why_first_css:
+    raise SystemExit("occupied write CSS must compose Why as the first write after List")
+if ".desk[data-occupied=\"true\"] .bid-row .later-listing[data-later-listing]" not in why_first_css:
+    raise SystemExit("occupied write CSS must recede Product URL after Why")
+if "background:" in why_first_css or "var(--primary)" in why_first_css:
+    raise SystemExit("do not recolor the occupied Why-first write")
+if "take-after-list-seven" in why_first_css or "list-after-take-seven" in why_first_css:
+    raise SystemExit("do not stamp another named hop on occupied Why-first write")
+if "empty-claim-first" in why_first_css or "data-why-later" in why_first_css or "data-unpaid-off" in why_first_css:
+    raise SystemExit("occupied Why-first CSS must not swallow empty later-write or unpaid-off")
+if "claim-after-row" in why_first_css or "data-later-claim" in why_first_css:
+    raise SystemExit("do not restamp later merch claim-this-rank")
 if row_fn.find("data-cover-why") < 0 or "Why test this today" not in row_fn:
     raise SystemExit("Why must stay the prize on the occupied cover")
 PY
