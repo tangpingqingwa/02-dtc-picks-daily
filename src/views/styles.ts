@@ -925,7 +925,7 @@ a.row-link:hover { color: var(--primary); }
 .cover-hop-wrap + .list-after-take-wrap {
   margin-top: 0.35rem;
 }
-/* Occupied cover: Take is the one first click. List under Why, List after Take, and masthead List recede after that hop. */
+/* Occupied cover: Take is the one first click. One later List write after Take recedes after that hop. */
 .desk[data-occupied="true"] .list-after-cover[data-list-after-cover] {
   margin: 0.25rem 0 0;
   font-size: 0.68rem;
@@ -933,11 +933,6 @@ a.row-link:hover { color: var(--primary); }
   letter-spacing: 0.02em;
   color: var(--muted-foreground);
 }
-.desk[data-occupied="true"] .masthead-list.list-after-cover[data-list-after-cover] {
-  margin: 0.45rem 0 0;
-}
-.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-under-cover,
-.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-why,
 .desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-take,
 .desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-take-first,
 .desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-take-two,
@@ -964,8 +959,6 @@ a.row-link:hover { color: var(--primary); }
   color: var(--muted-foreground);
   vertical-align: baseline;
 }
-.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-under-cover:hover,
-.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-why:hover,
 .desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-take:hover,
 .desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-take-first:hover {
   background: none;
