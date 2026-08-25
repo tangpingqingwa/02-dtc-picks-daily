@@ -277,6 +277,10 @@ if [[ -f package.json ]]; then
     || fail "later-claim-quiet leftover test did not run"
   grep -q 'cover stays the prize' "$test_log" \
     || fail "later-claim-quiet prize leftover test did not run"
+  grep -q 'occupied cover one first click' "$test_log" \
+    || fail "occupied list-after-cover leftover test did not run"
+  grep -q 'List stays after the cover' "$test_log" \
+    || fail "occupied List-after-cover leftover test did not run"
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
   grep -q 'Outbid' src/views/board.ts \
@@ -351,6 +355,16 @@ if [[ -f package.json ]]; then
     || fail "later merch CSS missing claim-after-row later-write composition"
   grep -q 'not a filled pill on the name' src/views/styles.ts \
     || fail "later merch CSS must name claim-this-rank as not a filled pill"
+  grep -q 'data-list-after-cover' src/views/board.ts \
+    || fail "occupied cover missing list-after-cover wrap on List rails"
+  grep -q 'list-after-cover' src/views/board.ts \
+    || fail "occupied List rails must use the list-after-cover wrap"
+  grep -q 'list-after-cover\[data-list-after-cover\]' src/views/styles.ts \
+    || fail "occupied cover CSS missing list-after-cover recede composition"
+  grep -q 'Occupied cover: Take is the one first click' src/views/styles.ts \
+    || fail "occupied cover CSS must name Take as the one first click"
+  grep -q 'List under Why, List after Take, and masthead List recede' src/views/styles.ts \
+    || fail "occupied cover CSS must recede the three List rails after Take"
   if grep -nE 'data-empty-claim-after|data-claim-after-empty-[0-9]|take-after-list-seven|list-after-take-seven|data-later-rank-quiet|data-later-quiet|data-why-later-quiet|data-paid-name-quiet|data-unpaid-off-quiet|data-unpaid-off-board|data-later-claim|data-later-claim-quiet' \
     src/views/board.ts src/views/styles.ts >/dev/null; then
     fail "do not stamp another named hop; compose empty vs occupied"
@@ -936,6 +950,8 @@ if "claim-after-cover" not in hide:
     raise SystemExit("empty CSS must keep occupied later Claim wrap off empty")
 if "claim-after-row" not in hide:
     raise SystemExit("empty CSS must keep later-row claim-this-rank off empty")
+if "list-after-cover" not in hide:
+    raise SystemExit("empty CSS must keep occupied List-after-cover rails off empty")
 if "display: none" not in block:
     raise SystemExit("empty occupied chrome must stay off, not restyled")
 if "background:" in hide:
@@ -1112,6 +1128,8 @@ if ".desk[data-unpaid-off] .later-listing" not in unpaid_block:
     raise SystemExit("unpaid-off CSS must keep later-listing off leftover")
 if ".desk[data-unpaid-off] .claim-after-row" not in unpaid_block:
     raise SystemExit("unpaid-off CSS must keep later-row claim-this-rank off leftover")
+if ".desk[data-unpaid-off] .list-after-cover" not in unpaid_block:
+    raise SystemExit("unpaid-off CSS must keep occupied List-after-cover rails off leftover")
 if "display: none" not in unpaid_block:
     raise SystemExit("unpaid leftover cover must stay off, not restyled")
 if "background:" in unpaid_block or "var(--primary)" in unpaid_block:
@@ -1234,6 +1252,53 @@ if float(row_claim_size.group(1)) >= float(paid_size.group(1)):
     raise SystemExit("later merch claim-this-rank must stay quieter than the paid cover name")
 if ".desk:has(.empty) .claim-after-row" not in css:
     raise SystemExit("empty CSS must keep later-row claim-this-rank off empty")
+if ".desk:has(.empty) .list-after-cover" not in css:
+    raise SystemExit("empty CSS must keep occupied List-after-cover rails off empty")
+if 'data-list-after-cover=""' not in board:
+    raise SystemExit("occupied List rails must stamp data-list-after-cover")
+if board.count('data-list-after-cover=""') != 3:
+    raise SystemExit("List-after-cover must wrap masthead List, List under Why, and List after Take")
+if "class=\"list-after-why-wrap list-after-cover\"" not in board:
+    raise SystemExit("List under Why must recede in the list-after-cover wrap")
+if "class=\"list-after-take-wrap list-after-cover\"" not in board:
+    raise SystemExit("List after Take must recede in the list-after-cover wrap")
+if "class=\"masthead-list list-after-cover\"" not in board:
+    raise SystemExit("masthead List must recede in the list-after-cover wrap")
+list_recede_rule = css.split("Occupied cover: Take is the one first click. List under Why, List after Take, and masthead List recede after that hop.", 1)
+if len(list_recede_rule) < 2:
+    raise SystemExit("occupied cover CSS must name Take as the one first click")
+list_recede_css = list_recede_rule[1].split("@media (min-width: 768px)", 1)[0]
+if ".desk[data-occupied=\"true\"] .list-after-cover[data-list-after-cover]" not in list_recede_css:
+    raise SystemExit("list-after-cover CSS must recede occupied List after Take")
+if "var(--primary)" in list_recede_css:
+    raise SystemExit("do not recolor occupied List rails")
+if "take-after-list-seven" in list_recede_css or "list-after-take-seven" in list_recede_css:
+    raise SystemExit("do not stamp another named hop on occupied List")
+if "empty-claim-first" in list_recede_css or "data-why-later" in list_recede_css or "data-unpaid-off" in list_recede_css:
+    raise SystemExit("occupied List recede CSS must not swallow empty later-write or unpaid-off")
+if "claim-after-row" in list_recede_css or "data-later-claim" in list_recede_css:
+    raise SystemExit("do not restamp later merch claim-this-rank")
+list_size = re.search(r"font-size:\s*([0-9.]+)rem", list_recede_css)
+if not list_size or not take_h or not paid_size:
+    raise SystemExit("occupied List recede, Take, and paid name must all have sizes")
+if float(list_size.group(1)) >= float(take_h.group(1)):
+    raise SystemExit("occupied List rails must stay quieter than Test this today")
+if float(list_size.group(1)) >= float(paid_size.group(1)):
+    raise SystemExit("occupied List rails must stay quieter than the why / paid cover prize")
+why_prize = re.search(
+    r"\.cover-why-line\[data-prize-before-price\]\s*\{[^}]*font-size:\s*([0-9.]+)rem",
+    css,
+)
+if not why_prize:
+    raise SystemExit("why prize CSS missing")
+if float(list_size.group(1)) >= float(why_prize.group(1)):
+    raise SystemExit("occupied List rails must stay quieter than the why prize")
+if 'data-first-click="take"' not in board:
+    raise SystemExit("Test this today must stay the occupied first click")
+if "data-prize-before-price" not in board:
+    raise SystemExit("why must stay the occupied cover prize")
+if 'data-claim-after-row=""' not in board:
+    raise SystemExit("later merch claim-this-rank quiet already shipped — do not drop it")
 PY
   grep -q 'You pay only the difference' src/views/board.ts \
     || fail "board missing raise-pays-difference copy"

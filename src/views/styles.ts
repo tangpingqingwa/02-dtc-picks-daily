@@ -224,6 +224,7 @@ nav[aria-label="Main"] a:hover {
 .desk:has(.empty) .list-under-cover,
 .desk:has(.empty) .list-after-why,
 .desk:has(.empty) .list-after-take,
+.desk:has(.empty) .list-after-cover,
 .desk:has(.empty) .row-cover,
 .desk:has(.empty) .later-stack,
 .desk:has(.empty) .later-listing,
@@ -562,6 +563,7 @@ nav[aria-label="Main"] a:hover {
 .desk[data-unpaid-off] .list-under-cover,
 .desk[data-unpaid-off] .list-after-why,
 .desk[data-unpaid-off] .list-after-take,
+.desk[data-unpaid-off] .list-after-cover,
 .desk[data-unpaid-off] .later-listing,
 .desk[data-unpaid-off] .claim-kicker,
 .desk[data-unpaid-off] .claim-after-cover,
@@ -922,6 +924,52 @@ a.row-link:hover { color: var(--primary); }
 }
 .cover-hop-wrap + .list-after-take-wrap {
   margin-top: 0.35rem;
+}
+/* Occupied cover: Take is the one first click. List under Why, List after Take, and masthead List recede after that hop. */
+.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] {
+  margin: 0.25rem 0 0;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--muted-foreground);
+}
+.desk[data-occupied="true"] .masthead-list.list-after-cover[data-list-after-cover] {
+  margin: 0.45rem 0 0;
+}
+.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-under-cover,
+.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-why,
+.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-take,
+.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-take-first,
+.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-take-two,
+.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-take-three,
+.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-take-four,
+.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-take-five,
+.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-take-six {
+  display: inline;
+  min-height: 0;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  color: var(--muted-foreground);
+  vertical-align: baseline;
+}
+.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-under-cover:hover,
+.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-why:hover,
+.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-take:hover,
+.desk[data-occupied="true"] .list-after-cover[data-list-after-cover] .list-after-take-first:hover {
+  background: none;
+  color: var(--foreground);
 }
 @media (min-width: 768px) {
   .row-meta {

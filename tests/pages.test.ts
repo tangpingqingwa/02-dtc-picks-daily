@@ -5328,6 +5328,212 @@ test("GET / keeps occupied later merch claim-this-rank quieter than Take — cov
   assert.doesNotMatch(emptyCoverHtml, /data-first-click="take"/);
 });
 
+test("GET / keeps occupied cover one first click — Test this today, List stays after the cover", async () => {
+  const css = BOARD_CSS;
+  assert.match(css, /Occupied cover: Take is the one first click/);
+  assert.match(css, /List under Why, List after Take, and masthead List recede/);
+  assert.match(css, /\.desk\[data-occupied="true"\] \.list-after-cover\[data-list-after-cover\]/);
+  assert.match(css, /\.desk:has\(\.empty\) \.list-after-cover/);
+  assert.match(css, /\.desk\[data-unpaid-off\] \.list-after-cover/);
+  const recede = (css.split("Occupied cover: Take is the one first click", 2)[1] ?? "")
+    .split("@media (min-width: 768px)")[0] ?? "";
+  const listSize = recede.match(/font-size:\s*([0-9.]+)rem/);
+  const takeHeight = css.match(/\.take-after-list-six\s*\{[^}]*min-height:\s*([0-9.]+)rem/);
+  const whyPrize = css.match(
+    /\.cover-why-line\[data-prize-before-price\]\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
+  );
+  const paidName = css.match(
+    /\.row-cover\[data-paid-name\] \.host\[data-cover-name\]\s*\{[^}]*font-size:\s*([0-9.]+)rem/,
+  );
+  assert.ok(listSize && takeHeight && whyPrize && paidName, "occupied List recede, Take, why prize, and paid name must all have sizes");
+  assert.ok(Number(listSize[1]) < Number(takeHeight[1]), "occupied List rails stay quieter than Test this today");
+  assert.ok(Number(listSize[1]) < Number(whyPrize[1]), "occupied List rails stay quieter than the why prize");
+  assert.ok(Number(listSize[1]) < Number(paidName[1]), "occupied List rails stay quieter than the paid cover name");
+  assert.doesNotMatch(recede, /var\(--primary\)/);
+  assert.doesNotMatch(recede, /empty-claim-first|data-why-later|data-later-write|data-unpaid-off/);
+  assert.doesNotMatch(recede, /claim-after-row|data-later-claim|take-after-list-seven|list-after-take-seven/);
+  assert.doesNotMatch(css, /take-after-list-seven|list-after-take-seven|data-later-claim-quiet/);
+
+  const db = openDatabase(":memory:");
+  const now = new Date("2026-08-22T13:00:00.000Z");
+  const day = dayKey(now);
+  placeBid(db, {
+    id: "lst-cover",
+    day,
+    productUrl: "https://cover.example/apps/pick",
+    whyTestThisToday: "Cover app sellers should install this morning",
+    bidUsd: 20,
+    clicks: 3,
+    createdAt: "2026-08-22T09:00:00.000Z",
+  });
+  placeBid(db, {
+    id: "lst-under",
+    day,
+    productUrl: "https://under.example/sku",
+    whyTestThisToday: "Cheaper SKU still belongs on the brief",
+    bidUsd: 8,
+    clicks: 1,
+    createdAt: "2026-08-22T12:00:00.000Z",
+  });
+  placeBid(db, {
+    id: "lst-ghost",
+    day,
+    productUrl: "https://ghost.example/sku",
+    whyTestThisToday: "Abandoned Polar session must not print as this morning’s cover",
+    bidUsd: 99,
+    paidUsd: 0,
+    clicks: 12,
+    createdAt: "2026-08-22T08:00:00.000Z",
+  });
+
+  const app = await buildApp({ db, now });
+  after(async () => {
+    await app.close();
+    db.close();
+  });
+
+  const response = await app.inject({ method: "GET", url: "/" });
+  assert.equal(response.statusCode, 200);
+  const body = pageBody(response.body);
+  const coverStart = body.indexOf('data-listing-id="lst-cover"');
+  const cover = body.slice(coverStart, body.indexOf("</article>", coverStart));
+  const underStart = body.indexOf('data-listing-id="lst-under"');
+  const under = body.slice(underStart, body.indexOf("</article>", underStart));
+  const whyAt = cover.indexOf('data-cover-why=""');
+  const prizeAt = cover.indexOf("data-prize-before-price");
+  const listAfterWhyAt = cover.indexOf('data-list-after-why=""');
+  const takeAt = cover.indexOf('data-first-click="take"');
+  const hopLabelAt = cover.indexOf(">Test this today<");
+  const listAfterTakeAt = cover.indexOf('data-list-after-take=""');
+  const mastheadListAt = body.indexOf('data-list-under-cover=""');
+  const stackAt = body.indexOf('data-later-stack=""');
+  const stripAt = body.indexOf('data-last24h=""');
+  const laterClaimAt = under.indexOf('data-claim-after-row=""');
+  const wrapAt = body.indexOf('data-claim-after-cover=""');
+  const claimAt = body.indexOf('id="claim"');
+
+  assert.match(cover, /data-morning-slot=""/);
+  assert.match(cover, /This morning’s cover/);
+  assert.match(cover, /data-cover-why=""/);
+  assert.match(cover, /data-prize-before-price=""/);
+  assert.match(cover, /Why test this today/);
+  assert.match(cover, /Cover app sellers should install this morning/);
+  assert.match(cover, /data-first-click="take"/);
+  assert.match(cover, />Test this today</);
+  assert.match(cover, /href="\/r\/lst-cover"/);
+  assert.match(cover, /class="list-after-why-wrap list-after-cover"/);
+  assert.match(cover, /class="list-after-take-wrap list-after-cover"/);
+  assert.match(cover, /data-list-after-cover=""/);
+  assert.match(cover, /data-list-after-why=""/);
+  assert.match(cover, /under this reason/);
+  assert.match(cover, /data-list-after-take=""/);
+  assert.match(cover, /after Test this today/);
+  assert.match(body, /class="masthead-list list-after-cover"/);
+  assert.match(body, /data-list-under-cover=""/);
+  assert.match(body, /under today’s cover/);
+  assert.match(body, /data-occupied="true"/);
+  assert.match(body, /data-later-stack=""/);
+  assert.match(body, /data-claim-after-row=""/);
+  assert.match(under, /claim this rank for \$9/);
+  assert.match(body, /data-claim-after-cover=""/);
+  assert.match(body, /data-two-prizes=""/);
+  assert.match(body, /data-last24h-prize=""/);
+  assert.match(body, /Unpaid Polar checkout stays off this desk until Polar reports paid/);
+  assert.doesNotMatch(under, /data-first-click="take"/);
+  assert.doesNotMatch(under, /data-list-after-cover=/);
+  assert.doesNotMatch(under, /data-list-after-why=/);
+  assert.doesNotMatch(under, /data-list-after-take=/);
+  assert.doesNotMatch(under, /Test this today/);
+  assert.doesNotMatch(body, /ghost\.example/);
+  assert.doesNotMatch(body, /take-after-list-seven/);
+  assert.doesNotMatch(body, /list-after-take-seven/);
+  assert.doesNotMatch(body, /data-later-claim/);
+  assert.doesNotMatch(body, /data-later-claim-quiet/);
+  assert.doesNotMatch(body, /data-empty-claim-first/);
+  assert.doesNotMatch(body, /data-first-click="claim"/);
+  assert.equal((body.match(/data-first-click="take"/g) ?? []).length, 1);
+  assert.equal((body.match(/data-list-after-cover=""/g) ?? []).length, 3);
+  assert.equal((body.match(/data-list-after-why=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-list-after-take=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-list-under-cover=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-prize-before-price=""/g) ?? []).length, 1);
+  assert.equal((body.match(/data-claim-after-row=""/g) ?? []).length, 1);
+  assert.ok(coverStart > -1 && whyAt > -1 && prizeAt > whyAt, "why stays the occupied cover prize");
+  assert.ok(takeAt > prizeAt && hopLabelAt > takeAt, "Test this today is the one first click after the why prize");
+  assert.ok(listAfterWhyAt > whyAt && listAfterWhyAt < takeAt, "List under Why recedes under the prize, before Take");
+  assert.ok(listAfterTakeAt > hopLabelAt, "List after Take recedes after Test this today");
+  assert.ok(mastheadListAt > -1 && mastheadListAt < coverStart, "masthead List still sits above the cover and recedes after Take");
+  assert.ok(stackAt > coverStart && laterClaimAt > -1, "later merch claim-this-rank quiet already shipped — do not restamp");
+  assert.ok(stripAt > stackAt && wrapAt > stripAt && claimAt > wrapAt, "last-24h strip and Claim stay after the cover");
+
+  const hop = await app.inject({ method: "GET", url: "/r/lst-cover" });
+  assert.equal(hop.statusCode, 302);
+  assert.equal(hop.headers.location, "https://cover.example/apps/pick");
+  const ghostHop = await app.inject({ method: "GET", url: "/r/lst-ghost" });
+  assert.equal(ghostHop.statusCode, 404);
+
+  const emptyApp = await buildApp({ databasePath: ":memory:" });
+  after(() => emptyApp.close());
+  const empty = await emptyApp.inject({ method: "GET", url: "/" });
+  const quiet = pageBody(empty.body);
+  const quietClaim = quiet.indexOf('id="claim"');
+  const quietFirst = quiet.indexOf('data-first-click="claim"');
+  const quietOutbid = quiet.indexOf(">Outbid<");
+  const quietUrl = quiet.indexOf('data-later-write=""');
+  const quietWhy = quiet.indexOf('data-why-later=""');
+  assert.match(quiet, /data-empty-cover=""/);
+  assert.match(quiet, /data-first-click="claim"/);
+  assert.match(quiet, /Claim #1 for/);
+  assert.match(quiet, /data-later-write=""/);
+  assert.match(quiet, /Then the product URL/);
+  assert.match(quiet, /data-why-later=""/);
+  assert.match(quiet, /Then why test this today/);
+  assert.match(quiet, /data-last24h-empty=""/);
+  assert.ok(quietFirst > quietClaim && quietOutbid > quietFirst, "empty Claim #1 stays the first click");
+  assert.ok(quietUrl > quietOutbid && quietWhy > quietUrl, "empty stays Claim #1 then product URL then Why");
+  assert.doesNotMatch(quiet, /data-list-after-cover=/);
+  assert.doesNotMatch(quiet, /data-list-under-cover=/);
+  assert.doesNotMatch(quiet, /data-list-after-why=/);
+  assert.doesNotMatch(quiet, /data-list-after-take=/);
+  assert.doesNotMatch(quiet, /data-first-click="take"/);
+  assert.doesNotMatch(quiet, /Test this today/);
+  assert.doesNotMatch(quiet, /data-claim-after-cover=/);
+  assert.doesNotMatch(quiet, /data-unpaid-off=/);
+
+  const emptyCoverHtml = pageBody(renderBoardPage({
+    day: "2026-08-23",
+    tz: "UTC",
+    listings: [],
+    last24h: [
+      {
+        id: "lst-last-night",
+        day: "2026-08-22",
+        productUrl: "https://overnight.example/sku",
+        whyTestThisToday: "Last night’s $6 still belongs on the last-24h strip",
+        bidUsd: 6,
+        paidUsd: 6,
+        clicks: 0,
+        createdAt: "2026-08-22T12:00:00.000Z",
+        updatedAt: "2026-08-22T12:00:00.000Z",
+        rank: 1,
+      },
+    ],
+    defaultBidUsd: 5,
+    now: new Date("2026-08-23T00:30:00.000Z"),
+  }));
+  assert.match(emptyCoverHtml, /data-empty-cover=""/);
+  assert.match(emptyCoverHtml, /data-first-click="claim"/);
+  assert.match(emptyCoverHtml, /data-later-write=""/);
+  assert.match(emptyCoverHtml, /data-why-later=""/);
+  assert.match(emptyCoverHtml, /data-last24h-prize=""/);
+  assert.match(emptyCoverHtml, /Rolling 24h spend/);
+  assert.doesNotMatch(emptyCoverHtml, /data-list-after-cover=/);
+  assert.doesNotMatch(emptyCoverHtml, /data-list-under-cover=/);
+  assert.doesNotMatch(emptyCoverHtml, /This morning’s cover/);
+  assert.doesNotMatch(emptyCoverHtml, /data-first-click="take"/);
+  assert.doesNotMatch(emptyCoverHtml, /data-two-prizes=/);
+});
+
 test("SPEC acceptance 10: GET /about and GET /rules are 200", async () => {
   const app = await buildApp({ databasePath: ":memory:" });
   after(() => app.close());
