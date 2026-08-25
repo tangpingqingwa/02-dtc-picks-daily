@@ -200,7 +200,6 @@ export function renderBoardBody(model: BoardViewModel): string {
     ? ""
     : ' class="empty-claim-first" data-empty-claim-first="" aria-label="Claim #1"';
   const claimTitleAttrs = occupied ? "" : ' data-empty-claim="" data-first-click="claim"';
-  const claimKicker = occupied ? html`<p class="claim-kicker">List a product</p>` : "";
   const productUrlField = html`<div class="field">
       <label class="field-label" for="productUrl">Product URL</label>
       <input id="productUrl" name="productUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" required placeholder="https://store.example/sku"/>
@@ -240,6 +239,7 @@ export function renderBoardBody(model: BoardViewModel): string {
 
   // Occupied cover: Test this today is the one first click. One later List write sits after Take.
   // Occupied morning: Take is the first click. Claim #1 is a later write after the cover.
+  // Occupied later List write after Take is the only List label. Claim rail is Claim #1 / dashed $amount / ± / Outbid.
   const claimAfterOpen = occupied
     ? html`<div class="claim-after-cover" data-claim-after-cover="">`
     : "";
@@ -263,7 +263,6 @@ export function renderBoardBody(model: BoardViewModel): string {
 ${renderLast24hStrip(last24h, model.now)}
 ${claimAfterOpen}
 <section id="claim"${claimAttrs}>
-  ${claimKicker}
   <h2 class="claim-title"${claimTitleAttrs}>
     <span data-claim-copy>${claimCopy}</span>
     <span class="bid-stepper">
