@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">DTC Picks Daily merchandise tag</title>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#a44725"/>
+  <path d="M13 18a5 5 0 0 1 5-5h21l13 13-25 25-14-14V18Z" fill="#fffaf0"/>
+  <circle cx="35" cy="21" r="4" fill="#a44725"/>
+  <path d="m24 35 5 5 11-12" fill="none" stroke="#a44725" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

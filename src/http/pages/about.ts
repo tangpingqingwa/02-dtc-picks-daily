@@ -20,8 +20,8 @@ export function renderAboutBody(model: AboutViewModel): string {
     this morning’s list.
   </p>
   <p>
-    <strong>No ads. No API keys. No revenue share.</strong> This is a public ranking
-    board for product links.
+    This is a <strong>transparent paid-placement board</strong> for product links.
+    There are no hidden ranking factors, editorial boosts, or revenue-share claims.
   </p>
   <p>
     <strong>Rank is the bid.</strong> Nothing else. No recency boost, no editorial score,

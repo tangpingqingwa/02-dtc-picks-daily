@@ -399,9 +399,8 @@ about_body="${WORKDIR}/about.html"
 about_code="$(http_get "/about" "$about_body" || true)"
 if [[ "$about_code" == "200" ]] \
   && html_has "$about_body" 'public auction for the cover' \
-  && html_has "$about_body" 'No ads' \
-  && html_has "$about_body" 'No API keys' \
-  && html_has "$about_body" 'No revenue share' \
+  && html_has "$about_body" 'transparent paid-placement board' \
+  && html_has "$about_body" 'no hidden ranking factors' \
   && html_has "$about_body" 'Rank is the bid' \
   && html_has "$about_body" 'Minimum <strong>\$5</strong>' \
   && html_has "$about_body" 'difference' \
@@ -418,14 +417,11 @@ fi
 rules_body="${WORKDIR}/rules.html"
 rules_code="$(http_get "/rules" "$rules_body" || true)"
 if [[ "$rules_code" == "200" ]] \
-  && html_has "$rules_body" 'No ads' \
-  && html_has "$rules_body" 'No API keys' \
-  && html_has "$rules_body" 'No revenue share' \
-  && html_has "$rules_body" 'Waffo is the only live payment provider' \
-  && html_has "$rules_body" 'signed' \
-  && html_has "$rules_body" 'order[.]completed' \
-  && html_has "$rules_body" 'valid signature' \
-  && html_has "$rules_body" 'browser return' \
+  && html_has "$rules_body" 'A listing appears only after its payment is confirmed' \
+  && html_has "$rules_body" 'incomplete' \
+  && html_has "$rules_body" 'failed' \
+  && html_has "$rules_body" 'canceled' \
+  && html_has "$rules_body" 'abandoned checkout' \
   && html_has "$rules_body" 'rank is the bid' \
   && html_has "$rules_body" 'Minimum <strong>\$5</strong>' \
   && html_has "$rules_body" 'listing placed first keeps the higher rank' \

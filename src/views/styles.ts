@@ -1264,6 +1264,8 @@ body {
 }
 .brand-name { white-space: nowrap; }
 .brand-dot { color: var(--primary); }
+.brand { gap: 10px; }
+.brand-mark { display: block; width: 28px; height: 28px; flex: 0 0 28px; border-radius: 8px; }
 .rail-folio {
   margin: 0;
   text-align: center;

@@ -862,6 +862,7 @@ test("GET / keeps the MERCH DESK cover-ledger, claim-drawer, and card anatomy co
   assert.match(html, /id="search-button"[^>]*>[\s\S]*<span class="control-label">Find<\/span>/);
   assert.match(html, /id="theme-toggle"[^>]*>[\s\S]*<span class="control-label">Theme<\/span>/);
   assert.match(html, /<a class="brand"[^>]*>[\s\S]*<span class="brand-name">picks/);
+  assert.match(html, /<img class="brand-mark" src="\/icons\/brand-mark\.svg"[^>]*>/);
   assert.doesNotMatch(html, /<svg\b|class="lane-icon"|class="card-avatar"|[←→↔]/);
   assert.doesNotMatch(html, /outbid\.lol|outbid-mark|see\.io|tutti\.so|joni\.ai/);
   const dom = parseTestDom(html);
@@ -939,7 +940,8 @@ test("GET / keeps the MERCH DESK cover-ledger, claim-drawer, and card anatomy co
   assert.match(BOARD_CSS, /body\s*\{[\s\S]*scrollbar-width: none;[\s\S]*-ms-overflow-style: none;/);
   assert.match(BOARD_CSS, /html::-webkit-scrollbar,[\s\S]*body::-webkit-scrollbar[\s\S]*display: none;/);
   assert.match(BOARD_CSS, /\.search-button,[\s\S]*\.theme-toggle\s*\{[\s\S]*border-radius: var\(--radius\);[\s\S]*text-transform: uppercase;/);
-  assert.doesNotMatch(BOARD_CSS, /brand-mark|lane-icon|card-avatar|<svg\b/);
+  assert.match(BOARD_CSS, /\.brand-mark\s*\{[\s\S]*width: 28px;[\s\S]*height: 28px;/);
+  assert.doesNotMatch(BOARD_CSS, /lane-icon|card-avatar|<svg\b/);
   assert.doesNotMatch(BOARD_CSS, /visual-home|R20 exact-reference|outbid-today|outbid-activity|reference-fixture/);
 });
 
@@ -1724,9 +1726,8 @@ test("GET /about publishes customer-facing product and cadence copy", async () =
   assert.match(body, /aria-current="page"/);
   assert.match(body, /data-page="about"/);
   assert.match(body, /DTC Picks Daily/);
-  assert.match(body, /No ads/);
-  assert.match(body, /No API keys/);
-  assert.match(body, /No revenue share/);
+  assert.match(body, /transparent paid-placement board/);
+  assert.match(body, /no hidden ranking factors/);
   assert.match(body, /\$5/);
   assert.match(body, /Rank is the bid/);
   assert.match(body, /listing placed first stays higher/);
@@ -1757,13 +1758,9 @@ test("GET /rules publishes ranking, safety, and settlement rules without impleme
   const content = body.slice(body.indexOf('<article class="doc"'));
   assert.match(body, /aria-current="page"/);
   assert.match(body, /data-page="rules"/);
-  assert.match(content, /No ads/);
-  assert.match(content, /No API keys/);
-  assert.match(content, /No revenue share/);
-  assert.match(content, /Waffo is the only live payment provider/);
-  assert.match(content, /signed[\s\S]*order\.completed/);
-  assert.match(content, /valid signature/);
-  assert.match(content, /browser return/);
+  assert.match(content, /A listing appears only after its payment is confirmed/);
+  assert.match(content, /incomplete,[\s\S]*failed,[\s\S]*canceled,[\s\S]*abandoned checkout/);
+  assert.doesNotMatch(content, /API keys?|Waffo|provider|webhook|order\.completed|valid signature/i);
   assert.match(body, /Minimum <strong>\$5<\/strong>/);
   assert.match(body, /step <strong>\$1<\/strong>/i);
   assert.match(body, /listing placed first/);

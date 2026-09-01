@@ -19,15 +19,10 @@ export function renderRulesBody(model: RulesViewModel): string {
     <strong>rank is the bid</strong>.
   </p>
 
-  <h2>Product and payment</h2>
+  <h2>Listings and payment</h2>
   <p>
-    <strong>No ads. No API keys. No revenue share.</strong>
-  </p>
-  <p>
-    Waffo is the only live payment provider. A listing settles and appears on the board
-    only after a signed <code>order.completed</code> webhook with a valid signature from
-    Waffo is verified. A browser return, failed payment, or incomplete checkout never
-    settles or ranks a listing.
+    A listing appears only after its payment is confirmed. Returning from an incomplete,
+    failed, canceled, or abandoned checkout never changes the board or its ranking.
   </p>
 
   <h2>Ranking</h2>

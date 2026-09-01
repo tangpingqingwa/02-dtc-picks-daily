@@ -289,8 +289,10 @@ if [[ -f package.json ]]; then
   if grep -Eq 'OUTBID_REFERENCE_LISTINGS|isOutbidReferenceFixture|data-reference-fixture|outbid-today-reference|outbid-activity-reference|outbid-reference-fourth|1,404,927|see\\.io|tutti\\.so|joni\\.ai|/icons/outbid-mark\\.svg|outbid\\.lol' src/views/board.ts src/views/layout.ts src/views/styles.ts; then
     fail "reference fixture or copied Outbid shell remains in the DTC runtime"
   fi
-  if grep -Eq 'renderDeskMark|renderSearchIcon|renderMoonIcon|renderLaneIcon|brand-mark|lane-icon|card-avatar|<svg\b' src/views/board.ts src/views/layout.ts src/views/styles.ts; then
-    fail "DTC identity must use text-only owned labels, not handcrafted SVG or avatar layers"
+  grep -q 'class="brand-mark" src="/icons/brand-mark.svg"' src/views/layout.ts \
+    || fail "DTC identity must expose its owned brand mark"
+  if grep -Eq 'renderDeskMark|renderSearchIcon|renderMoonIcon|renderLaneIcon|lane-icon|card-avatar|<svg\b' src/views/board.ts src/views/layout.ts src/views/styles.ts; then
+    fail "DTC identity must not use handcrafted inline SVG or avatar layers"
   fi
   grep -q 'class="control-label">Find' src/views/layout.ts \
     || fail "Find control must be text-labelled"
@@ -443,12 +445,8 @@ PY
     || fail "bid amount is not dashed"
   grep -q 'public auction for the cover' src/http/pages/about.ts \
     || fail "about copy missing customer-facing product purpose"
-  grep -q 'No ads' src/http/pages/about.ts \
-    || fail "about copy missing no-ads promise"
-  grep -q 'No API keys' src/http/pages/about.ts \
-    || fail "about copy missing no-API-keys promise"
-  grep -q 'No revenue share' src/http/pages/about.ts \
-    || fail "about copy missing no-revenue-share promise"
+  grep -q 'transparent paid-placement board' src/http/pages/about.ts \
+    || fail "about copy missing transparent paid-placement purpose"
   grep -q 'appears only after payment' src/http/pages/about.ts \
     || fail "about copy missing payment-confirmation rule"
   grep -q '\$5' src/http/pages/rules.ts \
@@ -470,12 +468,12 @@ source = Path("src/http/pages/rules.ts").read_text()
 start = source.index("export function renderRulesBody")
 end = source.index("export function renderRulesPage")
 body = source[start:end]
-for marker in ("No ads", "No API keys", "No revenue share", "Waffo"):
+for marker in ("A listing appears only after its payment is confirmed", "incomplete", "failed", "canceled", "abandoned"):
     if marker not in body:
         raise SystemExit(f"rules body missing {marker!r}")
-for marker in ("signed", "order.completed", "valid signature"):
-    if marker not in body:
-        raise SystemExit(f"rules body missing signed settlement marker {marker!r}")
+for marker in ("API key", "Waffo", "provider", "webhook", "order.completed", "valid signature"):
+    if marker.lower() in body.lower():
+        raise SystemExit(f"rules body exposes implementation marker {marker!r}")
 PY
 fi
 

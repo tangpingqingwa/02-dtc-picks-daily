@@ -4,7 +4,21 @@ import { BOARD_CSS } from "./styles.js";
 
 export const SITE_NAME = "picks.daily";
 export const SITE_TITLE = "DTC Picks Daily";
+export const SITE_URL = "https://dtcpicks.lol";
 export const MAKER_CONTACT_EMAIL = "tangpingqingwa@gmail.com";
+
+function publicCss(css: string): string {
+  return css.replace(/\/\*[\s\S]*?\*\//g, (comment) =>
+    /waffo|fixture|reference|outbid|local-only|test-only|implementation|development/i.test(comment)
+      ? ""
+      : comment,
+  );
+}
+
+const PUBLIC_BOARD_CSS = publicCss(BOARD_CSS);
+
+const DEFAULT_DESCRIPTION =
+  "Discover direct-to-consumer products on a transparent daily merch desk. Sellers bid in USD for the cover and rank is the bid.";
 
 export type NavId = "leaderboard" | "about" | "rules";
 
@@ -16,6 +30,8 @@ export type LayoutInput = {
   day?: string;
   tz?: string;
   now?: Date;
+  canonicalPath?: string;
+  noIndex?: boolean;
 };
 
 function navItem(href: string, label: string, current: boolean): string {
@@ -51,6 +67,7 @@ export function renderSiteHeader(input: SiteHeaderInput): string {
   return html`<header class="site-header" data-site-header="" data-slot="site-header">
     <div class="site-header-inner" data-site-header-inner="" data-slot="shell">
       <a class="brand" href="/" data-slot="brand">
+        <img class="brand-mark" src="/icons/brand-mark.svg" width="28" height="28" alt="" aria-hidden="true"/>
         <span class="brand-name">picks<span class="brand-dot">.daily</span></span>
       </a>
       <p class="rail-folio">
@@ -80,9 +97,25 @@ export function renderLayout(input: LayoutInput): string {
   const day = input.day ?? dayKey(input.now, tz);
   const title = escapeHtml(input.title ?? SITE_TITLE);
   const description = escapeHtml(
-    input.description ??
-      "Bid USD. Own this morning’s cover. Sellers see your product link first.",
+    input.description ?? DEFAULT_DESCRIPTION,
   );
+  const canonicalPath = input.canonicalPath ??
+    (input.active === "about" ? "/about" : input.active === "rules" ? "/rules" : "/");
+  const canonical = `${SITE_URL}${canonicalPath}`;
+  const noIndex = input.noIndex ?? /(checkout|payment|return)/i.test(title);
+  const robots = noIndex
+    ? "noindex,nofollow"
+    : "index,follow,max-image-preview:large,max-snippet:-1";
+  const structuredData = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_TITLE,
+    alternateName: SITE_NAME,
+    url: SITE_URL,
+    description: input.description ?? DEFAULT_DESCRIPTION,
+    inLanguage: "en",
+    isAccessibleForFree: true,
+  }).replace(/</g, "\\u003c");
   const folio = formatFolioDate(day);
   const issueSpoken = formatIssueDate(day, tz);
   const siteHeader = renderSiteHeader({
@@ -96,9 +129,26 @@ export function renderLayout(input: LayoutInput): string {
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" type="image/svg+xml" href="/icons/brand-mark.svg"/>
+  <link rel="manifest" href="/site.webmanifest"/>
+  <link rel="canonical" href="${canonical}"/>
   <title>${title}</title>
   <meta name="description" content="${description}"/>
-  <style>${BOARD_CSS}</style>
+  <meta name="robots" content="${robots}"/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:site_name" content="${SITE_TITLE}"/>
+  <meta property="og:title" content="${title}"/>
+  <meta property="og:description" content="${description}"/>
+  <meta property="og:url" content="${canonical}"/>
+  <meta property="og:image" content="${SITE_URL}/icons/brand-mark.png"/>
+  <meta property="og:image:width" content="512"/>
+  <meta property="og:image:height" content="512"/>
+  <meta name="twitter:card" content="summary"/>
+  <meta name="twitter:title" content="${title}"/>
+  <meta name="twitter:description" content="${description}"/>
+  <meta name="twitter:image" content="${SITE_URL}/icons/brand-mark.png"/>
+  <script type="application/ld+json">${structuredData}</script>
+  <style>${PUBLIC_BOARD_CSS}</style>
 </head>
 <body>
   ${siteHeader}
