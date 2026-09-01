@@ -1,3 +1,5 @@
+import { isPrivateOrLocalHostname } from "./network.js";
+
 export class UrlError extends Error {
   readonly code: string;
   readonly statusCode = 400;
@@ -183,38 +185,5 @@ function isPathKeyedHost(hostname: string): boolean {
 }
 
 function isBlockedLocalHost(hostname: string): boolean {
-  if (
-    hostname === "localhost" ||
-    hostname.endsWith(".localhost") ||
-    hostname.endsWith(".local") ||
-    hostname === "::1" ||
-    hostname === "[::1]"
-  ) {
-    return true;
-  }
-  if (hostname.startsWith("fe80:")) {
-    return true;
-  }
-  const ipv4 = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (!ipv4) {
-    return false;
-  }
-  const octets = ipv4.slice(1).map(Number);
-  if (octets.some((part) => part > 255)) {
-    return false;
-  }
-  const [a, b] = octets as [number, number, number, number];
-  if (a === 0 || a === 10 || a === 127) {
-    return true;
-  }
-  if (a === 169 && b === 254) {
-    return true;
-  }
-  if (a === 192 && b === 168) {
-    return true;
-  }
-  if (a === 172 && b >= 16 && b <= 31) {
-    return true;
-  }
-  return false;
+  return isPrivateOrLocalHostname(hostname);
 }

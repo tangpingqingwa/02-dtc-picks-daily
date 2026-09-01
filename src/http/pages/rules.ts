@@ -15,103 +15,78 @@ export function renderRulesBody(model: RulesViewModel): string {
   return html`<article class="doc" data-page="rules">
   <h1>Rules</h1>
   <p>
-    Rank is the bid. A bidder can predict place from this page alone. There are no extra
-    ranking factors. <strong>No ads. No API keys. No revenue share</strong> with listed products.
+    The board follows the published rules below. There are no hidden ranking factors:
+    <strong>rank is the bid</strong>.
+  </p>
+
+  <h2>Product and payment</h2>
+  <p>
+    <strong>No ads. No API keys. No revenue share.</strong>
+  </p>
+  <p>
+    Waffo is the only live payment provider. A listing settles and appears on the board
+    only after a signed <code>order.completed</code> webhook with a valid signature from
+    Waffo is verified. A browser return, failed payment, or incomplete checkout never
+    settles or ranks a listing.
   </p>
 
   <h2>Ranking</h2>
   <ol>
-    <li>Rank is the bid. Nothing else — no recency boost, no editorial score, no click-through rate.</li>
-    <li>Bids are whole US dollars. Minimum <strong>$5</strong>. Step <strong>$1</strong>.</li>
-    <li>Sort today’s listings by bid descending. On a tie, the <strong>older</strong> listing keeps the higher rank.</li>
-    <li>Paying less than the current #1 still lists at whatever rank that bid can take.</li>
-    <li>A completed payment is what claims the rank. An unpaid Polar session does not appear.</li>
-    <li>After a successful raise, we re-sort. The listing keeps its original created time.</li>
+    <li>Listings are ordered by bid from highest to lowest.</li>
+    <li>Bids use whole US dollars. Minimum <strong>$5</strong>; step <strong>$1</strong>.</li>
+    <li>When bids are equal, the listing placed first keeps the higher rank.</li>
+    <li>A bid below the current #1 still appears at the rank that amount can take.</li>
+    <li>Rank changes only after payment is confirmed. An incomplete checkout never appears.</li>
+    <li>Clicks, recency, and editorial preference never affect rank.</li>
   </ol>
   <p>Example, same day:</p>
   <table>
     <thead>
-      <tr><th>Order paid</th><th>Bid</th><th>Rank</th></tr>
+      <tr><th>Order placed</th><th>Bid</th><th>Rank</th></tr>
     </thead>
     <tbody>
-      <tr><td>A $20</td><td>20</td><td>#1</td></tr>
-      <tr><td>B $12</td><td>12</td><td>#2</td></tr>
-      <tr><td>C $12</td><td>12</td><td>#3 (newer than B)</td></tr>
-      <tr><td>D $5</td><td>5</td><td>#4</td></tr>
+      <tr><td>A</td><td>$20</td><td>#1</td></tr>
+      <tr><td>B</td><td>$12</td><td>#2</td></tr>
+      <tr><td>C</td><td>$12</td><td>#3, because B was first</td></tr>
+      <tr><td>D</td><td>$5</td><td>#4</td></tr>
     </tbody>
   </table>
-  <p>D is on the board even though D did not take #1.</p>
 
-  <h2>Raise</h2>
+  <h2>Raises</h2>
   <ul>
-    <li>The same canonical product URL on the same day raises the existing listing. It does not create a second row.</li>
-    <li>The new bid must be a whole dollar strictly greater than this listing’s current bid.</li>
-    <li>The raiser pays only the <strong>difference</strong> (<code>newBid − currentBid</code>).</li>
-    <li>To take #1, the new bid must be at least $1 above the current top bid, unless this listing is already #1 and is only increasing its own number.</li>
-    <li>Another bidder cannot steal this listing’s rank by paying only this listing’s difference. They must submit <em>their</em> URL at a bid that outranks, paying that full bid (or their own difference if they already have a row).</li>
-    <li>Created time does not change on raise. Amount paid increases by the difference.</li>
+    <li>The same product link on the same day raises the existing listing instead of creating a duplicate.</li>
+    <li>The new total must be at least $1 above that listing’s current bid.</li>
+    <li>The original payer is charged only the <strong>difference</strong> between the current and new bid.</li>
+    <li>To take #1, the new total must be at least $1 above the current leader.</li>
+    <li>A different seller submits a new listing and pays the full bid; they cannot take over somebody else’s listing for the raise amount.</li>
   </ul>
 
-  <h2>URL identity and bans</h2>
-  <p>Before we compare, store, or send an outbound click:</p>
+  <h2>Product links</h2>
   <ol>
-    <li>Require <code>https:</code>. Reject <code>http:</code>, <code>javascript:</code>, <code>data:</code>.</li>
-    <li>Reject shortener hosts. We never keep <code>bit.ly</code> / <code>t.co</code> / <code>tinyurl.com</code> as the stored URL.</li>
-    <li>Drop the fragment.</li>
-    <li>Strip tracking and affiliate query keys, including <code>utm_*</code>, <code>ref</code>, <code>ref_</code>, <code>affiliate</code>, <code>aff</code>, <code>tag</code>, <code>fbclid</code>, <code>gclid</code>, <code>mc_cid</code>, <code>mc_eid</code>, <code>igshid</code>, <code>si</code>, <code>pp</code>, <code>ascsubtag</code>, and Amazon <code>tag</code> / <code>linkCode</code> / <code>psc</code>. If the only remaining identity is those keys, we reject.</li>
-    <li>Lowercase the host. Strip default ports. Strip a trailing slash on the path except <code>/</code>.</li>
-    <li>Amazon / Shopify / App Store style paths are keyed by path, not leftover query. Different ASINs or product handles are different listings.</li>
+    <li>Use a secure, public product page.</li>
+    <li>Tracking, referral, and affiliate parameters are removed.</li>
+    <li>Link shorteners, chat invitations, and adult content are rejected.</li>
+    <li>Private, local-only, credentialed, or otherwise unsafe destinations are rejected before checkout.</li>
+    <li>Products are identified by their cleaned destination, so tracking variants do not create duplicate listings.</li>
   </ol>
-  <p><strong>Reject (do not charge):</strong></p>
-  <ul>
-    <li>Chat and invite links: Telegram, WhatsApp, Discord, Messenger, Signal, Line, and similar.</li>
-    <li>NSFW / porn / adult-platform URLs and blurbs that are sexual content.</li>
-    <li>Empty or &gt;140 character “why test this today.”</li>
-    <li>Non-https, credentials-in-URL, or localhost / link-local hosts.</li>
-  </ul>
-  <p>Clicks go to the <strong>stripped</strong> URL. Affiliate and tracking query strings must not survive.</p>
 
-  <h2>Daily cadence</h2>
+  <h2>Daily cover</h2>
   <table>
     <tbody>
-      <tr><th>Timezone</th><td><code>BOARD_TZ</code> IANA name. Default <strong>UTC</strong>. This board is on <strong>${tz}</strong>.</td></tr>
-      <tr><th>Day key</th><td>Calendar date in <code>BOARD_TZ</code> (<code>YYYY-MM-DD</code>).</td></tr>
-      <tr><th>Reset</th><td>At <strong>00:00</strong> in <code>BOARD_TZ</code>, a new empty board starts. Yesterday’s listings leave the cover.</td></tr>
-      <tr><th>Cover</th><td>Rank #1 right now for today’s day is the cover slot of this morning’s brief. Occupied cover #1 and last-24h #1 stay two prizes. No hold on the cover.</td></tr>
-      <tr><th>Last 24h</th><td>A strip on the desk ranks paid rows from the <strong>rolling last 24 hours</strong>. Not civil midnight. Empty strip stays empty. Not a second cover. Cover #1 is this morning’s slot. Strip ranks are last-24h facts, not today’s cover #1.</td></tr>
-      <tr><th>History</th><td>We keep paid rows for audit. The public cover shows today only. Last night’s spend can still sit on the last-24h strip.</td></tr>
+      <tr><th>Timezone</th><td>This board follows <strong>${tz}</strong>.</td></tr>
+      <tr><th>Reset</th><td>A new cover starts at <strong>00:00 ${tz}</strong>. Yesterday’s placements do not carry into today.</td></tr>
+      <tr><th>Cover</th><td>The current #1 listing is today’s cover. If no placement is paid, the cover remains empty.</td></tr>
+      <tr><th>Last 24 hours</th><td>The activity strip is a rolling view of recent paid listings. It is not a second cover and does not change today’s winner.</td></tr>
+      <tr><th>Return tomorrow</th><td>A product that returns on a new day places a new full bid of at least $5.</td></tr>
     </tbody>
   </table>
-  <p>Do not carry bids across the reset. Raising yesterday’s URL today is a new listing on the new day and pays a full bid ≥ $5.</p>
 
   <h2>Clicks</h2>
   <ul>
-    <li>Every listing shows a public integer click count.</li>
-    <li>We increment once per outbound navigation through the board (a redirect hop we control).</li>
-    <li>We do not invent clicks. Counts start at 0. We do not hide low counts.</li>
-    <li>Clicking does not change rank.</li>
+    <li>Every listing shows a public click count beginning at 0.</li>
+    <li>Outbound clicks go to the cleaned product link.</li>
+    <li>Clicks never change rank.</li>
   </ul>
-
-  <h2>Checkout (Polar)</h2>
-  <p>Money in v1 is Polar Checkout (merchant of record).</p>
-  <table>
-    <thead>
-      <tr><th>Mode</th><th>When</th><th>Behavior</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Fixture</td><td>default in <code>scripts/test.sh</code> and CI</td><td>Completing a fixture session inserts or raises the listing. No network.</td></tr>
-      <tr><td>Live</td><td><code>POLAR_LIVE=1</code> plus Polar secret</td><td>Real Checkout. The listing appears only after a paid webhook / confirmed session.</td></tr>
-    </tbody>
-  </table>
-  <p>
-    Missing Polar live secret during operator smoke is <code>BLOCKED-SECRET: POLAR_ACCESS_TOKEN</code>.
-    That is not a fixture success.
-  </p>
-  <p>
-    No ads. No API-key product. No revenue share cut to the listed URL.
-    Unpaid Polar checkout stays off this desk until Polar reports paid.
-    Failed or abandoned checkout: 0 listing change, 0 rank change. An abandoned listing is not cover #1.
-  </p>
 </article>`;
 }
 
@@ -121,7 +96,7 @@ export function renderRulesPage(model: RulesViewModel): string {
   return renderLayout({
     title: `Rules · ${SITE_TITLE}`,
     description:
-      "Ranking, raise, URL stripping, banned chat and NSFW, daily UTC reset, Polar. Rank is the bid. Minimum $5.",
+      "Ranking, raises, product-link standards, daily reset, and payment confirmation. Rank is the bid; minimum $5.",
     active: "rules",
     day,
     tz,
@@ -132,7 +107,7 @@ export function renderRulesPage(model: RulesViewModel): string {
 export const rulesRoutes: FastifyPluginAsync = async (app) => {
   app.get(RULES_PATH, async (_request, reply) => {
     const tz = boardTimeZone();
-    const htmlPage = renderRulesPage({ tz, day: dayKey(new Date(), tz) });
+    const htmlPage = renderRulesPage({ tz, day: dayKey(app.now(), tz) });
     return reply.type("text/html; charset=utf-8").send(htmlPage);
   });
 };

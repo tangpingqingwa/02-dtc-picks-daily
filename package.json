@@ -8,11 +8,13 @@
   },
   "scripts": {
     "dev": "node --import tsx src/server.ts",
-    "start": "node --import tsx src/server.ts",
+    "start": "node dist/src/server.js",
+    "build": "tsc && node scripts/copy-migrations.mjs",
     "typecheck": "tsc --noEmit",
     "test": "bash scripts/test.sh"
   },
   "dependencies": {
+    "@waffo/pancake-ts": "0.19.1",
     "better-sqlite3": "^13.0.3",
     "fastify": "^5.6.1"
   },

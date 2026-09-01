@@ -2,6 +2,9 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { buildApp, DEFAULT_DATABASE_PATH } from "./app.js";
 import { createCheckoutPort } from "./billing/port.js";
+import { validateProductionConfig } from "./config.js";
+import { listenHost } from "./config.js";
+import { validateBoardTimeZone } from "./core/day.js";
 
 const DEFAULT_PORT = 3000;
 
@@ -28,10 +31,12 @@ export function isExecutedAsMain(
 
 if (isExecutedAsMain()) {
   const databasePath = process.env.DATABASE_PATH || DEFAULT_DATABASE_PATH;
+  const mode = validateProductionConfig(process.env, process.env.DATABASE_PATH);
+  validateBoardTimeZone();
   const app = await buildApp({
     logger: true,
     databasePath,
     checkout: createCheckoutPort(),
   });
-  await app.listen({ host: "0.0.0.0", port: parseListenPort() });
+  await app.listen({ host: listenHost(process.env, mode), port: parseListenPort() });
 }

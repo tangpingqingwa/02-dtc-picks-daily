@@ -8,7 +8,7 @@ import type {
 } from "./port.js";
 
 export type FixtureCheckoutOptions = {
-  /** Default true: createSession finishes paid so tests never need a Polar host. */
+  /** Default true: createSession finishes paid so tests never need a provider host. */
   autoComplete?: boolean;
 };
 
@@ -16,6 +16,10 @@ type StoredSession = CheckoutSession & { paidAt?: string };
 
 export class FixtureCheckout implements CheckoutPort {
   readonly kind = "fixture" as const;
+  readonly mode = "fixture" as const;
+  readonly expectedProductId = "fixture";
+  readonly expectedStoreId = "fixture";
+  readonly expectedCurrency = "USD" as const;
   private readonly autoComplete: boolean;
   private readonly sessions = new Map<string, StoredSession>();
 
@@ -84,18 +88,11 @@ export class FixtureCheckout implements CheckoutPort {
     if (!isPaidStatus(status) && event.type !== "order.paid") {
       return { ignored: true };
     }
+    // Recorded/provider metadata can never manufacture a local paid session.
+    // Fixture happy paths must first call createSession, just like production
+    // requires a durable local checkout intent before a webhook can apply.
     if (!this.sessions.has(sessionId)) {
-      const draft = draftFromMetadata(data, sessionId);
-      if (!draft) {
-        return { ignored: true };
-      }
-      this.sessions.set(sessionId, {
-        id: sessionId,
-        status: "open",
-        url: `/checkout/complete?session=${encodeURIComponent(sessionId)}`,
-        draft,
-        amountUsd: draft.chargeUsd,
-      });
+      return { ignored: true };
     }
     return this.completeSession(sessionId);
   }
@@ -132,33 +129,4 @@ function parseJson(rawBody: string): unknown {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function draftFromMetadata(data: Record<string, unknown>, fallbackDay: string): CheckoutDraft | undefined {
-  const metadata = isRecord(data.metadata) ? data.metadata : {};
-  const productUrl = readString(metadata.productUrl);
-  const whyTestThisToday = readString(metadata.whyTestThisToday);
-  const bidUsd = readInt(metadata.bidUsd) ?? readInt(data.amountUsd);
-  const amountCents = readInt(data.amount);
-  const day = readString(metadata.day) ?? fallbackDay;
-  const resolvedBid = bidUsd ?? (amountCents !== undefined ? amountCents / 100 : undefined);
-  if (!productUrl || !whyTestThisToday || resolvedBid === undefined || !Number.isInteger(resolvedBid)) {
-    return undefined;
-  }
-  const chargeUsd = readInt(metadata.chargeUsd) ?? resolvedBid;
-  return { productUrl, whyTestThisToday, bidUsd: resolvedBid, day, chargeUsd };
-}
-
-function readString(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() !== "" ? value : undefined;
-}
-
-function readInt(value: unknown): number | undefined {
-  if (typeof value === "number" && Number.isInteger(value)) {
-    return value;
-  }
-  if (typeof value === "string" && /^-?\d+$/.test(value.trim())) {
-    return Number(value.trim());
-  }
-  return undefined;
 }

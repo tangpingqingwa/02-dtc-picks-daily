@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { boardTimeZone, dayKey, formatIssueDate } from "../src/core/day.js";
+import { boardTimeZone, dayKey, formatIssueDate, validateBoardTimeZone } from "../src/core/day.js";
 import { formatFolioDate } from "../src/views/html.js";
 
 test("BOARD_TZ unset defaults to UTC", () => {
@@ -8,6 +8,14 @@ test("BOARD_TZ unset defaults to UTC", () => {
   assert.equal(boardTimeZone(""), "UTC");
   assert.equal(boardTimeZone("   "), "UTC");
   assert.equal(boardTimeZone("America/New_York"), "America/New_York");
+});
+
+test("BOARD_TZ validation rejects a typo before readiness", () => {
+  assert.equal(validateBoardTimeZone("UTC"), "UTC");
+  assert.throws(
+    () => validateBoardTimeZone("Not/A_Timezone"),
+    /BLOCKED-CONFIG: BOARD_TZ must be a valid IANA timezone/,
+  );
 });
 
 test("dayKey is YYYY-MM-DD in BOARD_TZ", () => {

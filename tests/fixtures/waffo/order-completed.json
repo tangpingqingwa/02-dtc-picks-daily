@@ -1,0 +1,45 @@
+{
+  "id": "7f5a4a64-7a34-4cf1-9f4b-8d5a5e1b7c21",
+  "timestamp": "2026-08-27T11:22:33.000Z",
+  "eventType": "order.completed",
+  "eventId": "PAY_1234567890123456789012",
+  "storeId": "STO_1234567890123456789012",
+  "storeName": "DTC Picks test store",
+  "mode": "test",
+  "data": {
+    "orderId": "ORD_1234567890123456789012",
+    "orderStatus": "completed",
+    "buyerEmail": "buyer@example.test",
+    "orderMerchantExternalId": "intent-fixture-0001",
+    "currency": "USD",
+    "orderMetadata": {
+      "intentId": "intent-fixture-0001",
+      "intentFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "metadataFingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "targetBidCents": "500",
+      "chargeCents": "500",
+      "canonicalUrl": "https://fixture-waffo.example/sku",
+      "productUrl": "https://fixture-waffo.example/sku",
+      "whyTestThisToday": "The official Waffo fixture carries the normalized listing intent",
+      "bidUsd": "5",
+      "chargeUsd": "5",
+      "day": "2026-08-27",
+      "quoteBaseBidCents": "0",
+      "mode": "waffo-test",
+      "storeId": "STO_1234567890123456789012",
+      "productId": "PROD_1234567890123456789012",
+      "currency": "USD",
+      "taxCategory": "digital_goods"
+    },
+    "amount": "5.00",
+    "taxAmount": "0.00",
+    "subtotal": "5.00",
+    "total": "5.00",
+    "productName": "Rank",
+    "productMetadata": {
+      "productId": "PROD_1234567890123456789012"
+    },
+    "paymentId": "PAY_1234567890123456789012",
+    "paymentStatus": "succeeded"
+  }
+}

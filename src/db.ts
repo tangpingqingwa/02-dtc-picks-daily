@@ -51,7 +51,21 @@ export function migrate(db: AppDb): void {
     if (applied.has(file)) {
       continue;
     }
-    db.exec(readFileSync(join(MIGRATIONS_DIR, file), "utf8"));
-    insert.run(file, new Date().toISOString());
+    // Keep the DDL/data change and its marker in one SQLite transaction. The
+    // marker is re-checked after the write lock is acquired so two app
+    // instances cannot both replay a migration from the same stale snapshot.
+    const applyMigration = db.transaction(() => {
+      const marker = db
+        .prepare<[string], MigrationRow>(
+          "SELECT id FROM schema_migrations WHERE id = ?",
+        )
+        .get(file);
+      if (marker) {
+        return;
+      }
+      db.exec(readFileSync(join(MIGRATIONS_DIR, file), "utf8"));
+      insert.run(file, new Date().toISOString());
+    });
+    applyMigration.immediate();
   }
 }

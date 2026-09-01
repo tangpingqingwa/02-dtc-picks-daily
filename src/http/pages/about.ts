@@ -15,48 +15,38 @@ export function renderAboutBody(model: AboutViewModel): string {
   return html`<article class="doc" data-page="about">
   <h1>About</h1>
   <p>
-    This is a daily public auction for the cover of a DTC / Shopify / Amazon picks brief.
-    Suppliers and tools bid whole US dollars so their product URL sits at the top of this
-    morning’s list. Sellers see your link first.
+    DTC Picks Daily is a public auction for the cover of a daily product-discovery brief.
+    Suppliers and tools bid whole US dollars so their product link appears at the top of
+    this morning’s list.
   </p>
   <p>
-    <strong>No ads. No API keys. No revenue share</strong> with listed products.
-    There is no developer platform, no sponsorship package, and no cut to the listed URL.
+    <strong>No ads. No API keys. No revenue share.</strong> This is a public ranking
+    board for product links.
   </p>
   <p>
     <strong>Rank is the bid.</strong> Nothing else. No recency boost, no editorial score,
-    no invented ratings. Paying less than today’s #1 still lists at whatever rank that
-    bid can take. Equal bids: the older listing keeps the higher rank.
+    and no invented ratings. A bid below today’s #1 still appears at the rank it can take.
+    When bids are equal, the listing placed first stays higher.
   </p>
   <p>
     Bids are whole-dollar <strong>USD</strong>. Minimum <strong>$5</strong>. Step $1.
-    The same product URL on the same day can raise; the raiser pays only the
-    <strong>difference</strong>. Global sellers. English copy. USD only.
+    The same product link can raise during the same day; the payer is charged only the
+    <strong>difference</strong> between the current and new bid.
   </p>
   <p>
-    The cover resets daily at <strong>00:00</strong> in
-    <code>BOARD_TZ</code> (default <strong>UTC</strong>). Right now this board uses
-    <strong>${tz}</strong>. Yesterday’s listings leave the cover. Raising yesterday’s
-    URL today is a new listing and pays a full bid of at least $5.
-    A last-24-hours strip on the desk is a <strong>rolling</strong> window, not that
-    midnight reset. An empty strip is honest. It is not a second cover. Cover #1 is
-    this morning’s slot. Strip ranks are last-24h facts, not today’s cover #1. A quiet
-    morning invents no #1 on the cover or the strip.
+    The cover resets at <strong>00:00 ${tz}</strong>. Yesterday’s listings leave today’s
+    cover, so returning products place a new full bid. The separate last-24-hours strip
+    is a rolling activity view, not a second cover. If nobody has paid for a placement,
+    the board remains empty.
   </p>
   <p>
-    Anyone can read the board without an account. Payment is the only write path.
-    Live money is Polar Checkout. Tests and CI use a fixture so they never call live Polar.
-    An unpaid Polar session does not appear. Failed or abandoned checkout changes nothing.
+    Anyone can read the board without an account. A product appears only after payment
+    is confirmed. Failed, canceled, or abandoned checkout changes nothing.
   </p>
   <p>
-    We strip tracking and affiliate query strings before we store a URL or send a click.
-    Chat and invite links and NSFW are banned. Public click counts start at 0 and do not
-    change rank.
-  </p>
-  <p>
-    Clone of the <a href="https://outbid.lol">outbid.lol</a> pay-to-rank board for the
-    <strong>dtc-picks-daily</strong> vertical — $5 floor, product URL plus one line:
-    why test this today.
+    We remove tracking and affiliate parameters before we store a URL or send a click.
+    Chat invitations and adult content are not accepted. Public click counts begin at 0
+    and never affect rank.
   </p>
 </article>`;
 }
@@ -67,7 +57,7 @@ export function renderAboutPage(model: AboutViewModel): string {
   return renderLayout({
     title: `About · ${SITE_TITLE}`,
     description:
-      "Daily public auction for this morning’s DTC / Shopify / Amazon picks cover. No ads, no API keys, no revenue share. Rank is the bid.",
+      "Daily public auction for this morning’s product-discovery cover. Rank is the bid.",
     active: "about",
     day,
     tz,
@@ -78,7 +68,7 @@ export function renderAboutPage(model: AboutViewModel): string {
 export const aboutRoutes: FastifyPluginAsync = async (app) => {
   app.get(ABOUT_PATH, async (_request, reply) => {
     const tz = boardTimeZone();
-    const htmlPage = renderAboutPage({ tz, day: dayKey(new Date(), tz) });
+    const htmlPage = renderAboutPage({ tz, day: dayKey(app.now(), tz) });
     return reply.type("text/html; charset=utf-8").send(htmlPage);
   });
 };

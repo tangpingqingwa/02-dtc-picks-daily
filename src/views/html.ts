@@ -57,12 +57,6 @@ export function displayHostPath(productUrl: string): string {
   }
 }
 
-export function avatarLetter(productUrl: string): string {
-  const host = displayHostPath(productUrl).replace(/^www\./, "");
-  const letter = host.charAt(0).toUpperCase();
-  return /[A-Z0-9]/.test(letter) ? letter : "?";
-}
-
 export function relativeTime(iso: string, now: Date = new Date()): string {
   const then = Date.parse(iso);
   if (Number.isNaN(then)) {

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Operator smoke against a local process. Not called from scripts/test.sh or CI.
-# Fixture path always. Live Polar only when POLAR_LIVE=1.
-# Missing Polar live secret → BLOCKED-SECRET: POLAR_ACCESS_TOKEN
+# Fixture path always. Live Waffo is never invoked by this offline smoke.
+# Missing Waffo live config → BLOCKED-SECRET/CONFIG with the exact variable.
 # Do not invent listings. Empty board is valid.
 set -euo pipefail
 
@@ -12,6 +12,12 @@ fail() {
   echo "FAIL: $*" >&2
   exit 1
 }
+
+BASE="${LIVE_SMOKE_BASE:-}"
+if [[ -n "${BASE}" ]]; then
+  echo "BLOCKED-CONFIG: LIVE_SMOKE_BASE is disabled for the offline fixture smoke; unset it so the script can spawn its disposable fixture" >&2
+  exit 2
+fi
 
 if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
   fail "live-smoke must not run in GitHub Actions"
@@ -38,7 +44,6 @@ FAIL=0
 STARTED_PID=""
 WORKDIR=""
 RESULT_LOG=""
-BASE="${LIVE_SMOKE_BASE:-}"
 
 cleanup() {
   if [[ -n "${STARTED_PID}" ]] && kill -0 "${STARTED_PID}" 2>/dev/null; then
@@ -141,6 +146,12 @@ html_has() {
   grep -Eq "$pattern" "$file"
 }
 
+html_has_literal() {
+  local file="$1"
+  local text="$2"
+  grep -Fq -- "$text" "$file"
+}
+
 listing_ids() {
   node --input-type=module -e '
     import { readFileSync } from "node:fs";
@@ -164,12 +175,14 @@ clicks_for_id() {
     import { readFileSync } from "node:fs";
     const html = readFileSync(process.argv[1], "utf8");
     const id = process.argv[2];
-    const re = new RegExp(
-      `data-listing-id="${id}"[\\s\\S]*?<span class="clicks">[\\s\\S]*?(\\d+) clicks`,
+    const article = [...html.matchAll(/<article\b[^>]*>[\s\S]*?<\/article>/g)]
+      .map((match) => match[0])
+      .find((candidate) => candidate.match(/data-listing-id="([^"]+)"/)?.[1] === id);
+    const clicks = article?.match(
+      /<span\b[^>]*class="clicks(?:\s+later-fact)?"[^>]*>[\s\S]*?(\d+)\s+clicks<\/span>/,
     );
-    const match = html.match(re);
-    if (!match) process.exit(2);
-    process.stdout.write(match[1]);
+    if (!clicks) process.exit(2);
+    process.stdout.write(clicks[1]);
   ' "$1" "$2"
 }
 
@@ -246,7 +259,11 @@ if [[ -z "${BASE}" ]]; then
   echo "database=${DB_PATH}"
   (
     cd "$root"
-    unset POLAR_LIVE POLAR_ACCESS_TOKEN POLAR_WEBHOOK_SECRET POLAR_FIXTURE_ONLY || true
+    unset POLAR_LIVE POLAR_ACCESS_TOKEN POLAR_WEBHOOK_SECRET POLAR_FIXTURE_ONLY \
+      WAFFO_LIVE WAFFO_MERCHANT_ID WAFFO_STORE_ID WAFFO_PRODUCT_ID WAFFO_PRIVATE_KEY \
+      WAFFO_PRIVATE_KEY_FILE WAFFO_WEBHOOK_PUBLIC_KEY WAFFO_WEBHOOK_TEST_PUBLIC_KEY \
+      WAFFO_WEBHOOK_PROD_PUBLIC_KEY || true
+    export PAYMENT_MODE=fixture
     export PORT
     export DATABASE_PATH="${DB_PATH}"
     export BOARD_TZ="${BOARD_TZ:-UTC}"
@@ -258,17 +275,11 @@ if [[ -z "${BASE}" ]]; then
     cat "${LOG_PATH}" >&2 || true
     fail "local server did not become healthy at ${BASE}/healthz"
   fi
-else
-  BASE="${BASE%/}"
-  echo "assuming existing server at ${BASE}"
-  if ! wait_health "$BASE"; then
-    fail "existing server at ${BASE} did not answer /healthz"
-  fi
 fi
 
 echo "base=${BASE}"
-echo "POLAR_LIVE=${POLAR_LIVE:-<unset>}"
-echo "POLAR_API_BASE=${POLAR_API_BASE:-<unset>}"
+echo "PAYMENT_MODE=${PAYMENT_MODE:-<unset>}"
+echo "WAFFO_API_BASE=${WAFFO_API_BASE:-<unset>}"
 
 # --- healthz ---
 health_body="${WORKDIR}/healthz.json"
@@ -386,9 +397,19 @@ fi
 # --- about / rules ---
 about_body="${WORKDIR}/about.html"
 about_code="$(http_get "/about" "$about_body" || true)"
-if [[ "$about_code" == "200" ]] && html_has "$about_body" 'No ads' \
-  && html_has "$about_body" 'No API keys' && html_has "$about_body" 'No revenue share' \
-  && html_has "$about_body" 'Rank is the bid' && html_has "$about_body" 'UTC'; then
+if [[ "$about_code" == "200" ]] \
+  && html_has "$about_body" 'public auction for the cover' \
+  && html_has "$about_body" 'No ads' \
+  && html_has "$about_body" 'No API keys' \
+  && html_has "$about_body" 'No revenue share' \
+  && html_has "$about_body" 'Rank is the bid' \
+  && html_has "$about_body" 'Minimum <strong>\$5</strong>' \
+  && html_has "$about_body" 'difference' \
+  && html_has "$about_body" 'appears only after payment' \
+  && html_has_literal "$about_body" "00:00 ${BOARD_TZ:-UTC}" \
+  && html_has "$about_body" 'tracking and affiliate parameters' \
+  && html_has "$about_body" 'Chat invitations' \
+  && html_has "$about_body" 'adult content'; then
   record "about" "PASS" "GET /about 200 copy contract"
 else
   record "about" "FAIL" "GET /about HTTP ${about_code}"
@@ -396,10 +417,25 @@ fi
 
 rules_body="${WORKDIR}/rules.html"
 rules_code="$(http_get "/rules" "$rules_body" || true)"
-if [[ "$rules_code" == "200" ]] && html_has "$rules_body" 'Minimum <strong>\$5</strong>' \
-  && html_has "$rules_body" 'difference' && html_has "$rules_body" 'older' \
-  && html_has "$rules_body" 'NSFW' && html_has "$rules_body" 'utm_\*' \
-  && html_has "$rules_body" 'BOARD_TZ' && html_has "$rules_body" 'Polar'; then
+if [[ "$rules_code" == "200" ]] \
+  && html_has "$rules_body" 'No ads' \
+  && html_has "$rules_body" 'No API keys' \
+  && html_has "$rules_body" 'No revenue share' \
+  && html_has "$rules_body" 'Waffo is the only live payment provider' \
+  && html_has "$rules_body" 'signed' \
+  && html_has "$rules_body" 'order[.]completed' \
+  && html_has "$rules_body" 'valid signature' \
+  && html_has "$rules_body" 'browser return' \
+  && html_has "$rules_body" 'rank is the bid' \
+  && html_has "$rules_body" 'Minimum <strong>\$5</strong>' \
+  && html_has "$rules_body" 'listing placed first keeps the higher rank' \
+  && html_has "$rules_body" 'difference' \
+  && html_has "$rules_body" 'Rank changes only after payment is confirmed' \
+  && html_has "$rules_body" 'This board follows' \
+  && html_has "$rules_body" 'Tracking, referral, and affiliate parameters are removed' \
+  && html_has "$rules_body" 'chat invitations' \
+  && html_has "$rules_body" 'adult content' \
+  && html_has "$rules_body" 'Clicks never change rank'; then
   record "rules" "PASS" "GET /rules 200 copy contract"
 else
   record "rules" "FAIL" "GET /rules HTTP ${rules_code}"
@@ -430,85 +466,31 @@ else
   fi
 fi
 
-# --- Polar live: never treat missing secret as a fixture success ---
-echo "== polar live =="
-if [[ "${POLAR_LIVE:-}" == "1" ]]; then
-  if [[ -z "${POLAR_ACCESS_TOKEN:-}" ]]; then
-    echo "BLOCKED-SECRET: POLAR_ACCESS_TOKEN"
-    record "polar-live" "BLOCKED-SECRET" "POLAR_ACCESS_TOKEN"
-  elif [[ -z "${POLAR_PRODUCT_ID:-}" ]]; then
-    echo "BLOCKED-SECRET: POLAR_PRODUCT_ID"
-    record "polar-live" "BLOCKED-SECRET" "POLAR_PRODUCT_ID"
+# --- Waffo live boundary: this smoke never makes a provider call ---
+echo "== Waffo live boundary =="
+waffo_mode="${PAYMENT_MODE:-fixture}"
+if [[ "$waffo_mode" == "waffo-test" || "$waffo_mode" == "waffo-prod" ]]; then
+  missing=""
+  [[ -n "${WAFFO_MERCHANT_ID:-}" ]] || missing="WAFFO_MERCHANT_ID"
+  [[ -n "${WAFFO_STORE_ID:-}" ]] || missing="${missing:-WAFFO_STORE_ID}"
+  [[ -n "${WAFFO_PRODUCT_ID:-}" ]] || missing="${missing:-WAFFO_PRODUCT_ID}"
+  if [[ -z "${WAFFO_PRIVATE_KEY:-}" && -z "${WAFFO_PRIVATE_KEY_FILE:-}" ]]; then
+    missing="${missing:-WAFFO_PRIVATE_KEY}"
+  fi
+  if [[ "$waffo_mode" == "waffo-test" ]]; then
+    [[ -n "${WAFFO_WEBHOOK_TEST_PUBLIC_KEY:-}" ]] || missing="${missing:-WAFFO_WEBHOOK_TEST_PUBLIC_KEY}"
   else
-    live_port="$(pick_port)"
-    live_db="${WORKDIR}/polar-live.sqlite"
-    live_log="${WORKDIR}/polar-live.log"
-    live_base="http://127.0.0.1:${live_port}"
-    live_pid=""
-    (
-      cd "$root"
-      export POLAR_LIVE=1
-      unset POLAR_FIXTURE_ONLY || true
-      export POLAR_ACCESS_TOKEN
-      export POLAR_WEBHOOK_SECRET="${POLAR_WEBHOOK_SECRET:-}"
-      export POLAR_API_BASE="${POLAR_API_BASE:-https://sandbox-api.polar.sh}"
-      if [[ -n "${POLAR_PRODUCT_ID:-}" ]]; then
-        export POLAR_PRODUCT_ID
-      fi
-      export PORT="${live_port}"
-      export DATABASE_PATH="${live_db}"
-      export PUBLIC_BASE_URL="${live_base}"
-      export BOARD_TZ="${BOARD_TZ:-UTC}"
-      exec node --import tsx src/server.ts
-    ) >"${live_log}" 2>&1 &
-    live_pid=$!
-    if ! wait_health "$live_base"; then
-      if grep -q 'BLOCKED-SECRET: POLAR_ACCESS_TOKEN' "${live_log}"; then
-        echo "BLOCKED-SECRET: POLAR_ACCESS_TOKEN"
-        record "polar-live" "BLOCKED-SECRET" "POLAR_ACCESS_TOKEN"
-      else
-        record "polar-live" "FAIL" "live Polar process did not become healthy"
-      fi
-    else
-      live_body="${WORKDIR}/polar-live.body"
-      live_hdrs="${WORKDIR}/polar-live.hdrs"
-      live_code="$(
-        curl -sS -D "$live_hdrs" -o "$live_body" -w "%{http_code}" \
-          --connect-timeout 5 --max-time 30 \
-          -X POST \
-          -H "content-type: application/x-www-form-urlencoded" \
-          --data-urlencode "productUrl=https://live.example/sku-${STAMP}" \
-          --data-urlencode "whyTestThisToday=Live Polar must not list until paid" \
-          --data-urlencode "bidUsd=5" \
-          "${live_base}/checkout" || true
-      )"
-      live_loc="$(header_value "$live_hdrs" "location" || true)"
-      live_board="${WORKDIR}/polar-live-board.html"
-      curl -sS -o "$live_board" "${live_base}/" >/dev/null || true
-      if html_has "$live_board" "live.example/sku-${STAMP}"; then
-        record "polar-live" "FAIL" "unpaid live Polar session appeared on the board"
-      elif [[ "$live_code" == "303" && "$live_loc" == https://sandbox.polar.sh/* ]]; then
-        record "polar-live" "PASS" "live sandbox checkout ${live_loc}; unpaid session not listed"
-      elif [[ "$live_code" == "303" && "$live_loc" == https://polar.sh/* ]]; then
-        record "polar-live" "FAIL" "live checkout hit production Polar (${live_loc}); sandbox required"
-      elif [[ "$live_code" == "303" && "$live_loc" == https://*polar.sh* ]]; then
-        record "polar-live" "PASS-ERROR" "live Polar HTTP ${live_code} loc=${live_loc} (not sandbox.polar.sh)"
-      else
-        record "polar-live" "PASS-ERROR" "live Polar HTTP ${live_code} loc=${live_loc} (no invented listing)"
-      fi
-    fi
-    if [[ -n "${live_pid}" ]] && kill -0 "${live_pid}" 2>/dev/null; then
-      kill "${live_pid}" 2>/dev/null || true
-      wait "${live_pid}" 2>/dev/null || true
-    fi
+    [[ -n "${WAFFO_WEBHOOK_PROD_PUBLIC_KEY:-}" ]] || missing="${missing:-WAFFO_WEBHOOK_PROD_PUBLIC_KEY}"
+  fi
+  if [[ -n "$missing" ]]; then
+    echo "BLOCKED-SECRET: ${missing}"
+    record "waffo-live" "BLOCKED-SECRET" "$missing"
+  else
+    record "waffo-live" "PASS-ERROR" "offline smoke does not invoke Waffo"
   fi
 else
-  if [[ -z "${POLAR_ACCESS_TOKEN:-}" ]]; then
-    echo "BLOCKED-SECRET: POLAR_ACCESS_TOKEN"
-    record "polar-live" "BLOCKED-SECRET" "POLAR_ACCESS_TOKEN"
-  else
-    record "polar-live" "PASS-ERROR" "POLAR_LIVE unset; token present but live Polar not invoked"
-  fi
+  echo "BLOCKED-SECRET: WAFFO_MERCHANT_ID"
+  record "waffo-live" "BLOCKED-SECRET" "PAYMENT_MODE is fixture; Waffo not invoked"
 fi
 
 echo

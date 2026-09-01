@@ -147,6 +147,22 @@ test("non-https, credentials, localhost, and shorteners are rejected", () => {
   assert.throws(() => canonicalizeProductUrl("https://user:pass@store.example/p"), /credentials/);
   assert.throws(() => canonicalizeProductUrl("https://localhost/p"), /local host/);
   assert.throws(() => canonicalizeProductUrl("https://127.0.0.1/p"), /local host/);
+  for (const host of [
+    "[::1]",
+    "[::]",
+    "[fc00::1]",
+    "[fd12:3456:789a::1]",
+    "[fe80::1]",
+    "[::ffff:127.0.0.1]",
+    "[::ffff:192.168.1.1]",
+    "localhost.",
+  ]) {
+    assert.throws(
+      () => canonicalizeProductUrl(`https://${host}/sku`),
+      /local host/,
+      host,
+    );
+  }
   assert.throws(() => canonicalizeProductUrl("https://bit.ly/abc"), /shortener/);
   assert.throws(() => canonicalizeProductUrl("https://t.co/abc"), /shortener/);
   assert.throws(() => normalizeWhyTestThisToday("short"), /8–140/);

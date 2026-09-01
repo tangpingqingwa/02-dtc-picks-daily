@@ -38,5 +38,13 @@ jobs:
           test -f scripts/test.sh
           test -x scripts/test.sh
 
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and exercise compiled runtime
+        run: |
+          npm run build
+          node scripts/verify-built-artifact.mjs
+
       - name: Test
         run: bash scripts/test.sh

@@ -75,7 +75,7 @@ test("SPEC acceptance 4: equal bids keep the older listing above", () => {
   assert.equal(ranked[1]?.id, "newer");
 });
 
-test("unpaid Polar checkout stays off the live board until paid", () => {
+test("unpaid Waffo checkout stays off the live board until paid", () => {
   const unpaid = listing({
     id: "lst-ghost",
     bidUsd: 99,
@@ -116,7 +116,7 @@ test("unpaid Polar checkout stays off the live board until paid", () => {
       id: "lst-ghost",
       day: "2026-08-22",
       productUrl: "https://ghost.example/sku",
-      whyTestThisToday: "Unpaid Polar checkout must not take this morning’s cover",
+      whyTestThisToday: "Unpaid Waffo checkout must not take this morning’s cover",
       bidUsd: 99,
       paidUsd: 0,
       createdAt: "2026-08-22T08:00:00.000Z",
@@ -125,7 +125,7 @@ test("unpaid Polar checkout stays off the live board until paid", () => {
       id: "lst-paid",
       day: "2026-08-22",
       productUrl: "https://store.example/sku",
-      whyTestThisToday: "Fixture pay $5 lists at #1 after Polar reports paid",
+      whyTestThisToday: "Fixture pay $5 lists at #1 after Waffo reports paid",
       bidUsd: 5,
       paidUsd: 5,
       createdAt: "2026-08-22T09:00:00.000Z",

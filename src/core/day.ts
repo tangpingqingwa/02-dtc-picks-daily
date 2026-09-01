@@ -7,6 +7,17 @@ export function boardTimeZone(tz = process.env.BOARD_TZ): string {
   return tz;
 }
 
+/** Validate the configured IANA zone before a listener reports readiness. */
+export function validateBoardTimeZone(tz = process.env.BOARD_TZ): string {
+  const value = boardTimeZone(tz);
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value }).format(new Date(0));
+  } catch {
+    throw new Error("BLOCKED-CONFIG: BOARD_TZ must be a valid IANA timezone");
+  }
+  return value;
+}
+
 function formatInZone(
   now: Date,
   tz: string,

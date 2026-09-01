@@ -4,6 +4,7 @@ import { BOARD_CSS } from "./styles.js";
 
 export const SITE_NAME = "picks.daily";
 export const SITE_TITLE = "DTC Picks Daily";
+export const MAKER_CONTACT_EMAIL = "tangpingqingwa@gmail.com";
 
 export type NavId = "leaderboard" | "about" | "rules";
 
@@ -21,6 +22,59 @@ function navItem(href: string, label: string, current: boolean): string {
   return html`<li><a href="${href}"${current ? ' aria-current="page"' : ""}>${label}</a></li>`;
 }
 
+type SiteHeaderInput = {
+  active: NavId;
+  day: string;
+  folio: string;
+  issueSpoken: string;
+};
+
+function renderSearchButton(active: NavId): string {
+  return active === "leaderboard"
+    ? html`<button type="button" class="search-button" id="search-button" aria-label="Find paid listings" aria-expanded="false" aria-controls="listing-search"><span class="control-label">Find</span></button>`
+    : html`<button type="button" class="search-button" aria-label="Find unavailable" aria-disabled="true" disabled><span class="control-label">Find</span></button>`;
+}
+
+/** A small public contact line shared by every server-rendered page. */
+export function renderMakerFooter(): string {
+  const email = escapeHtml(MAKER_CONTACT_EMAIL);
+  return html`<footer class="maker-footer" data-maker-contact="">
+    <p>Built by <a href="mailto:${email}">${email}</a></p>
+  </footer>`;
+}
+
+/** The merch-desk header keeps issue metadata independent of board content. */
+export function renderSiteHeader(input: SiteHeaderInput): string {
+  const day = escapeHtml(input.day);
+  const folio = escapeHtml(input.folio);
+  const issueSpoken = escapeHtml(input.issueSpoken);
+  return html`<header class="site-header" data-site-header="" data-slot="site-header">
+    <div class="site-header-inner" data-site-header-inner="" data-slot="shell">
+      <a class="brand" href="/" data-slot="brand">
+        <span class="brand-name">picks<span class="brand-dot">.daily</span></span>
+      </a>
+      <p class="rail-folio">
+        <span class="rail-kicker">MERCH DESK / MORNING ISSUE</span>
+        <time datetime="${day}" data-issue-date="${day}">${folio}</time>
+      </p>
+      <div class="nav-wrap">
+        <nav aria-label="Main" data-slot="primary-nav">
+          <ul>
+            ${navItem("/", "Leaderboard", input.active === "leaderboard")}
+            ${navItem("/about", "About", input.active === "about")}
+            <li class="nav-rules"><a href="/rules"${input.active === "rules" ? ' aria-current="page"' : ""}>Rules</a></li>
+          </ul>
+        </nav>
+        ${renderSearchButton(input.active)}
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode">
+          <span class="control-label">Theme</span>
+        </button>
+      </div>
+    </div>
+    <p class="sr-only">${issueSpoken}. Date is the issue.</p>
+  </header>`;
+}
+
 export function renderLayout(input: LayoutInput): string {
   const tz = input.tz ?? boardTimeZone();
   const day = input.day ?? dayKey(input.now, tz);
@@ -29,8 +83,14 @@ export function renderLayout(input: LayoutInput): string {
     input.description ??
       "Bid USD. Own this morning’s cover. Sellers see your product link first.",
   );
-  const folio = escapeHtml(formatFolioDate(day));
-  const issueSpoken = escapeHtml(formatIssueDate(day, tz));
+  const folio = formatFolioDate(day);
+  const issueSpoken = formatIssueDate(day, tz);
+  const siteHeader = renderSiteHeader({
+    active: input.active,
+    day,
+    folio,
+    issueSpoken,
+  });
   return `<!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
@@ -38,40 +98,14 @@ export function renderLayout(input: LayoutInput): string {
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>${title}</title>
   <meta name="description" content="${description}"/>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,650;0,6..72,700;1,6..72,500&display=swap" rel="stylesheet"/>
   <style>${BOARD_CSS}</style>
 </head>
 <body>
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a class="brand" href="/">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <span>picks<span class="brand-dot">.</span>daily</span>
-      </a>
-      <p class="rail-folio">
-        <span class="rail-kicker">Morning edition</span>
-        <time datetime="${escapeHtml(day)}" data-issue-date="${escapeHtml(day)}">${folio}</time>
-      </p>
-      <div class="nav-wrap">
-        <nav aria-label="Main">
-          <ul>
-            ${navItem("/", "Leaderboard", input.active === "leaderboard")}
-            ${navItem("/about", "About", input.active === "about")}
-            ${navItem("/rules", "Rules", input.active === "rules")}
-          </ul>
-        </nav>
-        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"></path></svg>
-        </button>
-      </div>
-    </div>
-    <p class="sr-only">${issueSpoken}. Date is the issue.</p>
-  </header>
+  ${siteHeader}
   <div class="page">
     ${input.body}
   </div>
+  ${renderMakerFooter()}
   <script>
     (function () {
       var root = document.documentElement;

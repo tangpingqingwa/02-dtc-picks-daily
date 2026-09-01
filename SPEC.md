@@ -36,7 +36,7 @@ One-line pitch: **Bid USD. Own this morning’s cover. Sellers see your link fir
 - Each listing is a product URL plus one line: **why test this today**.
 - Daily reset of the cover (timezone documented; default **UTC**).
 - Public click counts on every listing.
-- Polar Checkout for live money. Fixture checkout for tests and CI.
+- Waffo Pancake Checkout for live money. Fixture checkout for tests and CI.
 - Three pages only in v1: board, about, rules.
 - Global sellers. English copy. USD.
 
@@ -70,7 +70,7 @@ There is no logged-in “member.” Payment is the only write path.
 |---|---|
 | `/` | Public leaderboard for **today’s** cover auction. Bid form. Click-throughs. |
 | `/about` | What this is: no ads, no API keys, no revenue share. Daily cover. UTC. |
-| `/rules` | Ranking, raise, URL stripping, banned links, reset, Polar. |
+| `/rules` | Ranking, raise, URL stripping, banned links, reset, Waffo settlement. |
 
 No other marketing pages in v1. No dashboard. No `/api` for third parties.
 
@@ -78,7 +78,7 @@ No other marketing pages in v1. No dashboard. No `/api` for third parties.
 
 ## 5. Listing
 
-A listing is created only after Polar (or the fixture checkout) reports a completed payment.
+A listing is created only after Waffo (or the fixture checkout) reports a completed payment.
 
 ```ts
 type Listing = {
@@ -112,7 +112,7 @@ Copied from outbid.lol, with a **$5** floor instead of $2.
 2. Bids are whole US dollars. Minimum **$5**. Step **$1**.
 3. Sort today’s listings by `bidUsd` descending. On a tie, the **older** `createdAt` keeps the higher rank.
 4. Paying less than the current #1 still lists at whatever rank that bid can take.
-5. A completed payment is what claims the rank. An unpaid Polar session does not appear.
+5. A completed payment is what claims the rank. An unpaid Waffo session does not appear.
 6. After a successful raise, re-sort. The listing keeps its original `createdAt`.
 
 Example, same day:
@@ -192,16 +192,30 @@ Every listing shows a public integer click count.
 
 ---
 
-## 11. Checkout (Polar)
+## 11. Checkout (Waffo Pancake)
 
-Money in v1 is **Polar Checkout** (merchant of record).
+Money in v1 is **Waffo Pancake Checkout** (merchant of record). The official
+`@waffo/pancake-ts@0.19.1` SDK is the only live provider path; legacy Polar
+variables and adapters are inert compatibility debris.
 
 | Mode | When | Behavior |
 |---|---|---|
-| Fixture | default in `scripts/test.sh` and CI | Completing a fixture session inserts/raises the listing. No network. |
-| Live | `POLAR_LIVE=1` plus Polar secret | Real Checkout. Listing appears only after a paid webhook / confirmed session. |
+| Fixture | explicit `PAYMENT_MODE=fixture` in tests and CI | Completing a fixture session inserts/raises the listing. No network. |
+| Waffo test | explicit `PAYMENT_MODE=waffo-test` plus test credentials | Waffo test Checkout. Listing appears only after a signed `order.completed` webhook. |
+| Waffo production | explicit `PAYMENT_MODE=waffo-prod` plus production credentials | Production Checkout. Requires the official HTTPS API origin, durable DB, public HTTPS webhook URL, and signed `order.completed` settlement. |
 
-Missing Polar live secret during operator smoke is `BLOCKED-SECRET: POLAR_ACCESS_TOKEN` (or the exact env name BUILD locks). That is not a fixture success.
+Missing Waffo live configuration during operator smoke is reported as the exact
+`BLOCKED-SECRET: WAFFO_*` or `BLOCKED-CONFIG: ...` variable. That is not a
+fixture success. A production-like process never infers fixture mode.
+
+The app persists an immutable checkout intent (URL, day, target bid, exact
+charge, expected Waffo product/store/USD binding, and fingerprints) before
+provider I/O. A timeout, 5xx, malformed response, or lost response remains
+recoverable and cannot rank. Live ranking accepts only a raw-body-verified
+`order.completed` event whose event/payment identity, metadata, decimal
+subtotal/tax/total, and intent all match; the provider timestamp supplies the
+initial tie time. `/webhooks/waffo` is the only live settlement path, and the
+browser return URL never settles a listing.
 
 No ads. No API-key product. No revenue share cut to the listed URL.
 
@@ -261,8 +275,8 @@ Must state every rule in sections 6–11 in operator language. No extra ranking 
 | 8 | NSFW | Adult URL or sexual blurb rejected; no charge. |
 | 9 | Reset | After `00:00` `BOARD_TZ`, `/` does not show yesterday’s cover. |
 | 10 | Pages | `/`, `/about`, `/rules` all 200. |
-| 11 | Polar fixture | CI / `scripts/test.sh` never call live Polar. |
-| 12 | Polar live | `POLAR_LIVE=1` smoke can complete or record `BLOCKED-SECRET`. |
+| 11 | Waffo fixture | CI / `scripts/test.sh` never call Waffo or any live provider. |
+| 12 | Waffo live | Explicit `waffo-test`/`waffo-prod` smoke can complete or record `BLOCKED-SECRET`/`BLOCKED-CONFIG`; fixture smoke remains offline. |
 
 ---
 
@@ -284,4 +298,4 @@ Full process: [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 Implementation plan (stack, modules, PR DAG): [BUILD.md](./BUILD.md).
 
-Until there is an application binary, `scripts/test.sh` still has to pass: contract files exist, SPEC/CONTRIBUTING agree, no tracked secrets. Adding a server means **extending** that script with unit/contract tests. Live Polar is optional and must not be required for `main` to stay green.
+Until there is an application binary, `scripts/test.sh` still has to pass: contract files exist, SPEC/CONTRIBUTING agree, no tracked secrets. Adding a server means **extending** that script with unit/contract tests. Live Waffo is optional and must not be required for `main` to stay green.

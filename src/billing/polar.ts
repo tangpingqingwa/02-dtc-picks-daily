@@ -1,251 +1,43 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
-import {
-  polarAccessToken,
-  polarLiveEnabled,
-  polarProductId,
-  polarWebhookSecret,
-  publicBaseUrl,
-} from "../config.js";
-import type {
-  CheckoutDraft,
-  CheckoutPort,
-  CheckoutSession,
-  PaidEvent,
-  WebhookResult,
-} from "./port.js";
+import type { CheckoutDraft, CheckoutPort, CheckoutSession, PaidEvent, WebhookResult } from "./port.js";
 
-/** Production Polar API. Override with POLAR_API_BASE (sandbox-api for operator smoke). */
+/**
+ * Retained only as a source-compatible marker for old local imports. Polar is
+ * not a provider adapter and has no runtime route or settlement path.
+ */
 export const POLAR_API_BASE = "https://api.polar.sh";
 
-export function polarApiBase(env: NodeJS.ProcessEnv = process.env): string {
-  const fromEnv = env.POLAR_API_BASE?.trim();
-  if (fromEnv) {
-    return fromEnv.replace(/\/$/, "");
-  }
+export function polarApiBase(_env: NodeJS.ProcessEnv = process.env): string {
   return POLAR_API_BASE;
 }
 
-export type PolarCheckoutOptions = {
-  env?: NodeJS.ProcessEnv;
-  fetch?: typeof fetch;
-};
-
-type StoredSession = CheckoutSession & { paidAt?: string };
-
-/** Live Polar Checkout. Never constructed unless POLAR_LIVE=1. */
-export class PolarCheckout implements CheckoutPort {
-  readonly kind = "live" as const;
-  private readonly env: NodeJS.ProcessEnv;
-  private readonly fetchFn: typeof fetch;
-  private readonly sessions = new Map<string, StoredSession>();
-
-  constructor(options: PolarCheckoutOptions = {}) {
-    this.env = options.env ?? process.env;
-    this.fetchFn = options.fetch ?? fetch;
-    if (!polarLiveEnabled(this.env)) {
-      throw new Error("PolarCheckout requires POLAR_LIVE=1");
-    }
-    if (!polarAccessToken(this.env)) {
-      throw new Error("BLOCKED-SECRET: POLAR_ACCESS_TOKEN");
-    }
-  }
-
-  async createSession(draft: CheckoutDraft): Promise<CheckoutSession> {
-    const token = this.requireToken();
-    const body: Record<string, unknown> = {
-      amount: draft.chargeUsd * 100,
-      currency: "usd",
-      success_url: `${publicBaseUrl(this.env)}/checkout/complete?session={CHECKOUT_ID}`,
-      metadata: {
-        productUrl: draft.productUrl,
-        whyTestThisToday: draft.whyTestThisToday,
-        bidUsd: String(draft.bidUsd),
-        chargeUsd: String(draft.chargeUsd),
-        day: draft.day,
-      },
-    };
-    const productId = polarProductId(this.env);
-    if (productId) {
-      body.product_id = productId;
-    }
-    const response = await this.fetchFn(`${polarApiBase(this.env)}/v1/checkouts/`, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${token}`,
-        "content-type": "application/json",
-        accept: "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-    if (!response.ok) {
-      throw new Error(`polar checkout failed: ${response.status}`);
-    }
-    const payload = (await response.json()) as Record<string, unknown>;
-    const id = readString(payload.id);
-    const url = readString(payload.url);
-    if (!id || !url) {
-      throw new Error("polar checkout response missing id/url");
-    }
-    const session: StoredSession = {
-      id,
-      status: "open",
-      url,
-      draft: { ...draft },
-      amountUsd: draft.chargeUsd,
-    };
-    this.sessions.set(id, session);
-    return { ...session };
-  }
-
-  getSession(id: string): CheckoutSession | undefined {
-    const session = this.sessions.get(id);
-    return session ? { ...session } : undefined;
-  }
-
-  async completeSession(id: string): Promise<PaidEvent> {
-    // Live listings appear only after a verified paid webhook.
-    throw new Error(`live Polar session ${id} completes via webhook only`);
-  }
-
-  async abandonSession(id: string): Promise<void> {
-    const session = this.sessions.get(id);
-    if (session && session.status !== "complete") {
-      session.status = "expired";
-    }
-  }
-
-  async parseWebhook(rawBody: string, headers: Record<string, string>): Promise<WebhookResult> {
-    const secret = polarWebhookSecret(this.env);
-    if (!secret) {
-      throw new Error("BLOCKED-SECRET: POLAR_WEBHOOK_SECRET");
-    }
-    if (!verifyPolarSignature(rawBody, headers, secret)) {
-      throw new Error("invalid Polar webhook signature");
-    }
-    const event = parseJson(rawBody);
-    if (!isRecord(event)) {
-      return { ignored: true };
-    }
-    const data = isRecord(event.data) ? event.data : event;
-    const status = readString(data.status) ?? "";
-    const sessionId = readString(data.id);
-    if (!sessionId) {
-      return { ignored: true };
-    }
-    if (status === "expired" || status === "failed" || status === "canceled") {
-      await this.abandonSession(sessionId);
-      return { ignored: true };
-    }
-    if (!isPaidStatus(status) && event.type !== "order.paid") {
-      return { ignored: true };
-    }
-    const existing = this.sessions.get(sessionId);
-    const draft = existing?.draft ?? draftFromMetadata(data);
-    if (!draft) {
-      return { ignored: true };
-    }
-    const paidAt = new Date().toISOString();
-    this.sessions.set(sessionId, {
-      id: sessionId,
-      status: "complete",
-      url: existing?.url ?? "",
-      draft,
-      amountUsd: existing?.amountUsd ?? draft.chargeUsd,
-      paidAt,
-    });
-    return {
-      sessionId,
-      draft,
-      amountUsd: existing?.amountUsd ?? draft.chargeUsd,
-      paidAt,
-    };
-  }
-
-  private requireToken(): string {
-    const token = polarAccessToken(this.env);
-    if (!token) {
-      throw new Error("BLOCKED-SECRET: POLAR_ACCESS_TOKEN");
-    }
-    return token;
-  }
-}
-
-export function verifyPolarSignature(
-  rawBody: string,
-  headers: Record<string, string>,
-  secret: string,
-): boolean {
-  const id = header(headers, "webhook-id");
-  const timestamp = header(headers, "webhook-timestamp");
-  const signature = header(headers, "webhook-signature");
-  if (!id || !timestamp || !signature) {
-    return false;
-  }
-  const expected = createHmac("sha256", secret).update(`${id}.${timestamp}.${rawBody}`).digest("base64");
-  for (const part of signature.split(" ")) {
-    const value = part.startsWith("v1,") ? part.slice(3) : part;
-    if (safeEqual(value, expected)) {
-      return true;
-    }
-  }
+export function polarLiveEnabled(_env: NodeJS.ProcessEnv = process.env): boolean {
   return false;
 }
 
-function header(headers: Record<string, string>, name: string): string | undefined {
-  const needle = name.toLowerCase();
-  for (const [key, value] of Object.entries(headers)) {
-    if (key.toLowerCase() === needle && value.trim() !== "") {
-      return value;
-    }
+export class PolarCheckout implements CheckoutPort {
+  readonly kind = "live" as const;
+
+  constructor(_options: Record<string, unknown> = {}) {
+    throw new Error("BLOCKED-CONFIG: Polar provider is retired; use Waffo");
   }
-  return undefined;
-}
 
-function safeEqual(left: string, right: string): boolean {
-  const a = Buffer.from(left);
-  const b = Buffer.from(right);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
-function isPaidStatus(status: string): boolean {
-  return status === "succeeded" || status === "paid" || status === "confirmed" || status === "complete";
-}
-
-function parseJson(rawBody: string): unknown {
-  try {
-    return JSON.parse(rawBody) as unknown;
-  } catch {
-    return null;
+  createSession(_draft: CheckoutDraft): Promise<CheckoutSession> {
+    return Promise.reject(new Error("BLOCKED-CONFIG: Polar provider is retired; use Waffo"));
   }
-}
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function draftFromMetadata(data: Record<string, unknown>): CheckoutDraft | undefined {
-  const metadata = isRecord(data.metadata) ? data.metadata : {};
-  const productUrl = readString(metadata.productUrl);
-  const whyTestThisToday = readString(metadata.whyTestThisToday);
-  const bidUsd = readInt(metadata.bidUsd);
-  const day = readString(metadata.day);
-  if (!productUrl || !whyTestThisToday || bidUsd === undefined || !day) {
+  getSession(_id: string): CheckoutSession | undefined {
     return undefined;
   }
-  const chargeUsd = readInt(metadata.chargeUsd) ?? bidUsd;
-  return { productUrl, whyTestThisToday, bidUsd, day, chargeUsd };
-}
 
-function readString(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() !== "" ? value : undefined;
-}
+  completeSession(_id: string): Promise<PaidEvent> {
+    return Promise.reject(new Error("BLOCKED-CONFIG: Polar provider is retired; use Waffo"));
+  }
 
-function readInt(value: unknown): number | undefined {
-  if (typeof value === "number" && Number.isInteger(value)) {
-    return value;
+  abandonSession(_id: string): Promise<void> {
+    return Promise.resolve();
   }
-  if (typeof value === "string" && /^-?\d+$/.test(value.trim())) {
-    return Number(value.trim());
+
+  parseWebhook(_rawBody: string, _headers: Record<string, string>): Promise<WebhookResult> {
+    return Promise.reject(new Error("BLOCKED-CONFIG: Polar provider is retired; use Waffo"));
   }
-  return undefined;
 }
