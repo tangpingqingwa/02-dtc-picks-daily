@@ -111,7 +111,10 @@ export function canonicalizeProductUrl(raw: string): string {
     throw new UrlError("invalid_url", "product URL must not include credentials");
   }
 
-  const host = url.hostname.toLowerCase();
+  // DNS treats a trailing root label as equivalent, so normalize every
+  // trailing dot before denylist checks and before storing the identity. This
+  // prevents `t.me.`, `t.me..`, and subdomain variants from bypassing policy.
+  const host = url.hostname.toLowerCase().replace(/\.+$/, "");
   if (host === "") {
     throw new UrlError("invalid_url", "product URL must be a valid https URL");
   }

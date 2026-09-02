@@ -62,6 +62,15 @@ test("bare product domains default to HTTPS without weakening protocol checks", 
     canonicalizeProductUrl("//hartevo.com:8443/jobs"),
     "https://hartevo.com:8443/jobs",
   );
+  assert.equal(
+    canonicalizeProductUrl("hartevo.com.:8443/jobs"),
+    "https://hartevo.com:8443/jobs",
+  );
+  assert.equal(
+    canonicalizeProductUrl("//hartevo.com.:8443/jobs"),
+    "https://hartevo.com:8443/jobs",
+  );
+  assert.equal(canonicalizeProductUrl("https://hartevo.com."), "https://hartevo.com/");
   assert.equal(canonicalizeProductUrl("https://hartevo.com/products/pick"), "https://hartevo.com/products/pick");
   assert.throws(() => canonicalizeProductUrl("http://hartevo.com/products/pick"), /https/);
   assert.throws(() => canonicalizeProductUrl("javascript:alert(1)"), /https/);
@@ -137,6 +146,58 @@ test("bare public host ports default to HTTPS through checkout", async () => {
   assert.equal(response.statusCode, 303);
   const [listing] = listToday(app.db, dayKey());
   assert.equal(listing?.productUrl, "https://hartevo.com:8443/jobs");
+});
+
+test("trailing-dot host spellings cannot bypass URL denylists or checkout", async () => {
+  const cases = [
+    ["t.me.", "chat_forbidden"],
+    ["//t.me.", "chat_forbidden"],
+    ["https://t.me.", "chat_forbidden"],
+    ["t.me..", "invalid_url"],
+    ["//t.me..", "chat_forbidden"],
+    ["https://t.me..", "chat_forbidden"],
+    ["onlyfans.com.", "nsfw_forbidden"],
+    ["//onlyfans.com.", "nsfw_forbidden"],
+    ["https://onlyfans.com.", "nsfw_forbidden"],
+    ["pornhub.com..", "invalid_url"],
+    ["//pornhub.com..", "nsfw_forbidden"],
+    ["https://pornhub.com..", "nsfw_forbidden"],
+    ["bit.ly.", "shortener_forbidden"],
+    ["//bit.ly.", "shortener_forbidden"],
+    ["https://bit.ly.", "shortener_forbidden"],
+    ["sub.onlyfans.com.", "nsfw_forbidden"],
+    ["//sub.onlyfans.com.", "nsfw_forbidden"],
+    ["https://sub.onlyfans.com.", "nsfw_forbidden"],
+  ] as const;
+  for (const [value, code] of cases) {
+    assert.throws(
+      () => canonicalizeProductUrl(value),
+      (error: unknown) => {
+        assert.ok(error instanceof UrlError, value);
+        assert.equal(error.code, code, value);
+        return true;
+      },
+      value,
+    );
+  }
+
+  const app = await buildApp({ databasePath: ":memory:" });
+  after(() => app.close());
+  for (const [value] of cases) {
+    const response = await app.inject({
+      method: "POST",
+      url: "/checkout",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: form({
+        productUrl: value,
+        whyTestThisToday: "Trailing dots must not bypass product safety checks",
+        bidUsd: "5",
+      }),
+    });
+    assert.equal(response.statusCode, 400, value);
+    assert.notEqual(response.statusCode, 303, value);
+  }
+  assert.equal(listToday(app.db, dayKey()).length, 0);
 });
 
 test("Amazon and Shopify listings are keyed by path, not leftover query", () => {
