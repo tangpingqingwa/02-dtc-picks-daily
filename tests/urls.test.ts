@@ -54,6 +54,14 @@ test("bare product domains default to HTTPS without weakening protocol checks", 
     canonicalizeProductUrl("Hartevo.com/products/pick/?utm_source=launch#role"),
     "https://hartevo.com/products/pick",
   );
+  assert.equal(
+    canonicalizeProductUrl("hartevo.com:8443/jobs"),
+    "https://hartevo.com:8443/jobs",
+  );
+  assert.equal(
+    canonicalizeProductUrl("//hartevo.com:8443/jobs"),
+    "https://hartevo.com:8443/jobs",
+  );
   assert.equal(canonicalizeProductUrl("https://hartevo.com/products/pick"), "https://hartevo.com/products/pick");
   assert.throws(() => canonicalizeProductUrl("http://hartevo.com/products/pick"), /https/);
   assert.throws(() => canonicalizeProductUrl("javascript:alert(1)"), /https/);
@@ -74,6 +82,61 @@ test("bare product domains default to HTTPS without weakening protocol checks", 
   assert.equal(response.statusCode, 303);
   const [listing] = listToday(app.db, dayKey());
   assert.equal(listing?.productUrl, "https://hartevo.com/");
+});
+
+test("obfuscated schemes and malformed authorities cannot reach checkout", async () => {
+  const malformed = [
+    "javascript\n://",
+    "data\t://",
+    "ftp\r://",
+    "http\\://",
+    "javascript\\:alert(1)",
+    "/path",
+    "///example.com",
+    "https:hartevo.com/jobs",
+    "https:/hartevo.com/jobs",
+    "https:///hartevo.com/jobs",
+    "hartevo.com:abc/jobs",
+  ];
+  for (const value of malformed) {
+    assert.throws(() => canonicalizeProductUrl(value), UrlError, value);
+  }
+
+  const app = await buildApp({ databasePath: ":memory:" });
+  after(() => app.close());
+  for (const value of malformed) {
+    const response = await app.inject({
+      method: "POST",
+      url: "/checkout",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: form({
+        productUrl: value,
+        whyTestThisToday: "Malformed URL input must never create a checkout",
+        bidUsd: "5",
+      }),
+    });
+    assert.equal(response.statusCode, 400, value);
+    assert.notEqual(response.statusCode, 303, value);
+  }
+  assert.equal(listToday(app.db, dayKey()).length, 0);
+});
+
+test("bare public host ports default to HTTPS through checkout", async () => {
+  const app = await buildApp({ databasePath: ":memory:" });
+  after(() => app.close());
+  const response = await app.inject({
+    method: "POST",
+    url: "/checkout",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    payload: form({
+      productUrl: "hartevo.com:8443/jobs",
+      whyTestThisToday: "A product host with a port remains a valid desk URL",
+      bidUsd: "5",
+    }),
+  });
+  assert.equal(response.statusCode, 303);
+  const [listing] = listToday(app.db, dayKey());
+  assert.equal(listing?.productUrl, "https://hartevo.com:8443/jobs");
 });
 
 test("Amazon and Shopify listings are keyed by path, not leftover query", () => {

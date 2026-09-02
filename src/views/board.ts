@@ -526,10 +526,27 @@ ${renderSearchPopover(searchListings)}
       if (sizer) sizer.textContent = "$" + bid;
       if (copy) copy.textContent = "Claim #" + rankFor(bid) + " for";
     }
+    function bareAuthority(value) {
+      return /^(?:(?:(?:[a-z\\d](?:[a-z\\d-]{0,61}[a-z\\d])?\\.)+[a-z\\d](?:[a-z\\d-]{0,61}[a-z\\d])?\\.?|(?:\\d{1,3}\\.){3}\\d{1,3}|localhost|\\[[^\\]]+\\])(?::\\d+)?(?:[/?#].*)?)$/i.test(value);
+    }
     function validUrl(value) {
       var trimmed = String(value || "").trim();
-      if (!trimmed) return false;
-      var candidate = /^[a-z][a-z\d+.-]*:/i.test(trimmed) ? trimmed : "https://" + trimmed;
+      if (!trimmed || /[\\s\\\\\\u0000-\\u001f\\u007f-\\u009f]/.test(trimmed)) return false;
+      var candidate;
+      if (trimmed.indexOf("/") === 0) {
+        if (trimmed.indexOf("//") !== 0 || trimmed.indexOf("///") === 0) return false;
+        candidate = "https:" + trimmed;
+      } else if (bareAuthority(trimmed)) {
+        candidate = "https://" + trimmed;
+      } else {
+        var scheme = /^([a-z][a-z\\d+.-]*):/i.exec(trimmed);
+        if (!scheme) return false;
+        if (scheme[1].toLowerCase() === "https") {
+          var remainder = trimmed.slice(scheme[0].length);
+          if (remainder.indexOf("//") !== 0 || remainder.indexOf("///") === 0) return false;
+        }
+        candidate = trimmed;
+      }
       try { return new URL(candidate).protocol === "https:"; } catch (e) { return false; }
     }
     function ready() {

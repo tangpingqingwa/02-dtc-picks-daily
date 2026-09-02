@@ -78,6 +78,10 @@ const NSFW_HOSTS = [
 const NSFW_PATH_RE = /(?:^|\/)(?:porn|xxx|nsfw|onlyfans|fansly)(?:\/|$)/i;
 const SEXUAL_COPY_RE =
   /\b(porn|porno|xxx|nsfw|onlyfans|fansly|nude|nudes|naked|hentai|escort|camgirl|cam girls|sex tape|erotic|blowjob|handjob|anal|cumshot|fetish|sexual)\b/i;
+const URL_INPUT_CONTROL_RE = /[\s\\\u0000-\u001f\u007f-\u009f]/u;
+const URL_SCHEME_RE = /^([a-z][a-z\d+.-]*):/i;
+const BARE_AUTHORITY_RE =
+  /^(?:(?:(?:[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?\.)+[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?\.?|(?:\d{1,3}\.){3}\d{1,3}|localhost|\[[^\]]+\])(?::\d+)?(?:[/?#].*)?)$/i;
 
 export function isTrackingQueryKey(key: string): boolean {
   const lower = key.toLowerCase();
@@ -93,13 +97,7 @@ export function isTrackingQueryKey(key: string): boolean {
 /** Strip tracking, drop fragment, reject chat / NSFW / non-https. Clicks use this URL. */
 export function canonicalizeProductUrl(raw: string): string {
   const trimmed = raw.trim();
-  // A bare host/path is a convenient form input, but an explicitly supplied
-  // scheme must still be parsed and rejected when it is not HTTPS. In
-  // particular, do not retry `http:`, `javascript:`, or `data:` values with
-  // an HTTPS prefix after the first parse fails.
-  const candidate = /^[a-z][a-z\d+.-]*:/i.test(trimmed)
-    ? trimmed
-    : `https://${trimmed}`;
+  const candidate = productUrlCandidate(trimmed);
   let url: URL;
   try {
     url = new URL(candidate);
@@ -159,6 +157,49 @@ export function canonicalizeProductUrl(raw: string): string {
     throw new UrlError("invalid_url", "product URL must identify a product after stripping tracking");
   }
   return url.toString();
+}
+
+function productUrlCandidate(trimmed: string): string {
+  // WHATWG URL parsing discards ASCII whitespace and treats backslashes as
+  // slashes for special schemes. Reject those characters before parsing so
+  // an obfuscated unsafe scheme cannot become an apparently safe HTTPS host.
+  if (URL_INPUT_CONTROL_RE.test(trimmed)) {
+    throw new UrlError("invalid_url", "product URL must be a valid https URL");
+  }
+
+  // A leading slash without an authority is a path, not a product URL. The
+  // only accepted slash-prefixed form is an exact protocol-relative authority;
+  // reject `///host` before URL normalisation turns it into `//host`.
+  if (trimmed.startsWith("/")) {
+    if (!trimmed.startsWith("//") || trimmed.startsWith("///")) {
+      throw new UrlError("invalid_url", "product URL must be a valid https URL");
+    }
+    return `https:${trimmed}`;
+  }
+
+  // A dotted authority with an optional numeric port is a valid scheme-less
+  // form (for example, hartevo.com:8443/jobs). Check it before the scheme
+  // regex because WHATWG interprets the hostname's colon as a scheme marker.
+  if (BARE_AUTHORITY_RE.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+
+  const scheme = URL_SCHEME_RE.exec(trimmed);
+  if (scheme) {
+    if (scheme[1]!.toLowerCase() === "https") {
+      const remainder = trimmed.slice(scheme[0].length);
+      // Do not let WHATWG repair malformed HTTPS spellings such as
+      // `https:example.com` or `https:///example.com` into a valid URL.
+      if (!remainder.startsWith("//") || remainder.startsWith("///")) {
+        throw new UrlError("invalid_url", "product URL must be a valid https URL");
+      }
+    }
+    // Keep explicit schemes intact so the existing protocol check rejects
+    // http:, javascript:, data:, and any other non-HTTPS scheme.
+    return trimmed;
+  }
+
+  throw new UrlError("invalid_url", "product URL must be a valid https URL");
 }
 
 export function normalizeWhyTestThisToday(raw: string): string {
