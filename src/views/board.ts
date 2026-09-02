@@ -248,7 +248,7 @@ function renderClaimForm(view: ClaimFormView): string {
     ${occupiedWhyLand}
     ${renderCategoryPicker()}
     <input id="bid" name="bidUsd" type="hidden" value="${view.defaultBid}"/>
-    <button type="submit" class="claim-submit outbid" id="claim-submit" data-claim-submit="" data-slot="claim-button" aria-label="Claim rank" aria-disabled="true" disabled>Claim rank<span class="sr-only">Outbid</span></button>
+    <button type="submit" class="claim-submit outbid" id="claim-submit" data-claim-submit="" data-slot="claim-button" aria-label="Claim rank" aria-disabled="true" disabled>Claim rank</button>
     ${formHint}
   </form>`;
   return bidForm;
@@ -472,7 +472,7 @@ ${claimAfterOpen}
   ${bidForm}
   ${renderCategoryRail()}
   ${laterRailOpen}
-  <span class="claim-rail-copy sr-only">Claim rank and Outbid stay available after the required product URL and test note.</span>
+  <span class="claim-rail-copy sr-only">Claim rank becomes available after the required product URL and test note.</span>
   ${laterRailClose}
   ${occupiedUrlAfterRail}
 </section>

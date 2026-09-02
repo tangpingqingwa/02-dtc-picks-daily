@@ -2071,18 +2071,23 @@ nav[aria-label="Main"] .nav-rules { display: list-item; }
     max-width: none;
   }
   .site-header-inner {
-    height: 68px;
-    grid-template-columns: minmax(0, 1fr) auto;
+    height: auto;
+    min-height: 112px;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "brand nav"
-      "folio folio";
-    gap: 0 12px;
+      "brand"
+      "folio"
+      "nav";
+    gap: 7px;
+    padding-top: 10px;
+    padding-bottom: 9px;
   }
   .brand { grid-area: brand; font-size: 1.15rem; }
   .rail-folio {
     grid-area: folio;
     display: flex;
     align-items: baseline;
+    width: 100%;
     justify-content: space-between;
     gap: 10px;
     text-align: left;
@@ -2090,7 +2095,12 @@ nav[aria-label="Main"] .nav-rules { display: list-item; }
   }
   .rail-kicker { display: inline; }
   .rail-folio time { display: inline; margin-top: 0; }
-  .nav-wrap { grid-area: nav; gap: 8px; }
+  .nav-wrap {
+    grid-area: nav;
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
   nav[aria-label="Main"] ul { gap: 9px; font-size: 0.68rem; }
   .search-button,
   .theme-toggle { width: auto; min-width: 0; height: 28px; padding: 0 7px; }

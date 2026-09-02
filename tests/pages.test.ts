@@ -276,7 +276,8 @@ test("GET / is a public empty board with bid form", async () => {
   assert.ok(emptyAt > -1 && claimAt > -1 && emptyAt > claimAt, "claim chrome precedes the quiet morning surface");
   assert.ok(stripAt > emptyAt, "last-24h strip sits under the one cover");
   assert.ok(titleAt > claimAt && productUrlAt > titleAt && whyAt > productUrlAt && outbidAt > whyAt, "empty form orders Product URL, Why, then one Claim rank");
-  assert.equal((body.match(/>Claim rank<span/g) ?? []).length, 1);
+  assert.equal((body.match(/>Claim rank<\/button>/g) ?? []).length, 1);
+  assert.doesNotMatch(body, />Outbid<|Claim rank and Outbid/i);
   assert.equal((body.match(/name="productUrl"/g) ?? []).length, 1);
   assert.equal((body.match(/name="whyTestThisToday"/g) ?? []).length, 1);
   const stepDownAt = body.indexOf('data-bid-step="-1"');
@@ -518,7 +519,8 @@ test("GET / keeps one Test action, one quiet List route, and one Claim rank form
   assert.equal((body.match(/data-list-route=""/g) ?? []).length, 1);
   assert.equal((body.match(/>Test this today</g) ?? []).length, 1);
   assert.equal((body.match(/>List a product</g) ?? []).length, 1);
-  assert.equal((body.match(/>Claim rank<span/g) ?? []).length, 1);
+  assert.equal((body.match(/>Claim rank<\/button>/g) ?? []).length, 1);
+  assert.doesNotMatch(body, />Outbid<|Claim rank and Outbid/i);
   assert.ok(coverWhyAt > -1 && testAt > coverWhyAt && listAt > testAt && listAt < bidAt, "the why prize leads, Test is first action, and List stays quiet before later facts");
   assert.ok(claimAt > -1 && coverStart > claimAt, "the listing form precedes the cover surface");
 
@@ -872,6 +874,7 @@ test("GET / keeps the MERCH DESK cover-ledger, claim-drawer, and card anatomy co
   assert.match(html, /<img class="brand-mark" src="\/icons\/brand-mark\.svg"[^>]*>/);
   assert.doesNotMatch(html, /<svg\b|class="lane-icon"|class="card-avatar"|[←→↔]/);
   assert.doesNotMatch(html, /outbid\.lol|outbid-mark|see\.io|tutti\.so|joni\.ai/);
+  assert.doesNotMatch(html, />Outbid<|Claim rank and Outbid/i);
   const dom = parseTestDom(html);
   const domElements = testDomElements(dom);
   const home = domElements.find((element) => element.attributes.get("data-slot") === "home-shell");
@@ -948,6 +951,7 @@ test("GET / keeps the MERCH DESK cover-ledger, claim-drawer, and card anatomy co
   assert.doesNotMatch(BOARD_CSS, /\.desk:has\(\.empty\) #claim \.claim-title\s*\{[^}]*font-size: clamp\(2\.1rem, 5vw, 2\.85rem\);/);
   assert.match(BOARD_CSS, /@media \(max-width: 767px\)[\s\S]*\.merch-desk-main\s*\{[\s\S]*display: flex;[\s\S]*flex-direction: column;/);
   assert.match(BOARD_CSS, /@media \(max-width: 767px\)[\s\S]*\.desk\[data-occupied="false"\] \.merch-desk-main > #claim \{ order: 1; \}/);
+  assert.match(BOARD_CSS, /@media \(max-width: 767px\)[\s\S]*grid-template-areas:\s*"brand"\s*"folio"\s*"nav";/);
   assert.match(BOARD_CSS, /@media \(max-width: 767px\)[\s\S]*\.merch-desk-main \.row-cover\s*\{[\s\S]*min-height: 176px;/);
   assert.match(BOARD_CSS, /body\s*\{[\s\S]*scrollbar-width: none;[\s\S]*-ms-overflow-style: none;/);
   assert.match(BOARD_CSS, /html::-webkit-scrollbar,[\s\S]*body::-webkit-scrollbar[\s\S]*display: none;/);
@@ -1539,7 +1543,8 @@ test("GET / keeps an empty desk direct: Product URL, Why, then one Claim rank", 
   assert.match(body, /Claim #1 for/);
   assert.match(body, /Product URL/);
   assert.match(body, /Why test this today/);
-  assert.equal((body.match(/>Claim rank<span/g) ?? []).length, 1);
+  assert.equal((body.match(/>Claim rank<\/button>/g) ?? []).length, 1);
+  assert.doesNotMatch(body, />Outbid<|Claim rank and Outbid/i);
   assert.equal((body.match(/name="productUrl"/g) ?? []).length, 1);
   assert.equal((body.match(/name="whyTestThisToday"/g) ?? []).length, 1);
   assert.ok(claimAt > -1 && titleAt > claimAt && productUrlAt > titleAt && whyAt > productUrlAt && outbidAt > whyAt, "empty keyboard order is Product URL, Why, then Claim rank");
