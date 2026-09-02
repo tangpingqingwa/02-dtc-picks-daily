@@ -93,9 +93,16 @@ export function isTrackingQueryKey(key: string): boolean {
 /** Strip tracking, drop fragment, reject chat / NSFW / non-https. Clicks use this URL. */
 export function canonicalizeProductUrl(raw: string): string {
   const trimmed = raw.trim();
+  // A bare host/path is a convenient form input, but an explicitly supplied
+  // scheme must still be parsed and rejected when it is not HTTPS. In
+  // particular, do not retry `http:`, `javascript:`, or `data:` values with
+  // an HTTPS prefix after the first parse fails.
+  const candidate = /^[a-z][a-z\d+.-]*:/i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
   let url: URL;
   try {
-    url = new URL(trimmed);
+    url = new URL(candidate);
   } catch {
     throw new UrlError("invalid_url", "product URL must be a valid https URL");
   }

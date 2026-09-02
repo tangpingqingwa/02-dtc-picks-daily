@@ -48,6 +48,34 @@ test("SPEC acceptance 6: strip utm_source and aff before store", () => {
   }
 });
 
+test("bare product domains default to HTTPS without weakening protocol checks", async () => {
+  assert.equal(canonicalizeProductUrl("hartevo.com"), "https://hartevo.com/");
+  assert.equal(
+    canonicalizeProductUrl("Hartevo.com/products/pick/?utm_source=launch#role"),
+    "https://hartevo.com/products/pick",
+  );
+  assert.equal(canonicalizeProductUrl("https://hartevo.com/products/pick"), "https://hartevo.com/products/pick");
+  assert.throws(() => canonicalizeProductUrl("http://hartevo.com/products/pick"), /https/);
+  assert.throws(() => canonicalizeProductUrl("javascript:alert(1)"), /https/);
+  assert.throws(() => canonicalizeProductUrl("data:text/plain,hello"), /https/);
+
+  const app = await buildApp({ databasePath: ":memory:" });
+  after(() => app.close());
+  const response = await app.inject({
+    method: "POST",
+    url: "/checkout",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    payload: form({
+      productUrl: "hartevo.com",
+      whyTestThisToday: "A bare domain should reach the daily desk",
+      bidUsd: "5",
+    }),
+  });
+  assert.equal(response.statusCode, 303);
+  const [listing] = listToday(app.db, dayKey());
+  assert.equal(listing?.productUrl, "https://hartevo.com/");
+});
+
 test("Amazon and Shopify listings are keyed by path, not leftover query", () => {
   assert.equal(
     canonicalizeProductUrl("https://www.amazon.com/dp/B00TEST123?tag=aff-20&linkCode=ll1&psc=1"),

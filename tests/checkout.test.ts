@@ -2464,7 +2464,7 @@ test("abandoned fixture session does not insert a listing", async () => {
   assert.match(board.body, /data-empty-cover=""/);
   assert.match(board.body, /name="productUrl"/);
   assert.match(board.body, /name="whyTestThisToday"/);
-  assert.match(board.body, />Outbid</);
+  assert.match(board.body, />Claim rank/);
   assert.doesNotMatch(board.body, /take-after-list|list-after-take|empty-claim-first|data-empty-claim|data-first-click="claim"/);
   assert.doesNotMatch(board.body, /data-later-write|data-why-later|Then the product URL|Then why test this today/);
   assert.doesNotMatch(board.body, /ghost\.example/);

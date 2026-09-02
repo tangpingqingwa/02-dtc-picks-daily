@@ -96,7 +96,7 @@ type Listing = {
 
 Required fields on submit:
 
-1. **Product URL** — `https` only. Host must be a product, store, app, or supplier page (Shopify, Amazon, brand site, tool site).
+1. **Product URL** — canonicalized to `https`. A scheme-less host/path such as `hartevo.com` is accepted as input and receives the safe `https://` default before validation. Host must be a product, store, app, or supplier page (Shopify, Amazon, brand site, tool site).
 2. **Why test this today** — one line. What a seller should try this morning. Not a slogan dump.
 3. **Bid** — whole USD, minimum $5.
 
@@ -144,7 +144,7 @@ The same **canonical product URL** on the **same day** raises the existing listi
 
 Before compare, store, or outbound redirect:
 
-1. Require `https:`. Reject `http:`, `javascript:`, `data:`.
+1. For a scheme-less host/path, prepend `https://`; then require `https:`. Reject explicit `http:`, `javascript:`, and `data:` schemes.
 2. Resolve one redirect hop for known shorteners **or** reject shortener hosts. Never keep `bit.ly` / `t.co` / `tinyurl.com` as the stored URL.
 3. Drop the fragment.
 4. Strip tracking and affiliate query keys, including: `utm_*`, `ref`, `ref_`, `affiliate`, `aff`, `tag`, `fbclid`, `gclid`, `mc_cid`, `mc_eid`, `igshid`, `si`, `pp`, `ascsubtag`, and Amazon `tag` / `linkCode` / `psc`. If the only remaining identity is those keys, reject.

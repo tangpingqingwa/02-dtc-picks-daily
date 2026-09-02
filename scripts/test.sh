@@ -303,8 +303,12 @@ if [[ -f package.json ]]; then
   fi
   grep -q 'Claim #1 for' src/views/board.ts \
     || fail "board missing Claim #1 chrome"
+  grep -q 'aria-label="Claim rank"' src/views/board.ts \
+    || fail "board missing Claim rank button"
+  grep -q '>Claim rank' src/views/board.ts \
+    || fail "board missing visible Claim rank button"
   grep -q 'Outbid' src/views/board.ts \
-    || fail "board missing Outbid button"
+    || fail "board missing Outbid compatibility marker"
   grep -q 'data-empty-board' src/views/board.ts \
     || fail "board missing honest empty marker"
   grep -q 'data-empty-cover' src/views/board.ts \
@@ -430,10 +434,10 @@ if form_start < 0 or form_end < 0:
     raise SystemExit("claim form template missing")
 form = board[form_start:form_end]
 why_token = "${whyField}" if "${whyField}" in form else "${occupiedWhyLand}"
-if "${productUrlField}" not in form or why_token not in form or ">Outbid<" not in form:
+if "${productUrlField}" not in form or why_token not in form or ">Claim rank" not in form:
     raise SystemExit("claim form fields missing")
-if not (form.find("${productUrlField}") < form.find(why_token) < form.find(">Outbid<")):
-    raise SystemExit("claim form must order Product URL, Why, Outbid")
+if not (form.find("${productUrlField}") < form.find(why_token) < form.find(">Claim rank")):
+    raise SystemExit("claim form must order Product URL, Why, Claim rank")
 if board.count('data-first-click="take"') != 1:
     raise SystemExit("only the paid cover may own the first-click take stamp")
 PY

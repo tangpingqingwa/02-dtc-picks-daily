@@ -1443,8 +1443,9 @@ nav[aria-label="Main"] .nav-rules { display: list-item; }
 }
 .claim-title {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   margin: 0;
   font-family: var(--serif);
@@ -1452,14 +1453,14 @@ nav[aria-label="Main"] .nav-rules { display: list-item; }
   font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 1.04;
-  text-align: left;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
 }
 .bid-stepper {
   display: inline-flex;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 6px;
   margin-top: 0;
 }
@@ -1477,8 +1478,11 @@ nav[aria-label="Main"] .nav-rules { display: list-item; }
 }
 .step:hover { background: color-mix(in srgb, var(--primary) 13%, var(--muted)); }
 .bid-field {
+  position: relative;
   display: block;
-  flex: 1;
+  flex: 0 0 auto;
+  width: max-content;
+  min-width: 3.25rem;
   color: var(--primary);
   text-align: center;
   text-decoration: none;
@@ -1492,7 +1496,7 @@ nav[aria-label="Main"] .nav-rules { display: list-item; }
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
 }
 .bid-input-wrap input {
@@ -1517,13 +1521,22 @@ nav[aria-label="Main"] .nav-rules { display: list-item; }
 .claim-note[data-unpaid-off] { color: var(--foreground); }
 .unpaid-off-line { display: block; margin-bottom: 8px; font-weight: 700; }
 .bid-form {
+  align-items: center;
   display: flex;
   flex-direction: column;
   gap: 13px;
   margin-top: 18px;
 }
 .url-field,
-.claim-note-field { display: block; min-width: 0; }
+.claim-note-field,
+.desk-lane-picker,
+.claim-submit,
+.form-hint {
+  display: block;
+  width: 100%;
+  max-width: 28rem;
+  min-width: 0;
+}
 .url-field input,
 .claim-note-field input {
   width: 100%;
@@ -2100,8 +2113,19 @@ nav[aria-label="Main"] .nav-rules { display: list-item; }
     padding: 18px 16px 17px;
     box-shadow: 5px 5px 0 color-mix(in srgb, var(--primary) 14%, transparent);
   }
-  .claim-title { flex-wrap: nowrap; gap: 8px; font-size: 1.55rem; white-space: nowrap; }
-  .bid-stepper { flex: 1 1 auto; justify-content: space-between; gap: 6px; }
+  .claim-title {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    font-size: 1.55rem;
+    text-align: center;
+    white-space: normal;
+  }
+  .bid-stepper {
+    flex: 0 0 auto;
+    justify-content: center;
+    gap: 6px;
+  }
   .step { width: 38px; height: 38px; flex-basis: 38px; }
   .cover-board .masthead { margin-bottom: 15px; padding-bottom: 14px; }
   .cover-board .masthead-title { font-size: clamp(2.3rem, 12vw, 3.35rem); }

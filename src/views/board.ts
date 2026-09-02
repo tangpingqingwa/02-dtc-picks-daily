@@ -218,7 +218,7 @@ function renderClaimHero(claimCopy: string, defaultBid: number): string {
 function renderProductUrlField(): string {
   return html`<label class="url-field" for="productUrl">
       <span class="sr-only">Product URL</span>
-      <input id="productUrl" name="productUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" required placeholder="https://store.example/product" data-slot="url-input"/>
+      <input id="productUrl" name="productUrl" type="text" inputmode="url" autocomplete="off" spellcheck="false" required placeholder="store.example/product" data-slot="url-input"/>
     </label>`;
 }
 
@@ -248,7 +248,7 @@ function renderClaimForm(view: ClaimFormView): string {
     ${occupiedWhyLand}
     ${renderCategoryPicker()}
     <input id="bid" name="bidUsd" type="hidden" value="${view.defaultBid}"/>
-    <button type="submit" class="claim-submit outbid" id="claim-submit" data-claim-submit="" data-slot="claim-button" aria-label="Outbid and claim this rank" disabled>Outbid</button>
+    <button type="submit" class="claim-submit outbid" id="claim-submit" data-claim-submit="" data-slot="claim-button" aria-label="Claim rank" aria-disabled="true" disabled>Claim rank<span class="sr-only">Outbid</span></button>
     ${formHint}
   </form>`;
   return bidForm;
@@ -527,7 +527,10 @@ ${renderSearchPopover(searchListings)}
       if (copy) copy.textContent = "Claim #" + rankFor(bid) + " for";
     }
     function validUrl(value) {
-      try { return new URL(value).protocol === "https:"; } catch (e) { return false; }
+      var trimmed = String(value || "").trim();
+      if (!trimmed) return false;
+      var candidate = /^[a-z][a-z\d+.-]*:/i.test(trimmed) ? trimmed : "https://" + trimmed;
+      try { return new URL(candidate).protocol === "https:"; } catch (e) { return false; }
     }
     function ready() {
       if (!submit) return;
