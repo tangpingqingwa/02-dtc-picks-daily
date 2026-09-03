@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
+import { runInNewContext } from "node:vm";
 import { buildApp } from "../src/app.js";
 import { applyPaidBid, placeBid } from "../src/core/board.js";
 import { dayKey, formatIssueDate } from "../src/core/day.js";
@@ -141,6 +142,48 @@ function closestTestDomClass(element: TestDomElement, className: string): TestDo
 function pageBody(html: string): string {
   const start = html.indexOf('<div class="page">');
   return start >= 0 ? html.slice(start) : html;
+}
+
+function renderedBoardScript(html: string): string {
+  const scriptStart = html.indexOf("<script>\n  (function ()");
+  const scriptEnd = html.indexOf("</script>", scriptStart);
+  assert.ok(scriptStart >= 0 && scriptEnd > scriptStart, "board readiness script is rendered");
+  return html.slice(scriptStart + "<script>".length, scriptEnd);
+}
+
+class ReadinessVmElement {
+  value = "";
+  hidden = false;
+  textContent = "";
+  disabled = false;
+  focused = false;
+  private readonly attributes = new Map<string, string>();
+  private readonly listeners = new Map<string, Array<(event: { preventDefault(): void }) => void>>();
+
+  addEventListener(type: string, listener: (event: { preventDefault(): void }) => void): void {
+    const existing = this.listeners.get(type) ?? [];
+    existing.push(listener);
+    this.listeners.set(type, existing);
+  }
+
+  dispatch(type: string): boolean {
+    let defaultPrevented = false;
+    const event = { preventDefault: () => { defaultPrevented = true; } };
+    for (const listener of this.listeners.get(type) ?? []) listener(event);
+    return defaultPrevented;
+  }
+
+  setAttribute(name: string, value: string): void {
+    this.attributes.set(name, value);
+  }
+
+  getAttribute(name: string): string | null {
+    return this.attributes.get(name) ?? null;
+  }
+
+  focus(): void {
+    this.focused = true;
+  }
 }
 
 function assertStripRankIsLast24hFact(stripHtml: string, ranks: number[]): void {
@@ -1583,10 +1626,71 @@ test("GET / makes desk lanes browse-only and explains URL policy before submit",
   assert.match(html, /sexual content is not allowed/);
   assert.match(html, /bidForm\.addEventListener\("submit"/);
   assert.match(html, /event\.preventDefault\(\)/);
-  const scriptStart = html.indexOf("<script>\n  (function ()");
-  const scriptEnd = html.indexOf("</script>", scriptStart);
-  assert.ok(scriptStart >= 0 && scriptEnd > scriptStart, "board readiness script is rendered");
-  assert.doesNotThrow(() => new Function(html.slice(scriptStart + "<script>".length, scriptEnd)), "board readiness script parses");
+  const script = renderedBoardScript(html);
+  assert.doesNotThrow(() => new Function(script), "board readiness script parses");
+});
+
+test("GET / readiness VM blocks sexual why copy and allows a benign listing", () => {
+  const html = pageBody(renderBoardPage({
+    day: "2026-08-23",
+    tz: "UTC",
+    listings: [],
+    defaultBidUsd: 5,
+  }));
+  const bidDisplay = new ReadinessVmElement();
+  bidDisplay.value = "5";
+  const formBid = new ReadinessVmElement();
+  const bidSizer = new ReadinessVmElement();
+  const claimCopy = new ReadinessVmElement();
+  const submit = new ReadinessVmElement();
+  const urlField = new ReadinessVmElement();
+  const whyField = new ReadinessVmElement();
+  const bidForm = new ReadinessVmElement();
+  const urlFeedback = new ReadinessVmElement();
+  const whyFeedback = new ReadinessVmElement();
+  const elements = new Map<string, ReadinessVmElement>([
+    ["bid-display", bidDisplay],
+    ["bid", formBid],
+    ["productUrl", urlField],
+    ["whyTestThisToday", whyField],
+    ["bid-form", bidForm],
+    ["productUrl-feedback", urlFeedback],
+    ["whyTestThisToday-feedback", whyFeedback],
+  ]);
+  const selectors = new Map<string, ReadinessVmElement>([
+    [".bid-sizer", bidSizer],
+    ["[data-claim-copy]", claimCopy],
+    ["[data-claim-submit]", submit],
+  ]);
+  const document = {
+    getElementById: (id: string) => elements.get(id) ?? null,
+    querySelector: (selector: string) => selectors.get(selector) ?? null,
+    querySelectorAll: (_selector: string) => [] as ReadinessVmElement[],
+    addEventListener: (_type: string, _listener: (event: { preventDefault(): void }) => void) => undefined,
+  };
+  const window = {
+    location: { href: "https://example.test/" },
+    history: { replaceState: () => undefined },
+  };
+
+  runInNewContext(renderedBoardScript(html), { document, window, URL, URLSearchParams });
+  urlField.value = "https://store.example/product";
+  urlField.dispatch("input");
+  whyField.value = "Test this porn product";
+  whyField.dispatch("input");
+
+  assert.equal(submit.disabled, true, "sexual why copy keeps Claim rank disabled");
+  assert.equal(whyFeedback.hidden, false);
+  assert.match(whyFeedback.textContent, /sexual content is not allowed/);
+  assert.equal(whyField.getAttribute("aria-invalid"), "true");
+  assert.equal(bidForm.dispatch("submit"), true, "submit guard blocks the banned why copy");
+
+  whyField.value = "Test this durable restock";
+  whyField.dispatch("input");
+  assert.equal(submit.disabled, false, "benign why copy enables Claim rank");
+  assert.equal(whyFeedback.hidden, true);
+  assert.equal(whyField.getAttribute("aria-invalid"), "false");
+  assert.equal(bidForm.dispatch("submit"), false, "submit guard allows the benign listing");
 });
 
 test("GET / keeps morning and rolling-window prizes distinct", () => {
