@@ -111,21 +111,22 @@ function renderCategoryChoices(className: string): string {
 }
 
 function renderCategoryPicker(): string {
-  return html`<div class="desk-lane-picker" data-category-picker="">
+  return html`<div class="desk-lane-picker" data-category-picker="" data-display-only="">
     <input type="hidden" value="" data-category-value=""/>
-    <button type="button" class="lane-select" id="category-select" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="category-menu" data-category-select="" data-slot="category-control">
-      <span class="lane-select-label">Desk lane</span>
-      <span data-category-label>Choose a lane</span>
+    <p class="lane-purpose" data-category-purpose="">Browse desk lanes <span>Display only · not part of checkout</span></p>
+    <button type="button" class="lane-select" id="category-select" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="category-menu" aria-label="Browse desk lanes (display only)" data-category-select="" data-slot="category-control">
+      <span class="lane-select-label">Browse desk lanes</span>
+      <span data-category-label>Choose a lane to browse</span>
     </button>
-    <div class="lane-menu" id="category-menu" role="listbox" aria-label="Choose a desk lane" hidden data-category-menu="">
+    <div class="lane-menu" id="category-menu" role="listbox" aria-label="Browse desk lanes (display only)" hidden data-category-menu="">
       ${renderCategoryChoices("lane-menu")}
     </div>
   </div>`;
 }
 
 function renderCategoryRail(): string {
-  return html`<nav class="desk-lanes" aria-label="DTC desk lanes" data-category-rail="" data-slot="category-rail">
-    <p class="desk-lanes-label">Desk lanes / presentation only</p>
+  return html`<nav class="desk-lanes" aria-label="Browse DTC desk lanes (display only)" data-category-rail="" data-display-only="" data-slot="category-rail">
+    <p class="desk-lanes-label">Browse desk lanes / display only</p>
     <div class="category-rail-scroll">
       <div class="category-chip-list">
         ${DESK_LANES.map(
@@ -218,15 +219,17 @@ function renderClaimHero(claimCopy: string, defaultBid: number): string {
 function renderProductUrlField(): string {
   return html`<label class="url-field" for="productUrl">
       <span class="sr-only">Product URL</span>
-      <input id="productUrl" name="productUrl" type="text" inputmode="url" autocomplete="off" spellcheck="false" required placeholder="store.example/product" data-slot="url-input"/>
-    </label>`;
+      <input id="productUrl" name="productUrl" type="text" inputmode="url" autocomplete="off" spellcheck="false" required aria-describedby="productUrl-feedback" placeholder="store.example/product" data-slot="url-input"/>
+    </label>
+    <p id="productUrl-feedback" class="field-feedback" data-url-feedback="" role="status" aria-live="polite" hidden></p>`;
 }
 
 function renderWhyField(): string {
   return html`<div class="claim-note-field" data-slot="why-field">
       <label class="field-label" for="whyTestThisToday">Why test this today</label>
-      <input id="whyTestThisToday" name="whyTestThisToday" type="text" maxlength="140" minlength="8" required placeholder="What a seller should try this morning"/>
+      <input id="whyTestThisToday" name="whyTestThisToday" type="text" maxlength="140" minlength="8" required aria-describedby="whyTestThisToday-feedback" placeholder="What a seller should try this morning"/>
       <p class="claim-note-help">A short, specific reason helps sellers decide what to test.</p>
+      <p id="whyTestThisToday-feedback" class="field-feedback" data-why-feedback="" role="status" aria-live="polite" hidden></p>
     </div>`;
 }
 
@@ -510,6 +513,18 @@ ${renderSearchPopover(searchListings)}
     var searchStatus = document.querySelector("[data-search-status]");
     var searchItems = document.querySelectorAll("[data-search-item]");
     var bids = ${JSON.stringify(listings.map((row) => row.bidUsd))};
+    var urlFeedback = document.getElementById("productUrl-feedback");
+    var whyFeedback = document.getElementById("whyTestThisToday-feedback");
+    var urlTouched = false;
+    var whyTouched = false;
+    // Keep this browser-side guard aligned with the server URL policy. The
+    // server remains authoritative; these checks only explain a rejection earlier.
+    var shortenerHosts = ["bit.ly", "t.co", "tinyurl.com", "goo.gl", "ow.ly", "buff.ly", "is.gd", "cutt.ly", "rebrand.ly", "amzn.to"];
+    var chatHosts = ["t.me", "telegram.me", "telegram.org", "telegram.dog", "wa.me", "whatsapp.com", "discord.gg", "discord.com", "discordapp.com", "m.me", "messenger.com", "signal.me", "signal.org", "line.me", "line.naver.jp"];
+    var nsfwHosts = ["pornhub.com", "xvideos.com", "xnxx.com", "xhamster.com", "onlyfans.com", "fansly.com", "chaturbate.com", "stripchat.com", "manyvids.com", "youporn.com", "redtube.com", "brazzers.com", "spankbang.com"];
+    var trackingKeys = ["ref", "affiliate", "aff", "tag", "fbclid", "gclid", "mc_cid", "mc_eid", "igshid", "si", "pp", "ascsubtag", "linkcode", "psc"];
+    var nsfwPathRe = /(?:^|\\\/)(?:porn|xxx|nsfw|onlyfans|fansly)(?:\\\/|$)/i;
+    var sexualCopyRe = /\b(porn|porno|xxx|nsfw|onlyfans|fansly|nude|nudes|naked|hentai|escort|camgirl|cam girls|sex tape|erotic|blowjob|handjob|anal|cumshot|fetish|sexual)\b/i;
     function parseBid(raw) {
       var n = parseInt(String(raw).replace(/[^0-9]/g, ""), 10);
       return Number.isFinite(n) ? n : min;
@@ -529,31 +544,141 @@ ${renderSearchPopover(searchListings)}
     function bareAuthority(value) {
       return /^(?:(?:(?:[a-z\\d](?:[a-z\\d-]{0,61}[a-z\\d])?\\.)+[a-z\\d](?:[a-z\\d-]{0,61}[a-z\\d])?\\.?|(?:\\d{1,3}\\.){3}\\d{1,3}|localhost|\\[[^\\]]+\\])(?::\\d+)?(?:[/?#].*)?)$/i.test(value);
     }
-    function validUrl(value) {
+    function hostMatchesAny(host, listed) {
+      for (var i = 0; i < listed.length; i++) {
+        if (host === listed[i] || host.slice(-(listed[i].length + 1)) === "." + listed[i]) return true;
+      }
+      return false;
+    }
+    function isTrackingQueryKey(key) {
+      var lower = String(key).toLowerCase();
+      return lower.indexOf("utm_") === 0 || lower.indexOf("ref_") === 0 || trackingKeys.indexOf(lower) >= 0;
+    }
+    function isPrivateIpv4(value) {
+      var parts = value.split(".").map(Number);
+      if (parts.length !== 4 || parts.some(function (part) { return !Number.isInteger(part) || part < 0 || part > 255; })) return true;
+      var a = parts[0];
+      var b = parts[1];
+      var c = parts[2];
+      return a === 0 || a === 10 || a === 127 || (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && (b === 0 || b === 2 || b === 88 || b === 168)) || (a === 192 && b === 31 && c === 196) || (a === 192 && b === 52 && c === 193) || (a === 192 && b === 175 && c === 48) || (a === 198 && (b >= 18 && b <= 19 || b === 51)) || (a === 203 && b === 0) || a >= 224;
+    }
+    function isPrivateOrLocalHost(host) {
+      var normalized = String(host || "").trim().toLowerCase().replace(/^\\[|\\]$/g, "").replace(/\\.+$/, "");
+      if (!normalized || normalized === "localhost" || normalized.slice(-10) === ".localhost" || normalized.slice(-6) === ".local" || normalized.indexOf("%") >= 0) return true;
+      if (/^(?:\\d{1,3}\\.){3}\\d{1,3}$/.test(normalized)) return isPrivateIpv4(normalized);
+      if (normalized.indexOf(":") < 0) return false;
+      var words = parseIpv6(normalized);
+      if (!words) return true;
+      if (words.every(function (word) { return word === 0; })) return true;
+      if (words.slice(0, 7).every(function (word) { return word === 0; }) && words[7] === 1) return true;
+      if ((words[0] & 0xfe00) === 0xfc00 || (words[0] & 0xffc0) === 0xfe80 || (words[0] & 0xffc0) === 0xfec0) return true;
+      if (words.slice(0, 5).every(function (word) { return word === 0; }) && words[5] === 0xffff) return isPrivateIpv4((words[6] >>> 8) + "." + (words[6] & 255) + "." + (words[7] >>> 8) + "." + (words[7] & 255));
+      if (words.slice(0, 6).every(function (word) { return word === 0; })) return true;
+      if (hasIpv6Prefix(words, [0xff00], 8) || hasIpv6Prefix(words, [0x64ff, 0x9b00, 0, 0, 0, 0], 96) || hasIpv6Prefix(words, [0x64ff, 0x9b00, 1], 48) || hasIpv6Prefix(words, [0x2001, 0x0db8], 32) || hasIpv6Prefix(words, [0x2001, 2, 0], 48) || hasIpv6Prefix(words, [0x2001, 3], 32) || hasIpv6Prefix(words, [0x2001, 4, 0x0112], 48) || hasIpv6Prefix(words, [0x2001, 0x0010], 28) || hasIpv6Prefix(words, [0x2001, 0x0020], 28) || hasIpv6Prefix(words, [0x2001, 0], 32) || hasIpv6Prefix(words, [0x0100, 0, 0, 0], 64) || hasIpv6Prefix(words, [0x3fff, 0], 20) || hasIpv6Prefix(words, [0x2002], 16)) return true;
+      return false;
+    }
+    function hasIpv6Prefix(words, prefix, bits) {
+      var fullWords = Math.floor(bits / 16);
+      for (var index = 0; index < fullWords; index++) if (words[index] !== prefix[index]) return false;
+      var remainingBits = bits % 16;
+      if (remainingBits === 0) return true;
+      var mask = (0xffff << (16 - remainingBits)) & 0xffff;
+      return (words[fullWords] & mask) === (prefix[fullWords] & mask);
+    }
+    function parseIpv6(value) {
+      var sections = value.split("::");
+      if (sections.length > 2) return null;
+      var left = sections[0] ? sections[0].split(":") : [];
+      var right = sections.length === 2 && sections[1] ? sections[1].split(":") : [];
+      var leftWords = expandIpv6Parts(left);
+      var rightWords = expandIpv6Parts(right);
+      if (!leftWords || !rightWords) return null;
+      if (sections.length === 1) return leftWords.length === 8 ? leftWords : null;
+      var missing = 8 - leftWords.length - rightWords.length;
+      if (missing < 1) return null;
+      return leftWords.concat(Array.from({ length: missing }, function () { return 0; }), rightWords);
+    }
+    function expandIpv6Parts(parts) {
+      var words = [];
+      for (var index = 0; index < parts.length; index++) {
+        var part = parts[index];
+        if (part.indexOf(".") >= 0) {
+          var octets = part.split(".").map(Number);
+          if (octets.length !== 4 || octets.some(function (octet) { return !Number.isInteger(octet) || octet < 0 || octet > 255; })) return null;
+          words.push((octets[0] << 8) | octets[1], (octets[2] << 8) | octets[3]);
+        } else {
+          if (!/^[0-9a-f]{1,4}$/i.test(part)) return null;
+          words.push(parseInt(part, 16));
+        }
+      }
+      return words;
+    }
+    function urlIssue(value) {
       var trimmed = String(value || "").trim();
-      if (!trimmed || /[\\s\\\\\\u0000-\\u001f\\u007f-\\u009f]/.test(trimmed)) return false;
+      if (!trimmed) return "product URL is required";
+      if (/[\\s\\\\\\u0000-\\u001f\\u007f-\\u009f]/.test(trimmed)) return "product URL must be a valid https URL";
       var candidate;
       if (trimmed.indexOf("/") === 0) {
-        if (trimmed.indexOf("//") !== 0 || trimmed.indexOf("///") === 0) return false;
+        if (trimmed.indexOf("//") !== 0 || trimmed.indexOf("///") === 0) return "product URL must be a valid https URL";
         candidate = "https:" + trimmed;
       } else if (bareAuthority(trimmed)) {
         candidate = "https://" + trimmed;
       } else {
         var scheme = /^([a-z][a-z\\d+.-]*):/i.exec(trimmed);
-        if (!scheme) return false;
+        if (!scheme) return "product URL must be a valid https URL";
         if (scheme[1].toLowerCase() === "https") {
           var remainder = trimmed.slice(scheme[0].length);
-          if (remainder.indexOf("//") !== 0 || remainder.indexOf("///") === 0) return false;
+          if (remainder.indexOf("//") !== 0 || remainder.indexOf("///") === 0) return "product URL must be a valid https URL";
         }
         candidate = trimmed;
       }
-      try { return new URL(candidate).protocol === "https:"; } catch (e) { return false; }
+      var url;
+      try { url = new URL(candidate); } catch (e) { return "product URL must be a valid https URL"; }
+      if (url.protocol !== "https:") return "product URL must be https";
+      if (url.username !== "" || url.password !== "") return "product URL must not include credentials";
+      var host = String(url.hostname || "").toLowerCase().replace(/\\.+$/, "");
+      if (!host) return "product URL must be a valid https URL";
+      if (isPrivateOrLocalHost(host)) return "product URL must not be a local host";
+      if (hostMatchesAny(host, shortenerHosts)) return "shortener URLs are not allowed";
+      if (hostMatchesAny(host, chatHosts)) return "chat and invite links are not allowed";
+      if (hostMatchesAny(host, nsfwHosts) || nsfwPathRe.test(url.pathname)) return "adult URLs are not allowed";
+      var queryKeys = [];
+      url.searchParams.forEach(function (_value, key) { queryKeys.push(key); });
+      var hadQuery = queryKeys.length > 0;
+      var allQueryWasTracking = hadQuery && queryKeys.every(isTrackingQueryKey);
+      if (url.pathname === "/" && allQueryWasTracking) return "product URL must identify a product after stripping tracking";
+      return "";
     }
-    function ready() {
-      if (!submit) return;
-      var isReady = Boolean(urlField && validUrl(urlField.value.trim()) && whyField && whyField.value.trim().length >= 8 && input && parseBid(input.value) >= min);
+    function validUrl(value) {
+      return urlIssue(value) === "";
+    }
+    function whyIssue(value) {
+      var text = String(value || "").trim();
+      if (text.length < 8 || text.length > 140) return "why test this today must be 8–140 characters";
+      if (/[\\r\\n]/.test(text)) return "why test this today must be a single line";
+      if (sexualCopyRe.test(text)) return "sexual content is not allowed";
+      return "";
+    }
+    function updateFeedback(node, inputField, message, touched) {
+      var visible = Boolean(touched && message);
+      if (node) {
+        node.hidden = !visible;
+        node.textContent = visible ? message : "";
+        node.setAttribute("data-state", visible ? "error" : "clear");
+      }
+      if (inputField) inputField.setAttribute("aria-invalid", visible ? "true" : "false");
+    }
+    function ready(showFeedback) {
+      if (showFeedback) { urlTouched = true; whyTouched = true; }
+      var urlMessage = urlIssue(urlField ? urlField.value : "");
+      var whyMessage = whyIssue(whyField ? whyField.value : "");
+      updateFeedback(urlFeedback, urlField, urlMessage, urlTouched);
+      updateFeedback(whyFeedback, whyField, whyMessage, whyTouched);
+      var isReady = Boolean(submit && urlField && validUrl(urlField.value) && whyField && whyMessage === "" && input && parseBid(input.value) >= min);
+      if (!submit) return isReady;
       submit.disabled = !isReady;
       submit.setAttribute("aria-disabled", isReady ? "false" : "true");
+      return isReady;
     }
     function closeMenu(menu, button) {
       if (menu) menu.hidden = true;
@@ -561,8 +686,7 @@ ${renderSearchPopover(searchListings)}
     }
     function setCategory(value) {
       if (categoryValue) categoryValue.value = value;
-      if (categoryLabel) categoryLabel.textContent = value || "Choose a lane";
-      if (bidForm && value) bidForm.setAttribute("data-note-open", "");
+      if (categoryLabel) categoryLabel.textContent = value || "Choose a lane to browse";
       document.querySelectorAll("[data-category-option]").forEach(function (option) {
         option.setAttribute("aria-selected", option.getAttribute("data-category-option") === value ? "true" : "false");
       });
@@ -641,8 +765,22 @@ ${renderSearchPopover(searchListings)}
     if (!input) return;
     input.addEventListener("input", sync);
     input.addEventListener("change", sync);
-    [urlField, whyField].forEach(function (field) {
-      if (field) { field.addEventListener("input", ready); field.addEventListener("change", ready); }
+    if (urlField) {
+      urlField.addEventListener("input", function () { urlTouched = true; ready(); });
+      urlField.addEventListener("change", function () { urlTouched = true; ready(); });
+      urlField.addEventListener("blur", function () { urlTouched = true; ready(); });
+    }
+    if (whyField) {
+      whyField.addEventListener("input", function () { whyTouched = true; ready(); });
+      whyField.addEventListener("change", function () { whyTouched = true; ready(); });
+      whyField.addEventListener("blur", function () { whyTouched = true; ready(); });
+    }
+    if (bidForm) bidForm.addEventListener("submit", function (event) {
+      if (!ready(true)) {
+        event.preventDefault();
+        var firstInvalid = urlIssue(urlField ? urlField.value : "") ? urlField : whyField;
+        if (firstInvalid) firstInvalid.focus();
+      }
     });
     if (categorySelect) categorySelect.addEventListener("click", function () {
       var open = categoryMenu && categoryMenu.hidden;

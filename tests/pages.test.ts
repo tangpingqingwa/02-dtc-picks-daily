@@ -1554,6 +1554,41 @@ test("GET / keeps an empty desk direct: Product URL, Why, then one Claim rank", 
   assert.doesNotMatch(body, /List a product|data-cover-hop|data-first-click="take"/);
 });
 
+test("GET / makes desk lanes browse-only and explains URL policy before submit", async () => {
+  const html = pageBody(renderBoardPage({
+    day: "2026-08-23",
+    tz: "UTC",
+    listings: [],
+    defaultBidUsd: 5,
+  }));
+
+  assert.match(html, /data-category-picker="" data-display-only=""/);
+  assert.match(html, /data-category-purpose="">Browse desk lanes <span>Display only · not part of checkout<\/span>/);
+  assert.match(html, /aria-label="Browse desk lanes \(display only\)"/);
+  assert.match(html, /Choose a lane to browse/);
+  assert.match(html, /data-category-rail="" data-display-only=""/);
+  assert.match(html, /Browse desk lanes \/ display only/);
+  assert.doesNotMatch(html, /name="category"/);
+
+  assert.match(html, /id="productUrl"[^>]*aria-describedby="productUrl-feedback"/);
+  assert.match(html, /id="productUrl-feedback" class="field-feedback" data-url-feedback=""[^>]*role="status"/);
+  assert.match(html, /function urlIssue\(value\)/);
+  assert.match(html, /product URL must be https/);
+  assert.match(html, /product URL must not include credentials/);
+  assert.match(html, /product URL must not be a local host/);
+  assert.match(html, /shortener URLs are not allowed/);
+  assert.match(html, /chat and invite links are not allowed/);
+  assert.match(html, /adult URLs are not allowed/);
+  assert.match(html, /product URL must identify a product after stripping tracking/);
+  assert.match(html, /sexual content is not allowed/);
+  assert.match(html, /bidForm\.addEventListener\("submit"/);
+  assert.match(html, /event\.preventDefault\(\)/);
+  const scriptStart = html.indexOf("<script>\n  (function ()");
+  const scriptEnd = html.indexOf("</script>", scriptStart);
+  assert.ok(scriptStart >= 0 && scriptEnd > scriptStart, "board readiness script is rendered");
+  assert.doesNotThrow(() => new Function(html.slice(scriptStart + "<script>".length, scriptEnd)), "board readiness script parses");
+});
+
 test("GET / keeps morning and rolling-window prizes distinct", () => {
   const html = pageBody(renderBoardPage({
     day: "2026-08-23",

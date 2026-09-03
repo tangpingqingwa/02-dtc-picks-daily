@@ -1567,7 +1567,33 @@ nav[aria-label="Main"] .nav-rules { display: list-item; }
 }
 .url-field input::placeholder,
 .claim-note-field input::placeholder { color: var(--muted-foreground); }
+.field-feedback {
+  width: 100%;
+  max-width: 28rem;
+  margin: -7px 0 0;
+  font-size: 0.7rem;
+  line-height: 1.45;
+  color: var(--primary);
+}
 .desk-lane-picker { position: relative; }
+.lane-purpose {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 0.61rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.lane-purpose span {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--muted-foreground);
+}
 .lane-select {
   width: 100%;
   min-height: 42px;
