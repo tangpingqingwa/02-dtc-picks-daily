@@ -2136,7 +2136,7 @@ nav[aria-label="Main"] .nav-rules { display: list-item; }
     justify-content: center;
     gap: 6px;
   }
-  .step { width: 38px; height: 38px; flex-basis: 38px; }
+  .step { width: 44px; min-width: 44px; height: 44px; min-height: 44px; flex-basis: 44px; }
   .cover-board .masthead { margin-bottom: 15px; padding-bottom: 14px; }
   .cover-board .masthead-title { font-size: clamp(2.3rem, 12vw, 3.35rem); }
   .cover-board .masthead-dek { font-size: 0.82rem; }
