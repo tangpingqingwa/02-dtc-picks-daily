@@ -102,6 +102,11 @@ const DESK_LANES = [
   "Analytics",
 ] as const satisfies readonly DeskLane[];
 
+// JSON-serialize this source into the browser script so the server's `\\b`
+// word-boundary semantics survive the surrounding HTML template literal.
+const CLIENT_SEXUAL_COPY_PATTERN =
+  "\\b(porn|porno|xxx|nsfw|onlyfans|fansly|nude|nudes|naked|hentai|escort|camgirl|cam girls|sex tape|erotic|blowjob|handjob|anal|cumshot|fetish|sexual)\\b";
+
 function renderCategoryChoices(className: string): string {
   return DESK_LANES.map(
     (lane) => html`<button type="button" class="${className}-option" role="option" aria-selected="${lane === "All" ? "true" : "false"}" data-category-option="${escapeHtml(lane)}">
@@ -524,9 +529,9 @@ ${renderSearchPopover(searchListings)}
     var nsfwHosts = ["pornhub.com", "xvideos.com", "xnxx.com", "xhamster.com", "onlyfans.com", "fansly.com", "chaturbate.com", "stripchat.com", "manyvids.com", "youporn.com", "redtube.com", "brazzers.com", "spankbang.com"];
     var trackingKeys = ["ref", "affiliate", "aff", "tag", "fbclid", "gclid", "mc_cid", "mc_eid", "igshid", "si", "pp", "ascsubtag", "linkcode", "psc"];
     var nsfwPathRe = /(?:^|\\\/)(?:porn|xxx|nsfw|onlyfans|fansly)(?:\\\/|$)/i;
-    // Use explicit ASCII boundaries so this expression stays intact inside
-    // the server-rendered template literal (and mirrors the server policy).
-    var sexualCopyRe = new RegExp("(^|[^A-Za-z])(porn|porno|xxx|nsfw|onlyfans|fansly|nude|nudes|naked|hentai|escort|camgirl|cam girls|sex tape|erotic|blowjob|handjob|anal|cumshot|fetish|sexual)([^A-Za-z]|$)", "i");
+    // The source is JSON-serialized before interpolation, preserving the
+    // server's JavaScript word-boundary semantics in this HTML template.
+    var sexualCopyRe = new RegExp(${JSON.stringify(CLIENT_SEXUAL_COPY_PATTERN)}, "i");
     function parseBid(raw) {
       var n = parseInt(String(raw).replace(/[^0-9]/g, ""), 10);
       return Number.isFinite(n) ? n : min;

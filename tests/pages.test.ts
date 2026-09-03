@@ -4,6 +4,7 @@ import { runInNewContext } from "node:vm";
 import { buildApp } from "../src/app.js";
 import { applyPaidBid, placeBid } from "../src/core/board.js";
 import { dayKey, formatIssueDate } from "../src/core/day.js";
+import { normalizeWhyTestThisToday } from "../src/core/urls.js";
 import { openDatabase } from "../src/db.js";
 import { renderAboutPage } from "../src/http/pages/about.js";
 import { renderRulesPage } from "../src/http/pages/rules.js";
@@ -1627,6 +1628,8 @@ test("GET / makes desk lanes browse-only and explains URL policy before submit",
   assert.match(html, /bidForm\.addEventListener\("submit"/);
   assert.match(html, /event\.preventDefault\(\)/);
   const script = renderedBoardScript(html);
+  assert.match(script, /new RegExp\("\\\\b/);
+  assert.doesNotMatch(script, /\u0008/);
   assert.doesNotThrow(() => new Function(script), "board readiness script parses");
 });
 
@@ -1676,21 +1679,27 @@ test("GET / readiness VM blocks sexual why copy and allows a benign listing", ()
   runInNewContext(renderedBoardScript(html), { document, window, URL, URLSearchParams });
   urlField.value = "https://store.example/product";
   urlField.dispatch("input");
-  whyField.value = "Test this porn product";
-  whyField.dispatch("input");
+  const checkWhy = (copy: string, blocked: boolean): void => {
+    whyField.value = copy;
+    whyField.dispatch("input");
+    assert.equal(submit.disabled, blocked, `${copy}: readiness state`);
+    assert.equal(whyFeedback.hidden, !blocked, `${copy}: feedback visibility`);
+    assert.equal(whyField.getAttribute("aria-invalid"), blocked ? "true" : "false", `${copy}: aria-invalid`);
+    assert.equal(bidForm.dispatch("submit"), blocked, `${copy}: submit guard`);
+  };
 
-  assert.equal(submit.disabled, true, "sexual why copy keeps Claim rank disabled");
-  assert.equal(whyFeedback.hidden, false);
-  assert.match(whyFeedback.textContent, /sexual content is not allowed/);
-  assert.equal(whyField.getAttribute("aria-invalid"), "true");
-  assert.equal(bidForm.dispatch("submit"), true, "submit guard blocks the banned why copy");
-
-  whyField.value = "Test this durable restock";
-  whyField.dispatch("input");
-  assert.equal(submit.disabled, false, "benign why copy enables Claim rank");
-  assert.equal(whyFeedback.hidden, true);
-  assert.equal(whyField.getAttribute("aria-invalid"), "false");
-  assert.equal(bidForm.dispatch("submit"), false, "submit guard allows the benign listing");
+  for (const copy of ["Test this porn product", "Try xxx item today"]) {
+    assert.throws(() => normalizeWhyTestThisToday(copy), /sexual content is not allowed/);
+    checkWhy(copy, true);
+    assert.match(whyFeedback.textContent, /sexual content is not allowed/);
+  }
+  for (const copy of ["Test nude3 sunscreen", "Try camgirl2 analytics", "Try anal_ysis today"]) {
+    assert.doesNotThrow(() => normalizeWhyTestThisToday(copy));
+    checkWhy(copy, false);
+    assert.equal(whyFeedback.textContent, "");
+  }
+  assert.doesNotThrow(() => normalizeWhyTestThisToday("Test this durable restock"));
+  checkWhy("Test this durable restock", false);
 });
 
 test("GET / keeps morning and rolling-window prizes distinct", () => {
